@@ -46,7 +46,7 @@ export function useBookingLinks() {
     }
   };
 
-  const addLink = useCallback((prefill: BookingPrefill, validityDays: number): BookingLink => {
+  const addLinkFromBooking = useCallback((prefill: BookingPrefill, validityDays: number): BookingLink => {
     const now = new Date();
     const newLink: BookingLink = {
       id: `SB-LINK-${now.toISOString().slice(0, 10)}-${Math.random().toString(36).substring(2, 6)}`,
@@ -66,14 +66,6 @@ export function useBookingLinks() {
     return newLink;
   }, []);
 
-  const removeLink = useCallback((linkId: string) => {
-    setLinks(prevLinks => {
-      const updatedLinks = prevLinks.filter(link => link.id !== linkId);
-      updateLocalStorage(updatedLinks);
-      return updatedLinks;
-    });
-  }, []);
-
   const getLink = useCallback((linkId: string): BookingLink | undefined => {
       return links.find(link => link.id === linkId);
   }, [links]);
@@ -88,5 +80,5 @@ export function useBookingLinks() {
     });
   }, []);
 
-  return { links, addLink, removeLink, getLink, markAsUsed, isLoading };
+  return { links, addLinkFromBooking, getLink, markAsUsed, isLoading };
 }

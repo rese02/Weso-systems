@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowUp, ArrowDown, CheckCircle2, Clock, CircleOff, Search } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowUp, ArrowDown, CheckCircle2, Clock, CircleOff, Search, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,19 +20,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useBookingLinks } from '@/hooks/use-booking-links';
+import { useToast } from '@/hooks/use-toast';
+import { format, parse } from 'date-fns';
 
 
 const initialBookings = [
-    { id: 'BPXMTR', guestName: 'Nawal Safar', checkIn: '21.09.2025', checkOut: '24.09.2025', status: 'Confirmed', lastChange: '05.06.2025, 08:40:18', paymentStatus: 'Partial Payment' },
-    { id: 'RVBEMD', guestName: 'Daniela varnero', checkIn: '25.01.2026', checkOut: '29.01.2026', status: 'Confirmed', lastChange: '04.06.2025, 06:46:55', paymentStatus: 'Partial Payment' },
-    { id: 'BBZGVD', guestName: 'Khalid AlKhozai', checkIn: '24.09.2025', checkOut: '28.09.2025', status: 'Confirmed', lastChange: '28.07.2025, 16:14:34', paymentStatus: 'Partial Payment' },
-    { id: 'CKGUZD', guestName: 'Anetta chodorska', checkIn: '20.12.2025', checkOut: '27.12.2025', status: 'Confirmed', lastChange: '28.07.2025, 14:12:37', paymentStatus: 'Partial Payment' },
-    { id: 'MWG9IR', guestName: 'Ligia Baran', checkIn: '03.01.2026', checkOut: '09.01.2026', status: 'Pending', lastChange: '28.07.2025, 06:42:54', paymentStatus: 'Open' },
-    { id: 'BC7EGC', guestName: 'Alexis Morant', checkIn: '09.08.2025', checkOut: '10.08.2025', status: 'Confirmed', lastChange: '28.07.2025, 06:32:18', paymentStatus: 'Partial Payment' },
-    { id: 'VV1AAH', guestName: 'bryony skinn', checkIn: '19.03.2026', checkOut: '22.03.2026', status: 'Confirmed', lastChange: '20.07.2025, 15:13:23', paymentStatus: 'Partial Payment' },
-    { id: 'B66SZQ', guestName: 'Anthony Stein', checkIn: '13.08.2025', checkOut: '17.08.2025', status: 'Confirmed', lastChange: '17.07.2025, 17:31:57', paymentStatus: 'Partial Payment' },
+    { id: 'BPXMTR', guestName: 'Nawal Safar', checkIn: '21.09.2025', checkOut: '24.09.2025', status: 'Confirmed', lastChange: '05.06.2025, 08:40:18', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 360 },
+    { id: 'RVBEMD', guestName: 'Daniela varnero', checkIn: '25.01.2026', checkOut: '29.01.2026', status: 'Confirmed', lastChange: '04.06.2025, 06:46:55', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 480 },
+    { id: 'BBZGVD', guestName: 'Khalid AlKhozai', checkIn: '24.09.2025', checkOut: '28.09.2025', status: 'Confirmed', lastChange: '28.07.2025, 16:14:34', paymentStatus: 'Partial Payment', roomType: 'suite', priceTotal: 800 },
+    { id: 'CKGUZD', guestName: 'Anetta chodorska', checkIn: '20.12.2025', checkOut: '27.12.2025', status: 'Confirmed', lastChange: '28.07.2025, 14:12:37', paymentStatus: 'Partial Payment', roomType: 'single', priceTotal: 560 },
+    { id: 'MWG9IR', guestName: 'Ligia Baran', checkIn: '03.01.2026', checkOut: '09.01.2026', status: 'Pending', lastChange: '28.07.2025, 06:42:54', paymentStatus: 'Open', roomType: 'single', priceTotal: 480 },
+    { id: 'BC7EGC', guestName: 'Alexis Morant', checkIn: '09.08.2025', checkOut: '10.08.2025', status: 'Confirmed', lastChange: '28.07.2025, 06:32:18', paymentStatus: 'Partial Payment', roomType: 'suite', priceTotal: 200 },
+    { id: 'VV1AAH', guestName: 'bryony skinn', checkIn: '19.03.2026', checkOut: '22.03.2026', status: 'Confirmed', lastChange: '20.07.2025, 15:13:23', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 360 },
+    { id: 'B66SZQ', guestName: 'Anthony Stein', checkIn: '13.08.2025', checkOut: '17.08.2025', status: 'Confirmed', lastChange: '17.07.2025, 17:31:57', paymentStatus: 'Partial Payment', roomType: 'single', priceTotal: 320 },
 ];
 
 const statusConfig: { [key: string]: { variant: 'default' | 'secondary' | 'outline' | 'destructive', icon: React.ElementType, label: string, color: string } } = {
@@ -61,6 +63,8 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
 export default function HotelierDashboardPage() {
   const [bookings, setBookings] = useState(initialBookings);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const { addLinkFromBooking } = useBookingLinks();
+  const { toast } = useToast();
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -81,6 +85,29 @@ export default function HotelierDashboardPage() {
   const handleDeleteSelected = () => {
     setBookings(prev => prev.filter(b => !selectedBookings.includes(b.id)));
     setSelectedBookings([]);
+  }
+
+  const handleCopyLink = (booking: typeof initialBookings[0]) => {
+     const getBaseUrl = () => {
+        if (typeof window !== 'undefined') {
+            return window.location.origin;
+        }
+        return '';
+    }
+    
+    const newLink = addLinkFromBooking({
+        roomType: booking.roomType,
+        checkIn: format(parse(booking.checkIn, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
+        checkOut: format(parse(booking.checkOut, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
+        priceTotal: booking.priceTotal,
+    }, 7);
+
+    const fullLink = `${getBaseUrl()}/booking/hotel-paradies?linkId=${newLink.id}`;
+    navigator.clipboard.writeText(fullLink);
+    toast({
+        title: "Link Copied",
+        description: "The booking link has been copied to your clipboard.",
+    });
   }
 
   const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
@@ -220,6 +247,10 @@ export default function HotelierDashboardPage() {
                                         <Eye className="h-4 w-4" />
                                         <span className="sr-only">View Details</span>
                                     </Link>
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)}>
+                                    <Copy className="h-4 w-4" />
+                                    <span className="sr-only">Copy Booking Link</span>
                                 </Button>
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

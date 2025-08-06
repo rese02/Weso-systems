@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   BookCopy,
-  Building2,
+  LayoutDashboard,
   PlusCircle,
   Settings,
 } from 'lucide-react';
@@ -29,17 +29,16 @@ export default function DashboardLayout({
         <Sidebar>
           <SidebarHeader>
             <div className="flex flex-col text-sidebar-foreground">
-              <span className="text-lg font-bold font-headline">Hotel Paradies</span>
-              <span className="text-sm text-sidebar-foreground/70">Hotelier Dashboard</span>
+              <span className="text-lg font-bold font-headline">Pradell</span>
             </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Bookings">
+                <SidebarMenuButton asChild tooltip="Dashboard">
                   <Link href="/dashboard">
-                    <BookCopy />
-                    <span>Bookings</span>
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -47,7 +46,15 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild tooltip="New Booking">
                   <Link href="/dashboard/create-booking">
                     <PlusCircle />
-                    <span>New Booking</span>
+                    <span>Neue Buchung</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Bookings">
+                  <Link href="/dashboard">
+                    <BookCopy />
+                    <span>Buchungen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -55,7 +62,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild tooltip="Settings">
                   <Link href="/dashboard/settings">
                     <Settings />
-                    <span>Settings</span>
+                    <span>Einstellungen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

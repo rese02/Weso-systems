@@ -16,30 +16,38 @@ import { Separator } from '../ui/separator';
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
 
-const Step1Details = () => (
+const Step1Details = () => {
+    const [checkInDate, setCheckInDate] = useState<Date>();
+    const [checkOutDate, setCheckOutDate] = useState<Date>();
+
+    return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="grid gap-2">
             <Label htmlFor="check-in">Check-in Date</Label>
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('justify-start text-left font-normal', !Date && 'text-muted-foreground')}>
+                    <Button variant="outline" className={cn('justify-start text-left font-normal', !checkInDate && 'text-muted-foreground')}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span>Pick a date</span>
+                        {checkInDate ? format(checkInDate, 'PPP') : <span>Pick a date</span>}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus />
+                </PopoverContent>
             </Popover>
         </div>
         <div className="grid gap-2">
             <Label htmlFor="check-out">Check-out Date</Label>
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('justify-start text-left font-normal', !Date && 'text-muted-foreground')}>
+                    <Button variant="outline" className={cn('justify-start text-left font-normal', !checkOutDate && 'text-muted-foreground')}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span>Pick a date</span>
+                         {checkOutDate ? format(checkOutDate, 'PPP') : <span>Pick a date</span>}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus />
+                </PopoverContent>
             </Popover>
         </div>
          <div className="grid gap-2">
@@ -65,7 +73,8 @@ const Step1Details = () => (
              </Select>
          </div>
     </div>
-);
+    )
+};
 
 const Step2GuestInfo = () => (
     <div className="grid gap-6">

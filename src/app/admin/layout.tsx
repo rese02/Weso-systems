@@ -64,7 +64,7 @@ export default function AdminLayout({
           </SidebarContent>
         </Sidebar>
         <SidebarInset>
-            <DashboardHeader title="Admin Dashboard">
+            <DashboardHeader>
               <SidebarTrigger />
             </DashboardHeader>
             <main className="flex-1 p-4 md:p-6">{children}</main>

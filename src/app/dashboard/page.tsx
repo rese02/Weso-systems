@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 
 const bookings = [
-    { id: 'booking-01', guestName: 'John Doe', checkIn: '2024-08-15', checkOut: '2024-08-20', room: 'Double Room', status: 'Confirmed' },
+    { id: 'BC7EGCD6', guestName: 'Alexis Morant', checkIn: '2025-08-09', checkOut: '2025-08-10', room: 'Komfort', status: 'Confirmed' },
     { id: 'booking-02', guestName: 'Jane Smith', checkIn: '2024-08-16', checkOut: '2024-08-18', room: 'Suite', status: 'Paid' },
     { id: 'booking-03', guestName: 'Peter Jones', checkIn: '2024-09-01', checkOut: '2024-09-07', room: 'Single Room', status: 'Checked-in' },
     { id: 'booking-04', guestName: 'Mary Williams', checkIn: '2024-07-20', checkOut: '2024-07-25', room: 'Double Room', status: 'Checked-out' },
@@ -73,7 +73,9 @@ export default function HotelierDashboardPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/bookings/${booking.id}`}>View Details</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Mark as Paid</DropdownMenuItem>
                         <DropdownMenuItem>Check-in Guest</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Cancel Booking</DropdownMenuItem>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {
   BookCopy,
   Building2,
+  PlusCircle,
   Settings,
 } from 'lucide-react';
 import {
@@ -43,6 +44,14 @@ export default function DashboardLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="New Booking">
+                  <Link href="/dashboard/create-booking">
+                    <PlusCircle />
+                    <span>New Booking</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
                   <Link href="/dashboard/settings">
                     <Settings />
@@ -54,7 +63,7 @@ export default function DashboardLayout({
           </SidebarContent>
         </Sidebar>
         <SidebarInset>
-            <DashboardHeader title="Bookings">
+            <DashboardHeader>
                 <SidebarTrigger />
             </DashboardHeader>
             <main className="flex-1 p-4 md:p-6">{children}</main>

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'HotelHub Central',
+  title: 'WESO Booking Systems',
   description: 'Manage all your hotel booking systems from one place.',
 };
 

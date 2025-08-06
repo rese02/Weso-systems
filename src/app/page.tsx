@@ -9,7 +9,7 @@ export default function Home() {
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Building2 className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold font-headline text-foreground">HotelHub Central</span>
+          <span className="text-2xl font-bold font-headline text-foreground">WESO Booking Systems</span>
         </Link>
         <nav className="flex items-center gap-4">
           <Button variant="ghost" asChild>
@@ -27,7 +27,7 @@ export default function Home() {
               All Your Hotel Bookings, <span className="text-primary">One Central Hub</span>
             </h1>
             <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-              HotelHub Central is the ultimate SaaS platform for agency owners to create and manage multiple hotel booking systems with ease.
+              WESO Booking Systems is the ultimate SaaS platform for agency owners to create and manage multiple hotel booking systems with ease.
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" asChild>
@@ -86,7 +86,7 @@ export default function Home() {
       </main>
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} HotelHub Central. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} WESO Booking Systems. All rights reserved.</p>
         </div>
       </footer>
     </div>

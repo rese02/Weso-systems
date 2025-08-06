@@ -8,14 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
-export default function CreateHotelPage() {
+export default function SettingsPage() {
   const { toast } = useToast();
-  const router = useRouter();
-  const [roomCategories, setRoomCategories] = useState(['Single Room', 'Double Room']);
+  const [roomCategories, setRoomCategories] = useState(['Single Room', 'Double Room', 'Suite']);
 
   const addRoomCategory = () => {
     setRoomCategories([...roomCategories, '']);
@@ -34,68 +31,48 @@ export default function CreateHotelPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
-        title: "Hotel Created",
-        description: "The new hotel system has been successfully created.",
+        title: "Settings Saved",
+        description: "Your hotel settings have been updated.",
     });
-    router.push('/admin');
   }
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-4">
-        <div className="grid gap-1">
-            <h1 className="text-3xl font-bold font-headline md:text-4xl">Create New Hotel System</h1>
-            <p className="text-muted-foreground">Fill out the form to set up a new booking system for a client.</p>
+    <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+       <div className="grid gap-1">
+            <h1 className="text-3xl font-bold font-headline md:text-4xl">Hotel Settings</h1>
+            <p className="text-muted-foreground">Manage your hotel's configuration.</p>
         </div>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Hotel Details</CardTitle>
-            <CardDescription>Basic information about the hotel.</CardDescription>
+            <CardDescription>Update basic information about your hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
               <Label htmlFor="hotel-name">Hotel Name</Label>
-              <Input id="hotel-name" placeholder="e.g., Hotel Paradies" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="domain">Domain or Subdomain</Label>
-              <Input id="domain" placeholder="e.g., hotel-paradies.de" />
-            </div>
-          </CardContent>
-          <Separator />
-          <CardHeader>
-            <CardTitle>Hotelier Login</CardTitle>
-            <CardDescription>Create the login credentials for the hotel owner.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" placeholder="kontakt@hotel.de" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" />
+              <Input id="hotel-name" defaultValue="Hotel Paradies" />
             </div>
           </CardContent>
           <Separator />
           <CardHeader>
             <CardTitle>Booking Configuration</CardTitle>
-            <CardDescription>Set up the initial booking options.</CardDescription>
+            <CardDescription>Manage the booking options for your guests.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
               <Label>Board Types</Label>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="breakfast" />
+                  <Checkbox id="breakfast" defaultChecked/>
                   <Label htmlFor="breakfast">Breakfast</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="half-board" />
+                  <Checkbox id="half-board" defaultChecked/>
                   <Label htmlFor="half-board">Half Board</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="full-board" />
+                  <Checkbox id="full-board" defaultChecked/>
                   <Label htmlFor="full-board">Full Board</Label>
                 </div>
               </div>
@@ -125,8 +102,7 @@ export default function CreateHotelPage() {
           <Separator />
           <CardContent className="pt-6">
             <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit">Create Hotel</Button>
+                <Button type="submit">Save Changes</Button>
             </div>
           </CardContent>
         </Card>

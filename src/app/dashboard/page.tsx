@@ -31,7 +31,7 @@ export default function HotelierDashboardPage() {
               <p className="text-muted-foreground">Manage all bookings for your hotel.</p>
           </div>
           <Button asChild>
-              <Link href="#">
+              <Link href="/booking/hotel-paradies">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Create New Booking
               </Link>

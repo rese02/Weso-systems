@@ -48,7 +48,11 @@ export default function AdminDashboardPage() {
                 <TableRow key={hotel.id}>
                   <TableCell className="font-medium">{hotel.name}</TableCell>
                   <TableCell>{hotel.ownerEmail}</TableCell>
-                  <TableCell>{hotel.domain}</TableCell>
+                  <TableCell>
+                    <Link href={`/booking/${hotel.id}`} className="underline" target="_blank"> 
+                      {hotel.domain}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -58,8 +62,8 @@ export default function AdminDashboardPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Dashboard</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Settings</DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/dashboard">View Dashboard</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/dashboard/settings">Edit Settings</Link></DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

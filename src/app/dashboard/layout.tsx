@@ -44,7 +44,7 @@ export default function DashboardLayout({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
-                  <Link href="#">
+                  <Link href="/dashboard/settings">
                     <Settings />
                     <span>Settings</span>
                   </Link>

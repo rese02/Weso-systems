@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,8 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-const bookings = [
+
+const initialBookings = [
     { id: 'BPXMTR', guestName: 'Nawal Safar', checkIn: '21.09.2025', checkOut: '24.09.2025', status: 'Confirmed', lastChange: '05.06.2025, 08:40:18', paymentStatus: 'Partial Payment' },
     { id: 'RVBEMD', guestName: 'Daniela varnero', checkIn: '25.01.2026', checkOut: '29.01.2026', status: 'Confirmed', lastChange: '04.06.2025, 06:46:55', paymentStatus: 'Partial Payment' },
     { id: 'BBZGVD', guestName: 'Khalid AlKhozai', checkIn: '24.09.2025', checkOut: '28.09.2025', status: 'Confirmed', lastChange: '28.07.2025, 16:14:34', paymentStatus: 'Partial Payment' },
@@ -46,6 +59,34 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
 
 
 export default function HotelierDashboardPage() {
+  const [bookings, setBookings] = useState(initialBookings);
+  const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(bookings.map(b => b.id));
+    } else {
+      setSelectedBookings([]);
+    }
+  };
+
+  const handleSelectSingle = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(prev => [...prev, id]);
+    } else {
+      setSelectedBookings(prev => prev.filter(bId => bId !== id));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    setBookings(prev => prev.filter(b => !selectedBookings.includes(b.id)));
+    setSelectedBookings([]);
+  }
+
+  const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
+  const isSomeSelected = selectedBookings.length > 0 && selectedBookings.length < bookings.length;
+
+
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
       <div className="flex items-center justify-between">
@@ -95,6 +136,28 @@ export default function HotelierDashboardPage() {
                             <SelectItem value="pending">Ausstehend</SelectItem>
                         </SelectContent>
                     </Select>
+                    {selectedBookings.length > 0 && (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Löschen ({selectedBookings.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird die ausgewählte Buchung dauerhaft gelöscht.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteSelected}>Löschen</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </div>
         </CardHeader>
@@ -102,7 +165,13 @@ export default function HotelierDashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]"><Checkbox /></TableHead>
+                <TableHead className="w-[40px]">
+                    <Checkbox 
+                        onCheckedChange={handleSelectAll}
+                        checked={isAllSelected}
+                        aria-label="Alle auswählen"
+                    />
+                </TableHead>
                 <TableHead>Buchungs-ID</TableHead>
                 <TableHead>Gast</TableHead>
                 <TableHead>Check-in</TableHead>
@@ -119,8 +188,14 @@ export default function HotelierDashboardPage() {
                 const paymentStatus = statusConfig[booking.paymentStatus] || { variant: 'secondary', icon: CircleOff, label: booking.paymentStatus, color: 'bg-gray-500' };
 
                 return (
-                    <TableRow key={booking.id}>
-                        <TableCell><Checkbox /></TableCell>
+                    <TableRow key={booking.id} data-state={selectedBookings.includes(booking.id) && "selected"}>
+                        <TableCell>
+                            <Checkbox 
+                                onCheckedChange={(checked) => handleSelectSingle(booking.id, !!checked)}
+                                checked={selectedBookings.includes(booking.id)}
+                                aria-label={`Buchung ${booking.id} auswählen`}
+                            />
+                        </TableCell>
                         <TableCell className="font-medium">{booking.id}</TableCell>
                         <TableCell>{booking.guestName}</TableCell>
                         <TableCell>{booking.checkIn}</TableCell>

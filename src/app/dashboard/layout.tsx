@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   PlusCircle,
   Settings,
+  Link2,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -47,6 +48,14 @@ export default function DashboardLayout({
                   <Link href="/dashboard/create-booking">
                     <PlusCircle />
                     <span>Neue Buchung</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Booking Links">
+                  <Link href="/dashboard/booking-links">
+                    <Link2 />
+                    <span>Booking Links</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

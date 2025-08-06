@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from './step-indicator';
@@ -9,16 +9,21 @@ import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, UploadCloud } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
+import type { BookingPrefill } from '@/hooks/use-booking-links';
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
 
-const Step1Details = () => {
-    const [checkInDate, setCheckInDate] = useState<Date>();
-    const [checkOutDate, setCheckOutDate] = useState<Date>();
+const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) => {
+    const [checkInDate, setCheckInDate] = useState<Date | undefined>(
+        prefillData?.checkIn ? parseISO(prefillData.checkIn) : undefined
+    );
+    const [checkOutDate, setCheckOutDate] = useState<Date | undefined>(
+        prefillData?.checkOut ? parseISO(prefillData.checkOut) : undefined
+    );
 
     return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -52,7 +57,7 @@ const Step1Details = () => {
         </div>
          <div className="grid gap-2">
              <Label htmlFor="room-type">Room Type</Label>
-             <Select>
+             <Select defaultValue={prefillData?.roomType}>
                 <SelectTrigger><SelectValue placeholder="Select a room" /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="single">Single Room</SelectItem>
@@ -72,6 +77,12 @@ const Step1Details = () => {
                 </SelectContent>
              </Select>
          </div>
+         {prefillData?.priceTotal && (
+            <div className="sm:col-span-2 grid gap-2">
+                <Label>Total Price</Label>
+                <Input value={`${prefillData.priceTotal.toFixed(2)} €`} readOnly />
+            </div>
+         )}
     </div>
     )
 };
@@ -149,7 +160,7 @@ const Step4Review = () => (
 );
 
 
-export function BookingForm() {
+export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | null }) {
   const [currentStep, setCurrentStep] = useState(0);
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -175,7 +186,7 @@ export function BookingForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="min-h-[250px]">
-        {currentStep === 0 && <Step1Details />}
+        {currentStep === 0 && <Step1Details prefillData={prefillData} />}
         {currentStep === 1 && <Step2GuestInfo />}
         {currentStep === 2 && <Step3Payment />}
         {currentStep === 3 && <Step4Review />}

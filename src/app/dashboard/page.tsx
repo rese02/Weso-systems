@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +33,7 @@ export default function HotelierDashboardPage() {
               <p className="text-muted-foreground">Manage all bookings for your hotel.</p>
           </div>
           <Button asChild>
-              <Link href="/booking/hotel-paradies">
+              <Link href="/dashboard/create-booking">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Create New Booking
               </Link>

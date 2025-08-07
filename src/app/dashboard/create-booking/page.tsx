@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -35,8 +34,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useBookingLinks } from '@/hooks/use-booking-links';
-import type { BookingPrefill } from '@/hooks/use-booking-links';
+import { useBookings } from '@/hooks/use-bookings';
+import type { Booking } from '@/hooks/use-bookings';
 
 
 type RoomDetail = {
@@ -51,7 +50,7 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addLinkFromBooking } = useBookingLinks();
+  const { addBooking } = useBookings();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [date, setDate] = useState<DateRange | undefined>({
@@ -95,45 +94,47 @@ export default function CreateBookingPage() {
     e.preventDefault();
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const price = formData.get('total-price');
+    
+    const price = formData.get('total-price') as string;
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
 
-    if (!date?.from || !date?.to || !price) {
+
+    if (!date?.from || !date?.to || !price || !firstName || !lastName) {
         toast({
             variant: "destructive",
             title: "Fehler",
-            description: "Bitte füllen Sie alle erforderlichen Felder aus (Zeitraum, Preis).",
+            description: "Bitte füllen Sie alle erforderlichen Felder aus (Vorname, Nachname, Zeitraum, Preis).",
         });
         setIsSubmitting(false);
         return;
     }
 
-    const prefillData: BookingPrefill = {
-      // For simplicity, we just use the first room's type
-      roomType: rooms[0].roomType, 
-      checkIn: format(date.from, 'yyyy-MM-dd'),
-      checkOut: format(date.to, 'yyyy-MM-dd'),
-      priceTotal: parseFloat(price as string),
+    const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId' > = {
+      firstName,
+      lastName,
+      email: formData.get('email') as string,
+      checkIn: date.from.toISOString(),
+      checkOut: date.to.toISOString(),
+      roomType: rooms[0].roomType, // Simplified for now
+      priceTotal: parseFloat(price),
+      status: 'Confirmed', // Default status for direct bookings
     };
 
     try {
-        const newLink = await addLinkFromBooking(prefillData, 7);
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const fullLink = `${baseUrl}/guest/${newLink.id}`;
-        
-        await navigator.clipboard.writeText(fullLink);
-
+        await addBooking(newBookingData);
         toast({
-            title: 'Buchungslink erstellt & kopiert!',
-            description: 'Der Link wurde in Ihre Zwischenablage kopiert. Senden Sie ihn an den Gast.',
+            title: 'Buchung erstellt!',
+            description: 'Die neue Buchung wurde erfolgreich in der Datenbank gespeichert.',
         });
         router.push('/dashboard');
 
     } catch (error) {
-        console.error("Failed to create booking link:", error);
+        console.error("Failed to create booking:", error);
         toast({
             variant: "destructive",
-            title: "Fehler beim Erstellen des Links",
-            description: "Der Link konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+            title: "Fehler beim Erstellen der Buchung",
+            description: "Die Buchung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         });
     } finally {
         setIsSubmitting(false);
@@ -156,14 +157,18 @@ export default function CreateBookingPage() {
               <User className="inline-block h-4 w-4 mr-1" />
               Vorname
             </Label>
-            <Input id="firstName" name="firstName" placeholder="Vorname des Gastes" />
+            <Input id="firstName" name="firstName" placeholder="Vorname des Gastes" required/>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">
               <User className="inline-block h-4 w-4 mr-1" />
               Nachname
             </Label>
-            <Input id="lastName" name="lastName" placeholder="Nachname des Gastes" />
+            <Input id="lastName" name="lastName" placeholder="Nachname des Gastes" required/>
+          </div>
+          <div className="grid gap-2">
+             <Label htmlFor="email">Email</Label>
+             <Input id="email" name="email" type="email" placeholder="gast@email.com" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="date-range">
@@ -229,23 +234,6 @@ export default function CreateBookingPage() {
                 Gesamtpreis (€)
             </Label>
             <Input id="total-price" name="total-price" type="number" placeholder="Preis in Euro" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="language">
-                <Languages className="inline-block h-4 w-4 mr-1" />
-                Sprache für Gastformular
-            </Label>
-            <Select defaultValue="de">
-              <SelectTrigger>
-                <SelectValue placeholder="Sprache wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="de">Deutsch</SelectItem>
-                <SelectItem value="en">Englisch</SelectItem>
-                <SelectItem value="es">Spanisch</SelectItem>
-                <SelectItem value="fr">Französisch</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
@@ -368,10 +356,12 @@ export default function CreateBookingPage() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Wird erstellt...
                 </>
-            ) : "Buchungslink erstellen"}
+            ) : "Buchung erstellen"}
           </Button>
         </div>
       </form>
     </div>
   );
 }
+
+    

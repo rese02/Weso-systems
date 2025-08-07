@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, query, orderBy, Timestamp, addDoc } from 'firebase/firestore';
 
 export interface Booking {
   id: string;
@@ -14,7 +14,7 @@ export interface Booking {
   checkOut: string; // ISO string
   roomType: string;
   priceTotal: number;
-  status: 'Confirmed' | 'Pending' | 'Cancelled';
+  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment';
   createdAt: Timestamp;
   documents?: {
     idDoc?: string;
@@ -53,6 +53,26 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
     }
   }, [getBookings, hotelId]);
 
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId'>) => {
+    if (!hotelId) {
+      throw new Error("Hotel ID is not specified.");
+    }
+
+    try {
+      const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
+      await addDoc(bookingsCollectionRef, {
+        ...bookingData,
+        createdAt: Timestamp.now(),
+        hotelId: hotelId,
+        bookingLinkId: '', // No link when created directly
+      });
+      // No need to call getBookings() here, the page will redirect and re-mount, triggering useEffect
+    } catch (error) {
+      console.error("Error adding booking to Firestore:", error);
+      throw error;
+    }
+  }, [hotelId]);
+
 
   const removeBooking = useCallback(async (bookingId: string) => {
     const bookingDoc = doc(db, `hotels/${hotelId}/bookings`, bookingId);
@@ -66,5 +86,7 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
     }
   }, [hotelId, getBookings]);
 
-  return { bookings, isLoading, removeBooking, getBookings };
+  return { bookings, isLoading, removeBooking, getBookings, addBooking };
 }
+
+    

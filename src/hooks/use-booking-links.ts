@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, collectionGroup, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, collectionGroup, query, where, getDocs, limit } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { addDays } from 'date-fns';
 
@@ -22,12 +22,13 @@ export interface BookingLink {
   prefill: BookingPrefill;
   used: boolean;
   hotelId: string; // ID of the hotel this link belongs to
+  bookingId?: string; // ID of the booking this link is associated with
 }
 
 export function useBookingLinks(hotelId = 'hotel-paradies') {
   const [isLoading, setIsLoading] = useState(false);
 
-  const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number): Promise<BookingLink> => {
+  const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number, bookingId: string): Promise<BookingLink> => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
@@ -41,6 +42,7 @@ export function useBookingLinks(hotelId = 'hotel-paradies') {
       prefill,
       used: false,
       hotelId,
+      bookingId,
     };
 
     try {
@@ -65,37 +67,24 @@ export function useBookingLinks(hotelId = 'hotel-paradies') {
     if (!linkId) return null;
     setIsLoading(true);
     try {
-      // This is inefficient but necessary if we don't know the hotelId on the guest page.
-      // A better long-term solution might be to include hotelId in the URL, but for now this works.
-      const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId));
-      const snapshot = await getDoc(doc(db, 'hotels/hotel-paradies/bookingLinks', linkId)); // Simplified path for now
+      // Use collectionGroup to search across all `bookingLinks` sub-collections.
+      // This is necessary because on the guest page, we only have the linkId.
+      const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+      const querySnapshot = await getDocs(q);
 
-      if (!snapshot.exists()) {
-        const groupSnapshot = await getDoc(doc(db, 'bookingLinks', linkId));
-        if (!groupSnapshot.exists()) {
-            console.warn(`No link found with ID: ${linkId}`);
-            return null;
-        }
-        return { ...groupSnapshot.data(), id: groupSnapshot.id } as BookingLink;
+      if (querySnapshot.empty) {
+        console.warn(`No link found with ID: ${linkId}`);
+        return null;
       }
       
-      return { ...snapshot.data(), id: snapshot.id } as BookingLink;
+      const linkDoc = querySnapshot.docs[0];
+      return { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
 
     } catch (error) {
-        // Fallback for deeply nested collections if direct path fails
-        try {
-            const q = query(collectionGroup(db, 'bookingLinks'));
-            const querySnapshot = await getDoc(doc(db, 'hotels/hotel-paradies/bookingLinks', linkId));
-             if (querySnapshot.exists()) {
-                 return { ...querySnapshot.data(), id: querySnapshot.id } as BookingLink;
-             }
-        } catch (groupError) {
-             console.error("Error fetching booking link by ID with collection group:", groupError);
-        }
-        console.error("Error fetching booking link by ID:", error);
-        return null;
+      console.error("Error fetching booking link by ID with collection group:", error);
+      return null;
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, []);
 

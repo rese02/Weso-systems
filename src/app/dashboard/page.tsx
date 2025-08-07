@@ -70,7 +70,7 @@ const exampleBooking: Booking = {
 
 
 export default function HotelierDashboardPage() {
-  const { bookings, isLoading, removeBooking } = useBookings('hotel-paradies');
+  const { bookings, isLoading, removeBooking, updateBooking } = useBookings('hotel-paradies');
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const { addLinkFromBooking } = useBookingLinks('hotel-paradies');
   const { toast } = useToast();
@@ -131,15 +131,21 @@ export default function HotelierDashboardPage() {
     }
     
     try {
-        const prefillData = {
-            roomType: booking.roomType || 'Standard',
-            checkIn: booking.checkIn,
-            checkOut: booking.checkOut,
-            priceTotal: booking.priceTotal,
-        };
-        const newLink = await addLinkFromBooking(prefillData, 7);
+        let linkId = booking.bookingLinkId;
 
-        const fullLink = `${getBaseUrl()}/guest/${newLink.id}`;
+        if (!linkId) {
+            const prefillData = {
+                roomType: booking.roomType || 'Standard',
+                checkIn: booking.checkIn,
+                checkOut: booking.checkOut,
+                priceTotal: booking.priceTotal,
+            };
+            const newLink = await addLinkFromBooking(prefillData, 7, booking.id);
+            linkId = newLink.id;
+            await updateBooking(booking.id, { bookingLinkId: linkId });
+        }
+
+        const fullLink = `${getBaseUrl()}/guest/${linkId}`;
         await navigator.clipboard.writeText(fullLink);
         toast({
             title: "Link kopiert",

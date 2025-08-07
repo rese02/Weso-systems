@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
 
 export interface Booking {
   id: string;
@@ -87,5 +87,18 @@ export function useBookings(hotelId: string) {
     }
   }, [hotelId]);
 
-  return { bookings, isLoading, removeBooking, addBooking };
+  const updateBooking = useCallback(async (bookingId: string, data: Partial<Booking>) => {
+    if (!hotelId) {
+        throw new Error("Hotel ID is not specified.");
+    }
+    const bookingDoc = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+    try {
+        await updateDoc(bookingDoc, data);
+    } catch (error) {
+        console.error("Error updating booking in Firestore:", error);
+        throw error;
+    }
+  }, [hotelId]);
+
+  return { bookings, isLoading, removeBooking, addBooking, updateBooking };
 }

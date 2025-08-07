@@ -24,14 +24,14 @@ export interface Booking {
   hotelId: string;
 }
 
-export function useBookings(hotelId = 'hotel-paradies') { // Default for now
+export function useBookings(hotelId: string) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // This effect sets up the real-time listener
   useEffect(() => {
     if (!hotelId) {
       setIsLoading(false);
+      setBookings([]);
       return;
     }
 
@@ -39,11 +39,10 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
     const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
     const q = query(bookingsCollectionRef, orderBy('createdAt', 'desc'));
 
-    // onSnapshot returns an unsubscribe function
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const bookingsData = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
         id: doc.id,
+        ...doc.data(),
       } as Booking));
       setBookings(bookingsData);
       setIsLoading(false);
@@ -52,7 +51,6 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
       setIsLoading(false);
     });
 
-    // Cleanup: unsubscribe when the component unmounts or hotelId changes
     return () => unsubscribe();
   }, [hotelId]);
 
@@ -69,7 +67,6 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
         hotelId: hotelId,
         bookingLinkId: '', // No link when created directly
       });
-      // No need to manually update state, onSnapshot will do it automatically
     } catch (error) {
       console.error("Error adding booking to Firestore:", error);
       throw error;
@@ -78,23 +75,17 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
 
 
   const removeBooking = useCallback(async (bookingId: string) => {
+    if (!hotelId) {
+      throw new Error("Hotel ID is not specified.");
+    }
     const bookingDoc = doc(db, `hotels/${hotelId}/bookings`, bookingId);
     try {
         await deleteDoc(bookingDoc);
-        // No need to manually update state, onSnapshot will do it automatically
     } catch (error) {
         console.error("Error deleting booking from Firestore:", error);
         throw error;
     }
   }, [hotelId]);
 
-  // The getBookings function is no longer needed as data is fetched in real-time.
-  // We keep the export object consistent for now.
-  const getBookings = useCallback(async () => {
-    // This function can be left empty or removed if not used elsewhere.
-    // The real-time listener in useEffect is now responsible for fetching.
-    console.warn("getBookings is deprecated in favor of the real-time listener.");
-  }, []);
-
-  return { bookings, isLoading, removeBooking, getBookings, addBooking };
+  return { bookings, isLoading, removeBooking, addBooking };
 }

@@ -23,10 +23,7 @@ export interface BookingLink {
   hotelId: string; // ID of the hotel this link belongs to
 }
 
-// Default hotelId for demonstration purposes. In a real multi-tenant app, this would be dynamically set.
-const DEFAULT_HOTEL_ID = 'hotel-paradies'; 
-
-export function useBookingLinks(hotelId = DEFAULT_HOTEL_ID) {
+export function useBookingLinks(hotelId = 'hotel-paradies') {
   const [isLoading, setIsLoading] = useState(false);
 
   const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number): Promise<BookingLink> => {
@@ -64,10 +61,9 @@ export function useBookingLinks(hotelId = DEFAULT_HOTEL_ID) {
     if (!linkId) return null;
     setIsLoading(true);
     try {
-      // Because we don't know the hotelId on the public guest page, we must search across all subcollections.
-      const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', `*/${linkId}`));
+      // This is inefficient but necessary if we don't know the hotelId on the guest page.
+      // A better long-term solution might be to include hotelId in the URL, but for now this works.
       const snapshot = await getDocs(query(collectionGroup(db, 'bookingLinks')));
-      
       const foundDoc = snapshot.docs.find(doc => doc.id === linkId);
       
       if (!foundDoc) {

@@ -65,14 +65,14 @@ const exampleBooking: Booking = {
     status: 'Confirmed',
     createdAt: new (require('firebase/firestore').Timestamp)(Math.floor(Date.now() / 1000), 0),
     bookingLinkId: 'example-link',
-    hotelId: 'example-hotel',
+    hotelId: 'hotel-paradies',
 };
 
 
 export default function HotelierDashboardPage() {
-  const { bookings, isLoading, removeBooking } = useBookings();
+  const { bookings, isLoading, removeBooking } = useBookings('hotel-paradies');
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
-  const { addLinkFromBooking } = useBookingLinks();
+  const { addLinkFromBooking } = useBookingLinks('hotel-paradies');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -288,7 +288,7 @@ export default function HotelierDashboardPage() {
                         <TableCell>{booking.priceTotal.toFixed(2)} €</TableCell>
                         <TableCell>
                             <div className="flex items-center gap-2">
-                                <Button asChild variant="ghost" size="icon" disabled={booking.id === 'example-1'}>
+                                <Button asChild variant="ghost" size="icon">
                                     <Link href={`/dashboard/bookings/${booking.id}`}>
                                         <Eye className="h-4 w-4" />
                                         <span className="sr-only">View Details</span>

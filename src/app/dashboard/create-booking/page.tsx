@@ -50,7 +50,7 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addBooking } = useBookings();
+  const { addBooking } = useBookings('hotel-paradies');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [date, setDate] = useState<DateRange | undefined>({

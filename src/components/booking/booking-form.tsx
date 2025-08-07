@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, doc, setDoc } from 'firebase/firestore';
 
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
@@ -195,14 +195,14 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
 
   const nextStep = (e: React.FormEvent) => {
     e.preventDefault();
-    const formElements = (e.target as HTMLFormElement).elements;
     const currentFormData = Object.fromEntries(new FormData(e.target as HTMLFormElement));
     setFormData(prev => ({...prev, ...currentFormData}));
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
+
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
-  const uploadFile = (upload: FileUpload, basePath: string): Promise<string> => {
+  const uploadFile = (upload: FileUpload): Promise<{name: string, url: string}> => {
         return new Promise((resolve, reject) => {
             if (!hotelId || !linkId) return reject("Missing hotel or link ID");
             const filePath = `${hotelId}/bookings/${linkId}/${upload.name}-${upload.file.name}`;
@@ -212,15 +212,18 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             uploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploads(prev => ({
-                        ...prev,
-                        [upload.name]: { ...prev[upload.name], progress }
-                    }));
+                    setUploads(prev => {
+                        const newUploads = {...prev};
+                        if (newUploads[upload.name]) {
+                            newUploads[upload.name] = { ...newUploads[upload.name], progress };
+                        }
+                        return newUploads;
+                    });
                 }, 
                 (error) => reject(error), 
                 () => {
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                        resolve(downloadURL);
+                        resolve({ name: upload.name, url: downloadURL });
                     });
                 }
             );
@@ -239,18 +242,19 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     setIsSubmitting(true);
 
     try {
-        const uploadPromises = Object.values(uploads).map(upload => 
-            uploadFile(upload, `${hotelId}/bookings/${linkId}`)
-        );
-
-        const fileURLs = await Promise.all(uploadPromises);
+        const uploadPromises = Object.values(uploads).map(upload => uploadFile(upload));
+        const uploadedFiles = await Promise.all(uploadPromises);
         
-        const uploadedFileMap = Object.values(uploads).reduce((acc, upload, index) => {
-            acc[upload.name] = fileURLs[index];
+        const uploadedFileMap = uploadedFiles.reduce((acc, file) => {
+            acc[file.name] = file.url;
             return acc;
         }, {} as Record<string, string>);
 
+        const bookingCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
+        const newBookingRef = doc(bookingCollectionRef); // Create a new doc ref to get ID
+
         const bookingData = {
+            id: newBookingRef.id,
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email,
@@ -264,8 +268,8 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             bookingLinkId: linkId,
             hotelId,
         };
-
-        await addDoc(collection(db, `hotels/${hotelId}/bookings`), bookingData);
+        
+        await setDoc(newBookingRef, bookingData); // Use setDoc with the new ref
         await markAsUsed(linkId, hotelId);
 
         toast({
@@ -279,7 +283,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         console.error("Booking confirmation failed:", err);
         toast({
             variant: "destructive",
-            title: "Error",
+            title: "Error confirming booking",
             description: err.message || "There was a problem confirming your booking. Please try again."
         });
     } finally {
@@ -320,7 +324,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         {currentStep < steps.length - 1 ? (
           <Button type="submit" disabled={isSubmitting}>Next</Button>
         ) : (
-          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress < 100)}>
+          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress > 0 && u.progress < 100)}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : 'Confirm Booking'}
           </Button>
         )}
@@ -329,5 +333,3 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     </form>
   );
 }
-
-    

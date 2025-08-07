@@ -111,8 +111,8 @@ export default function CreateBookingPage() {
     }
 
     const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId' > = {
-      firstName,
-      lastName,
+      firstName: firstName,
+      lastName: lastName,
       email: formData.get('email') as string,
       checkIn: date.from.toISOString(),
       checkOut: date.to.toISOString(),
@@ -363,5 +363,3 @@ export default function CreateBookingPage() {
     </div>
   );
 }
-
-    

@@ -131,24 +131,26 @@ export default function HotelierDashboardPage() {
     }
     
     try {
-        const newLink = await addLinkFromBooking({
+        const prefillData = {
             roomType: booking.roomType || 'Standard',
-            checkIn: format(parseISO(booking.checkIn), 'yyyy-MM-dd'),
-            checkOut: format(parseISO(booking.checkOut), 'yyyy-MM-dd'),
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
             priceTotal: booking.priceTotal,
-        }, 7);
+        };
+        const newLink = await addLinkFromBooking(prefillData, 7);
 
         const fullLink = `${getBaseUrl()}/guest/${newLink.id}`;
         await navigator.clipboard.writeText(fullLink);
         toast({
-            title: "Link Copied",
-            description: "The booking link has been copied to your clipboard.",
+            title: "Link kopiert",
+            description: "Der Buchungslink wurde in Ihre Zwischenablage kopiert.",
         });
     } catch (error) {
+        console.error("Could not create or copy the link:", error);
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Could not create or copy the link.",
+            title: "Fehler",
+            description: "Der Link konnte nicht erstellt oder kopiert werden.",
         });
     }
   }
@@ -321,3 +323,5 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
+
+    

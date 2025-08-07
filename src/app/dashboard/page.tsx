@@ -65,14 +65,14 @@ const exampleBooking: Booking = {
     status: 'Confirmed',
     createdAt: new (require('firebase/firestore').Timestamp)(Math.floor(Date.now() / 1000), 0),
     bookingLinkId: 'example-link',
-    hotelId: 'hotel-paradies',
+    hotelId: 'hotelhub-central',
 };
 
 
 export default function HotelierDashboardPage() {
-  const { bookings, isLoading, removeBooking, updateBooking } = useBookings('hotel-paradies');
+  const { bookings, isLoading, removeBooking, updateBooking } = useBookings('hotelhub-central');
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
-  const { addLinkFromBooking } = useBookingLinks('hotel-paradies');
+  const { addLinkFromBooking } = useBookingLinks('hotelhub-central');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -329,5 +329,3 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
-
-    

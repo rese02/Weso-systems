@@ -50,7 +50,7 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addBooking } = useBookings('hotel-paradies');
+  const { addBooking } = useBookings('hotelhub-central');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [date, setDate] = useState<DateRange | undefined>({
@@ -95,12 +95,13 @@ export default function CreateBookingPage() {
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
     
-    const price = formData.get('total-price') as string;
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
+    const email = formData.get('email') as string;
+    const priceString = formData.get('total-price') as string;
 
 
-    if (!date?.from || !date?.to || !price || !firstName || !lastName) {
+    if (!date?.from || !date?.to || !priceString || !firstName || !lastName) {
         toast({
             variant: "destructive",
             title: "Fehler",
@@ -110,15 +111,17 @@ export default function CreateBookingPage() {
         return;
     }
 
+    const priceTotal = parseFloat(priceString);
+
     const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId' > = {
       firstName: firstName,
       lastName: lastName,
-      email: formData.get('email') as string,
+      email: email,
       checkIn: date.from.toISOString(),
       checkOut: date.to.toISOString(),
-      roomType: rooms[0].roomType, // Simplified for now
-      priceTotal: parseFloat(price),
-      status: 'Open', // Default status for direct bookings, indicating it needs a link to be completed
+      roomType: rooms[0].roomType,
+      priceTotal: priceTotal,
+      status: 'Open', 
     };
 
     try {
@@ -363,5 +366,3 @@ export default function CreateBookingPage() {
     </div>
   );
 }
-
-    

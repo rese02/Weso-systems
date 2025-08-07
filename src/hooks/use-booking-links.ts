@@ -25,7 +25,7 @@ export interface BookingLink {
   bookingId?: string; // ID of the booking this link is associated with
 }
 
-export function useBookingLinks(hotelId = 'hotel-paradies') {
+export function useBookingLinks(hotelId = 'hotelhub-central') {
   const [isLoading, setIsLoading] = useState(false);
 
   const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number, bookingId: string): Promise<BookingLink> => {
@@ -101,5 +101,3 @@ export function useBookingLinks(hotelId = 'hotel-paradies') {
 
   return { addLinkFromBooking, getLink, markAsUsed, isLoading };
 }
-
-    

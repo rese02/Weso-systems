@@ -5,13 +5,12 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  "projectId": "hotelhub-central",
-  "appId": "1:288471095468:web:d0c65390732d2b5ae8a709",
-  "storageBucket": "hotelhub-central.firebasestorage.app",
-  "apiKey": "AIzaSyD8qwf141kcBE1cadH6kkUs4ezM7hYCjLE",
-  "authDomain": "hotelhub-central.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "288471095468"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

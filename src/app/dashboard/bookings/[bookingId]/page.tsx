@@ -3,11 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Utensils } from 'lucide-react';
+import { ArrowLeft, Edit, User, Users, FileText, BedDouble } from 'lucide-react';
 
 // Mock data, in a real app this would be fetched from a database
 const bookingDetails = {
-    id: 'BC7EGCD6',
+    id: 'BC7EGC',
     guestName: 'Alexis Morant',
     checkIn: '09. Aug. 2025',
     checkOut: '10. Aug. 2025',

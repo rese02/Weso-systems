@@ -53,6 +53,21 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
     </Card>
 );
 
+const exampleBooking: Booking = {
+    id: 'example-1',
+    firstName: 'Max',
+    lastName: 'Mustermann (Beispiel)',
+    email: 'max@example.com',
+    checkIn: new Date().toISOString(),
+    checkOut: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
+    roomType: 'Suite',
+    priceTotal: 450.00,
+    status: 'Confirmed',
+    createdAt: new (require('firebase/firestore').Timestamp)(Math.floor(Date.now() / 1000), 0),
+    bookingLinkId: 'example-link',
+    hotelId: 'example-hotel',
+};
+
 
 export default function HotelierDashboardPage() {
   const { bookings, isLoading, removeBooking } = useBookings();
@@ -61,9 +76,11 @@ export default function HotelierDashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const displayBookings = bookings.length === 0 && !isLoading ? [exampleBooking] : bookings;
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedBookings(bookings.map(b => b.id));
+      setSelectedBookings(displayBookings.map(b => b.id));
     } else {
       setSelectedBookings([]);
     }
@@ -78,8 +95,14 @@ export default function HotelierDashboardPage() {
   };
 
   const handleDeleteSelected = async () => {
+    const bookingsToDelete = selectedBookings.filter(id => id !== 'example-1');
+    if (bookingsToDelete.length === 0) {
+        toast({ title: "Aktion nicht möglich", description: "Die Beispiel-Buchung kann nicht gelöscht werden." });
+        return;
+    }
+
     try {
-        await Promise.all(selectedBookings.map(id => removeBooking(id)));
+        await Promise.all(bookingsToDelete.map(id => removeBooking(id)));
         setSelectedBookings([]);
         toast({
             title: "Buchungen gelöscht",
@@ -95,6 +118,11 @@ export default function HotelierDashboardPage() {
   }
 
   const handleCopyLink = async (booking: Booking) => {
+     if (booking.id === 'example-1') {
+        toast({ title: "Aktion nicht möglich", description: "Für eine Beispiel-Buchung kann kein Link erstellt werden."});
+        return;
+     }
+
      const getBaseUrl = () => {
         if (typeof window !== 'undefined') {
             return window.location.origin;
@@ -125,7 +153,7 @@ export default function HotelierDashboardPage() {
     }
   }
 
-  const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
+  const isAllSelected = displayBookings.length > 0 && selectedBookings.length === displayBookings.length;
 
 
   return (
@@ -228,13 +256,13 @@ export default function HotelierDashboardPage() {
                         Lade Buchungen...
                     </TableCell>
                 </TableRow>
-              ) : bookings.length === 0 ? (
+              ) : displayBookings.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
                         Noch keine Buchungen erstellt.
                     </TableCell>
                 </TableRow>
-              ) : (bookings.map((booking) => {
+              ) : (displayBookings.map((booking) => {
                 const currentStatus = statusConfig[booking.status] || { variant: 'secondary', icon: CircleOff, label: booking.status, color: 'bg-gray-500' };
                 const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
 
@@ -245,6 +273,7 @@ export default function HotelierDashboardPage() {
                                 onCheckedChange={(checked) => handleSelectSingle(booking.id, !!checked)}
                                 checked={selectedBookings.includes(booking.id)}
                                 aria-label={`Buchung ${booking.id} auswählen`}
+                                disabled={booking.id === 'example-1'}
                             />
                         </TableCell>
                         <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
@@ -259,19 +288,19 @@ export default function HotelierDashboardPage() {
                         <TableCell>{booking.priceTotal.toFixed(2)} €</TableCell>
                         <TableCell>
                             <div className="flex items-center gap-2">
-                                <Button asChild variant="ghost" size="icon">
+                                <Button asChild variant="ghost" size="icon" disabled={booking.id === 'example-1'}>
                                     <Link href={`/dashboard/bookings/${booking.id}`}>
                                         <Eye className="h-4 w-4" />
                                         <span className="sr-only">View Details</span>
                                     </Link>
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)}>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)} disabled={booking.id === 'example-1'}>
                                     <Copy className="h-4 w-4" />
                                     <span className="sr-only">Copy Booking Link</span>
                                 </Button>
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" disabled={booking.id === 'example-1'}>
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="sr-only">Toggle menu</span>
                                     </Button>

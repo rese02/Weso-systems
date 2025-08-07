@@ -14,7 +14,7 @@ export default function CreateHotelPage() {
   const router = useRouter();
   const { addHotel } = useHotels();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const newHotel: Omit<Hotel, 'id'> = {
@@ -32,13 +32,20 @@ export default function CreateHotelPage() {
         return;
     }
 
-    addHotel(newHotel);
-
-    toast({
-        title: "Hotel erstellt",
-        description: "Das neue Hotelsystem wurde erfolgreich erstellt.",
-    });
-    router.push('/admin');
+    try {
+      await addHotel(newHotel);
+      toast({
+          title: "Hotel erstellt",
+          description: "Das neue Hotelsystem wurde erfolgreich erstellt.",
+      });
+      router.push('/admin');
+    } catch (error) {
+       toast({
+            variant: "destructive",
+            title: "Fehler beim Erstellen",
+            description: "Das Hotel konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        });
+    }
   }
 
   return (

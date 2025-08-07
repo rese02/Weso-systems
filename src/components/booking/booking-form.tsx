@@ -8,7 +8,7 @@ import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, UploadCloud } from 'lucide-react';
+import { CalendarIcon, UploadCloud, Loader2 } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -17,8 +17,19 @@ import { Separator } from '../ui/separator';
 import type { BookingPrefill } from '@/hooks/use-booking-links';
 import { useBookingLinks } from '@/hooks/use-booking-links';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '../ui/progress';
+import { storage, db } from '@/lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { addDoc, collection } from 'firebase/firestore';
+
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
+
+type FileUpload = {
+    file: File;
+    progress: number;
+    url?: string;
+}
 
 const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) => {
     const [checkInDate, setCheckInDate] = useState<Date | undefined>(
@@ -90,30 +101,30 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
     )
 };
 
-const Step2GuestInfo = () => (
+const Step2GuestInfo = ({ onFileUpload }: { onFileUpload: (name: string, file: File) => void }) => (
     <div className="grid gap-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="grid gap-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" placeholder="John" /></div>
-            <div className="grid gap-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" placeholder="Doe" /></div>
+            <div className="grid gap-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" name="firstName" placeholder="John" /></div>
+            <div className="grid gap-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" name="lastName" placeholder="Doe" /></div>
         </div>
-        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="john.doe@example.com" /></div>
+        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="john.doe@example.com" /></div>
         <div className="grid gap-2">
             <Label htmlFor="id-upload">Upload ID Document</Label>
              <div className="flex items-center justify-center w-full">
-                <label htmlFor="id-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted">
+                <label htmlFor="id-upload-input" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                         <p className="text-xs text-muted-foreground">PDF, PNG, JPG (MAX. 5MB)</p>
                     </div>
-                    <Input id="id-upload" type="file" className="hidden" />
+                    <Input id="id-upload-input" type="file" className="hidden" onChange={(e) => e.target.files && onFileUpload('idDoc', e.target.files[0])} />
                 </label>
             </div> 
         </div>
     </div>
 );
 
-const Step3Payment = () => (
+const Step3Payment = ({ onFileUpload }: { onFileUpload: (name: string, file: File) => void }) => (
     <div className="grid gap-4">
         <div>
             <h3 className="font-medium">Payment Instructions</h3>
@@ -122,20 +133,20 @@ const Step3Payment = () => (
         <div className="grid gap-2">
             <Label htmlFor="payment-upload">Upload Payment Confirmation</Label>
             <div className="flex items-center justify-center w-full">
-                <label htmlFor="payment-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted">
+                <label htmlFor="payment-upload-input" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                         <p className="text-xs text-muted-foreground">PDF, PNG, JPG (MAX. 5MB)</p>
                     </div>
-                    <Input id="payment-upload" type="file" className="hidden" />
+                    <Input id="payment-upload-input" type="file" className="hidden" onChange={(e) => e.target.files && onFileUpload('paymentProof', e.target.files[0])} />
                 </label>
             </div>
         </div>
     </div>
 );
 
-const Step4Review = () => (
+const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<string, FileUpload>, formData: any, prefillData?: BookingPrefill | null }) => (
      <div className="space-y-6">
         <div>
             <h3 className="text-lg font-bold font-headline">Review Your Booking</h3>
@@ -144,18 +155,22 @@ const Step4Review = () => (
         <Separator/>
         <div className="grid gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-in</h4><p>August 15, 2024</p></div>
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-out</h4><p>August 20, 2024</p></div>
-                 <div><h4 className="font-medium text-sm text-muted-foreground">Room Type</h4><p>Double Room</p></div>
+                <div><h4 className="font-medium text-sm text-muted-foreground">Check-in</h4><p>{prefillData?.checkIn ? format(parseISO(prefillData.checkIn), 'PPP') : 'N/A'}</p></div>
+                <div><h4 className="font-medium text-sm text-muted-foreground">Check-out</h4><p>{prefillData?.checkOut ? format(parseISO(prefillData.checkOut), 'PPP') : 'N/A'}</p></div>
+                <div><h4 className="font-medium text-sm text-muted-foreground">Room Type</h4><p>{prefillData?.roomType || 'N/A'}</p></div>
                 <div><h4 className="font-medium text-sm text-muted-foreground">Board</h4><p>Half Board</p></div>
             </div>
             <Separator/>
-             <div><h4 className="font-medium text-sm text-muted-foreground">Guest</h4><p>John Doe (john.doe@example.com)</p></div>
+             <div><h4 className="font-medium text-sm text-muted-foreground">Guest</h4><p>{formData.firstName} {formData.lastName} ({formData.email})</p></div>
             <Separator/>
              <div><h4 className="font-medium text-sm text-muted-foreground">Uploaded Documents</h4>
-                <ul className="list-disc list-inside text-sm mt-2">
-                    <li>id_document.pdf</li>
-                    <li>payment_proof.jpg</li>
+                <ul className="list-disc list-inside text-sm mt-2 space-y-2">
+                    {Object.entries(uploads).map(([key, upload]) => (
+                        <li key={key}>
+                            {upload.file.name}
+                            {upload.progress < 100 && <Progress value={upload.progress} className="mt-1" />}
+                        </li>
+                    ))}
                 </ul>
              </div>
         </div>
@@ -163,29 +178,98 @@ const Step4Review = () => (
 );
 
 
-export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | null }) {
+export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: BookingPrefill | null, linkId?: string, hotelId?: string }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState<any>({});
+  const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { markAsUsed } = useBookingLinks();
+  const { markAsUsed } = useBookingLinks(hotelId);
   const { toast } = useToast();
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  const handleFileUpload = (name: string, file: File) => {
+    setUploads(prev => ({ ...prev, [name]: { file, progress: 0 } }));
+  }
+
+  const nextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formElements = (e.target as HTMLFormElement).elements;
+    const currentFormData = Object.fromEntries(new FormData(e.target as HTMLFormElement));
+    setFormData(prev => ({...prev, ...currentFormData}));
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  };
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
-  const handleConfirmBooking = () => {
-    const linkId = searchParams.get('linkId');
-    if (linkId) {
-        markAsUsed(linkId);
+  const uploadFile = (file: File, path: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const storageRef = ref(storage, path);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploads(prev => ({ ...prev, [path]: { ...prev[path], progress } }));
+                }, 
+                (error) => reject(error), 
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        resolve(downloadURL);
+                    });
+                }
+            );
+        });
+    };
+
+  const handleConfirmBooking = async () => {
+    if (!linkId || !hotelId) return;
+    setIsSubmitting(true);
+
+    try {
+        const uploadPromises = Object.entries(uploads).map(([key, upload]) => 
+            uploadFile(upload.file, `${hotelId}/bookings/${linkId}/${key}-${upload.file.name}`)
+        );
+
+        const fileURLs = await Promise.all(uploadPromises);
+
+        const uploadedFileMap = Object.keys(uploads).reduce((acc, key, index) => {
+            acc[key] = fileURLs[index];
+            return acc;
+        }, {} as Record<string, string>);
+
+        const bookingData = {
+            ...formData,
+            ...prefillData,
+            createdAt: new Date(),
+            status: 'Confirmed',
+            documents: uploadedFileMap,
+            bookingLinkId: linkId,
+            hotelId,
+        };
+
+        await addDoc(collection(db, `hotels/${hotelId}/bookings`), bookingData);
+
+        await markAsUsed(linkId, hotelId);
+
+        toast({
+            title: "Booking Confirmed!",
+            description: "Your booking has been successfully processed."
+        });
+        router.push(`/booking/${hotelId}/thank-you`);
+
+    } catch (error) {
+        console.error("Booking confirmation failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "There was a problem confirming your booking. Please try again."
+        });
+    } finally {
+        setIsSubmitting(false);
     }
-    toast({
-        title: "Booking Confirmed!",
-        description: "Your booking has been successfully processed."
-    })
-    router.push('/booking/hotel-paradies/thank-you');
   }
 
   return (
+    <form onSubmit={nextStep}>
     <Card className="w-full max-w-3xl">
       <CardHeader>
         <div className="mb-6">
@@ -206,20 +290,23 @@ export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | nu
       </CardHeader>
       <CardContent className="min-h-[250px]">
         {currentStep === 0 && <Step1Details prefillData={prefillData} />}
-        {currentStep === 1 && <Step2GuestInfo />}
-        {currentStep === 2 && <Step3Payment />}
-        {currentStep === 3 && <Step4Review />}
+        {currentStep === 1 && <Step2GuestInfo onFileUpload={handleFileUpload} />}
+        {currentStep === 2 && <Step3Payment onFileUpload={handleFileUpload} />}
+        {currentStep === 3 && <Step4Review uploads={uploads} formData={formData} prefillData={prefillData} />}
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+        <Button variant="outline" type="button" onClick={prevStep} disabled={currentStep === 0 || isSubmitting}>
           Back
         </Button>
         {currentStep < steps.length - 1 ? (
-          <Button onClick={nextStep}>Next</Button>
+          <Button type="submit" disabled={isSubmitting}>Next</Button>
         ) : (
-          <Button onClick={handleConfirmBooking}>Confirm Booking</Button>
+          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting}>
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : 'Confirm Booking'}
+          </Button>
         )}
       </CardFooter>
     </Card>
+    </form>
   );
 }

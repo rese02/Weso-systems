@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc, query, where, limit } from 'firebase/firestore';
 import { addDays } from 'date-fns';
 
 export interface BookingPrefill {
@@ -11,73 +13,91 @@ export interface BookingPrefill {
 }
 
 export interface BookingLink {
-  id: string; // e.g., "SB-LINK-2025-08-07-001"
+  id: string; // Firestore document ID
   createdBy: string; // For now, a placeholder
-  createdAt: string; // ISO date string
-  expiresAt: string; // ISO date string
+  createdAt: any; // Firestore Timestamp
+  expiresAt: any; // Firestore Timestamp
   prefill: BookingPrefill;
   used: boolean;
+  hotelId: string; // ID of the hotel this link belongs to
 }
 
-const LOCAL_STORAGE_KEY = 'bookingLinks';
-
-export function useBookingLinks() {
+export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
   const [links, setLinks] = useState<BookingLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const getLinks = useCallback(async () => {
+    if (!hotelId) return;
+    setIsLoading(true);
     try {
-      const storedLinks = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedLinks) {
-        setLinks(JSON.parse(storedLinks));
-      }
+        const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
+        const q = query(linksCollectionRef);
+        const data = await getDocs(q);
+        const filteredData = data.docs.map((doc) => ({
+            ...doc.data(),
+            id: doc.id,
+        } as BookingLink));
+        setLinks(filteredData);
     } catch (error) {
-      console.error("Failed to access localStorage for booking links", error);
+        console.error("Error fetching booking links:", error);
     } finally {
         setIsLoading(false);
     }
-  }, []);
+  }, [hotelId]);
 
-  const updateLocalStorage = (updatedLinks: BookingLink[]) => {
-    try {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedLinks));
-    } catch (error) {
-        console.error("Failed to update localStorage for booking links", error);
-    }
-  };
+  useEffect(() => {
+    getLinks();
+  }, [getLinks]);
 
-  const addLinkFromBooking = useCallback((prefill: BookingPrefill, validityDays: number): BookingLink => {
+  const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number): Promise<BookingLink> => {
     const now = new Date();
-    const newLink: BookingLink = {
-      id: `SB-LINK-${now.toISOString().slice(0, 10)}-${Math.random().toString(36).substring(2, 6)}`,
+    const newLinkData = {
       createdBy: 'hotel-admin-uid', // Placeholder
-      createdAt: now.toISOString(),
-      expiresAt: addDays(now, validityDays).toISOString(),
+      createdAt: now,
+      expiresAt: addDays(now, validityDays),
       prefill,
       used: false,
+      hotelId,
     };
 
-    let updatedLinks: BookingLink[] = [];
-    setLinks(prevLinks => {
-      updatedLinks = [newLink, ...prevLinks];
-      updateLocalStorage(updatedLinks);
-      return updatedLinks;
-    });
-    return newLink;
+    try {
+        const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
+        const docRef = await addDoc(linksCollectionRef, newLinkData);
+        const newLink = { ...newLinkData, id: docRef.id };
+        setLinks(prev => [newLink, ...prev]);
+        return newLink;
+    } catch (error) {
+        console.error("Error creating booking link:", error);
+        throw error;
+    }
+  }, [hotelId]);
+
+  const getLink = useCallback(async (linkId: string): Promise<BookingLink | null> => {
+    try {
+      // Since we don't know the hotelId on the public page, we query the collection group
+      const q = query(collection(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) return null;
+      
+      const doc = snapshot.docs[0];
+      return { ...doc.data(), id: doc.id } as BookingLink;
+
+    } catch (error) {
+        console.error("Error fetching booking link:", error);
+        return null;
+    }
   }, []);
 
-  const getLink = useCallback((linkId: string): BookingLink | undefined => {
-      return links.find(link => link.id === linkId);
-  }, [links]);
-
-  const markAsUsed = useCallback((linkId: string) => {
-    setLinks(prevLinks => {
-        const updatedLinks = prevLinks.map(link => 
-            link.id === linkId ? { ...link, used: true } : link
-        );
-        updateLocalStorage(updatedLinks);
-        return updatedLinks;
-    });
+  const markAsUsed = useCallback(async (linkId: string, hotelId: string) => {
+     if (!linkId || !hotelId) return;
+     const linkDocRef = doc(db, `hotels/${hotelId}/bookingLinks`, linkId);
+     try {
+        await updateDoc(linkDocRef, { used: true });
+        setLinks(prev => prev.map(link => link.id === linkId ? { ...link, used: true } : link));
+     } catch (error) {
+        console.error("Error marking link as used:", error);
+     }
   }, []);
 
   return { links, addLinkFromBooking, getLink, markAsUsed, isLoading };

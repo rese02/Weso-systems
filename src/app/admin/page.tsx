@@ -25,6 +25,14 @@ export default function AdminDashboardPage() {
   const { hotels, removeHotel, isLoading } = useHotels();
   const router = useRouter();
 
+  const handleDelete = async (hotelId: string) => {
+    try {
+        await removeHotel(hotelId);
+    } catch (error) {
+        console.error("Failed to delete hotel", error);
+    }
+  }
+
   if (isLoading) {
     return <div>Lade Hotels...</div>
   }
@@ -99,7 +107,7 @@ export default function AdminDashboardPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => removeHotel(hotel.id)}>Löschen</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)}>Löschen</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

@@ -1,71 +1,62 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 
 export interface Hotel {
   id: string;
   name: string;
   ownerEmail: string;
   domain: string;
+  createdAt?: any; 
 }
-
-const initialHotels: Hotel[] = [
-  { id: 'hotel-01', name: 'Hotel Paradies', ownerEmail: 'kontakt@hotel-paradies.de', domain: 'hotel-paradies.de' },
-  { id: 'hotel-02', name: 'Seaside Resort', ownerEmail: 'manager@seasideresort.com', domain: 'seasideresort.com' },
-  { id: 'hotel-03', name: 'Mountain Retreat', ownerEmail: 'info@mountainretreat.io', domain: 'mountainretreat.io' },
-  { id: 'hotel-04', name: 'Urban Getaway', ownerEmail: 'contact@urbangetaway.co', domain: 'urbangetaway.co' },
-  { id: 'hotel-05', name: 'The Grand Hotel', ownerEmail: 'reservations@thegrand.com', domain: 'thegrand.com' },
-];
-
-const LOCAL_STORAGE_KEY = 'managedHotels';
 
 export function useHotels() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const hotelsCollectionRef = collection(db, 'hotels');
 
-  useEffect(() => {
+  const getHotels = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const storedHotels = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedHotels) {
-        setHotels(JSON.parse(storedHotels));
-      } else {
-        // Initialize with default hotels if nothing is in storage
-        setHotels(initialHotels);
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialHotels));
-      }
+        const q = query(hotelsCollectionRef, orderBy('name'));
+        const data = await getDocs(q);
+        const filteredData = data.docs.map((doc) => ({
+            ...doc.data(),
+            id: doc.id,
+        } as Hotel));
+        setHotels(filteredData);
     } catch (error) {
-      console.error("Failed to access localStorage", error);
-      // Fallback to initial hotels if localStorage is not available
-      setHotels(initialHotels);
+        console.error("Error fetching hotels from Firestore:", error);
     } finally {
         setIsLoading(false);
     }
   }, []);
 
-  const updateLocalStorage = (updatedHotels: Hotel[]) => {
+  useEffect(() => {
+    getHotels();
+  }, [getHotels]);
+
+  const addHotel = useCallback(async (hotel: Omit<Hotel, 'id'>) => {
     try {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedHotels));
+        await addDoc(hotelsCollectionRef, { ...hotel, createdAt: new Date() });
+        await getHotels(); // Refresh list after adding
     } catch (error) {
-        console.error("Failed to update localStorage", error);
+        console.error("Error adding hotel to Firestore:", error);
+        throw error;
     }
-  };
+  }, [getHotels, hotelsCollectionRef]);
 
-  const addHotel = useCallback((hotel: Omit<Hotel, 'id'>) => {
-    setHotels(prevHotels => {
-      const newHotel = { ...hotel, id: `hotel-${Date.now()}` };
-      const updatedHotels = [...prevHotels, newHotel];
-      updateLocalStorage(updatedHotels);
-      return updatedHotels;
-    });
-  }, []);
-
-  const removeHotel = useCallback((hotelId: string) => {
-    setHotels(prevHotels => {
-      const updatedHotels = prevHotels.filter(hotel => hotel.id !== hotelId);
-      updateLocalStorage(updatedHotels);
-      return updatedHotels;
-    });
-  }, []);
+  const removeHotel = useCallback(async (hotelId: string) => {
+    const hotelDoc = doc(db, 'hotels', hotelId);
+    try {
+        await deleteDoc(hotelDoc);
+        await getHotels(); // Refresh list after deleting
+    } catch (error) {
+        console.error("Error deleting hotel from Firestore:", error);
+    }
+  }, [getHotels]);
 
   return { hotels, addHotel, removeHotel, isLoading };
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -29,6 +30,7 @@ type FileUpload = {
     file: File;
     progress: number;
     url?: string;
+    name: string;
 }
 
 const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) => {
@@ -165,8 +167,8 @@ const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<strin
             <Separator/>
              <div><h4 className="font-medium text-sm text-muted-foreground">Uploaded Documents</h4>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-2">
-                    {Object.entries(uploads).map(([key, upload]) => (
-                        <li key={key}>
+                    {Object.values(uploads).map((upload) => (
+                        <li key={upload.name}>
                             {upload.file.name}
                             {upload.progress < 100 && <Progress value={upload.progress} className="mt-1" />}
                         </li>
@@ -188,7 +190,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   const { toast } = useToast();
 
   const handleFileUpload = (name: string, file: File) => {
-    setUploads(prev => ({ ...prev, [name]: { file, progress: 0 } }));
+    setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name } }));
   }
 
   const nextStep = (e: React.FormEvent) => {
@@ -200,15 +202,22 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   };
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
-  const uploadFile = (file: File, path: string): Promise<string> => {
+  const uploadFile = (upload: FileUpload, basePath: string): Promise<string> => {
         return new Promise((resolve, reject) => {
-            const storageRef = ref(storage, path);
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            const filePath = `${basePath}/${upload.name}-${upload.file.name}`;
+            const storageRef = ref(storage, filePath);
+            const uploadTask = uploadBytesResumable(storageRef, upload.file);
 
             uploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploads(prev => ({ ...prev, [path]: { ...prev[path], progress } }));
+                    setUploads(prev => {
+                        const newUploads = { ...prev };
+                        if (newUploads[upload.name]) {
+                            newUploads[upload.name].progress = progress;
+                        }
+                        return newUploads;
+                    });
                 }, 
                 (error) => reject(error), 
                 () => {
@@ -225,14 +234,14 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     setIsSubmitting(true);
 
     try {
-        const uploadPromises = Object.entries(uploads).map(([key, upload]) => 
-            uploadFile(upload.file, `${hotelId}/bookings/${linkId}/${key}-${upload.file.name}`)
+        const uploadPromises = Object.values(uploads).map(upload => 
+            uploadFile(upload, `${hotelId}/bookings/${linkId}`)
         );
 
         const fileURLs = await Promise.all(uploadPromises);
-
-        const uploadedFileMap = Object.keys(uploads).reduce((acc, key, index) => {
-            acc[key] = fileURLs[index];
+        
+        const uploadedFileMap = Object.values(uploads).reduce((acc, upload, index) => {
+            acc[upload.name] = fileURLs[index];
             return acc;
         }, {} as Record<string, string>);
 
@@ -310,3 +319,5 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     </form>
   );
 }
+
+    

@@ -23,34 +23,11 @@ export interface BookingLink {
   hotelId: string; // ID of the hotel this link belongs to
 }
 
-export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
-  const [links, setLinks] = useState<BookingLink[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+// Default hotelId for demonstration purposes. In a real multi-tenant app, this would be dynamically set.
+const DEFAULT_HOTEL_ID = 'hotel-paradies'; 
 
-  const getLinks = useCallback(async () => {
-    if (!hotelId) return;
-    setIsLoading(true);
-    try {
-        const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
-        const q = query(linksCollectionRef);
-        const data = await getDocs(q);
-        const filteredData = data.docs.map((doc) => ({
-            ...doc.data(),
-            id: doc.id,
-        } as BookingLink));
-        setLinks(filteredData);
-    } catch (error) {
-        console.error("Error fetching booking links:", error);
-    } finally {
-        setIsLoading(false);
-    }
-  }, [hotelId]);
-
-  useEffect(() => {
-    if(hotelId) {
-      getLinks();
-    }
-  }, [getLinks, hotelId]);
+export function useBookingLinks(hotelId = DEFAULT_HOTEL_ID) {
+  const [isLoading, setIsLoading] = useState(false);
 
   const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number): Promise<BookingLink> => {
     if (!hotelId) {
@@ -59,7 +36,7 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
     
     const now = new Date();
     const newLinkData = {
-      createdBy: 'hotel-admin-uid', // Placeholder
+      createdBy: 'hotel-admin-uid', // Placeholder for user auth
       createdAt: Timestamp.fromDate(now),
       expiresAt: Timestamp.fromDate(addDays(now, validityDays)),
       prefill,
@@ -71,15 +48,11 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
         const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
         const docRef = await addDoc(linksCollectionRef, newLinkData);
         
-        // Construct the link object to return, ensuring timestamps are handled correctly for the client
         const newLink: BookingLink = {
-            ...newLinkData,
             id: docRef.id,
-            createdAt: newLinkData.createdAt,
-            expiresAt: newLinkData.expiresAt,
+            ...newLinkData,
         };
-
-        setLinks(prev => [newLink, ...prev]);
+        
         return newLink;
     } catch (error) {
         console.error("Error creating booking link:", error);
@@ -91,28 +64,18 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
     if (!linkId) return null;
     setIsLoading(true);
     try {
-      // This is a bit of a workaround to find a document in a subcollection when you don't know the parent ID.
-      // A better approach in a real large-scale app would be to have a root-level collection for links if needed,
-      // but for this structure, collectionGroup is the way.
-      const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-      const q = query(linksCollectionGroup, where('__name__', '==', `hotels/${hotelId}/bookingLinks/${linkId}`));
-      const snapshot = await getDocs(q);
+      // Because we don't know the hotelId on the public guest page, we must search across all subcollections.
+      const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', `*/${linkId}`));
+      const snapshot = await getDocs(query(collectionGroup(db, 'bookingLinks')));
       
-      if (snapshot.empty) {
-        // Fallback for when the link is not for the current hotel, which happens on the public guest page.
-        const allLinksQuery = query(collectionGroup(db, 'bookingLinks'));
-        const allLinksSnapshot = await getDocs(allLinksQuery);
-        const foundDoc = allLinksSnapshot.docs.find(doc => doc.id === linkId);
-        
-        if (!foundDoc) {
-            console.log(`No link found with ID: ${linkId} in any hotel.`);
-            return null;
-        }
-        return { ...foundDoc.data(), id: foundDoc.id } as BookingLink;
+      const foundDoc = snapshot.docs.find(doc => doc.id === linkId);
+      
+      if (!foundDoc) {
+        console.warn(`No link found with ID: ${linkId}`);
+        return null;
       }
       
-      const doc = snapshot.docs[0];
-      return { ...doc.data(), id: doc.id } as BookingLink;
+      return { ...foundDoc.data(), id: foundDoc.id } as BookingLink;
 
     } catch (error) {
         console.error("Error fetching booking link by ID:", error);
@@ -120,18 +83,18 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
     } finally {
         setIsLoading(false);
     }
-  }, [hotelId]);
+  }, []);
 
   const markAsUsed = useCallback(async (linkId: string, hotelIdForUpdate: string) => {
      if (!linkId || !hotelIdForUpdate) return;
      const linkDocRef = doc(db, `hotels/${hotelIdForUpdate}/bookingLinks`, linkId);
      try {
         await updateDoc(linkDocRef, { used: true });
-        setLinks(prev => prev.map(link => link.id === linkId ? { ...link, used: true } : link));
      } catch (error) {
         console.error("Error marking link as used:", error);
+        throw error; // Re-throw to be handled by the caller
      }
   }, []);
 
-  return { links, addLinkFromBooking, getLink, markAsUsed, isLoading };
+  return { addLinkFromBooking, getLink, markAsUsed, isLoading };
 }

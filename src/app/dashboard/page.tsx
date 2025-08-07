@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -65,6 +66,7 @@ export default function HotelierDashboardPage() {
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const { addLinkFromBooking } = useBookingLinks();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -260,7 +262,7 @@ export default function HotelierDashboardPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Bearbeiten</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}>Bearbeiten</DropdownMenuItem>
                                     <DropdownMenuItem>Stornieren</DropdownMenuItem>
                                 </DropdownMenuContent>
                                 </DropdownMenu>

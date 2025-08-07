@@ -18,10 +18,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useRouter } from 'next/navigation';
 
 
 export default function AdminDashboardPage() {
   const { hotels, removeHotel, isLoading } = useHotels();
+  const router = useRouter();
 
   if (isLoading) {
     return <div>Lade Hotels...</div>
@@ -82,8 +84,8 @@ export default function AdminDashboardPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild><Link href="/dashboard">Dashboard anzeigen</Link></DropdownMenuItem>
-                            <DropdownMenuItem asChild><Link href="/dashboard/settings">Einstellungen bearbeiten</Link></DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard anzeigen</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Einstellungen bearbeiten</DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Löschen</DropdownMenuItem>

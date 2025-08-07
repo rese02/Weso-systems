@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from './step-indicator';
@@ -14,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import type { BookingPrefill } from '@/hooks/use-booking-links';
+import { useBookingLinks } from '@/hooks/use-booking-links';
+import { useToast } from '@/hooks/use-toast';
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
 
@@ -162,9 +165,25 @@ const Step4Review = () => (
 
 export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | null }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { markAsUsed } = useBookingLinks();
+  const { toast } = useToast();
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+  const handleConfirmBooking = () => {
+    const linkId = searchParams.get('linkId');
+    if (linkId) {
+        markAsUsed(linkId);
+    }
+    toast({
+        title: "Booking Confirmed!",
+        description: "Your booking has been successfully processed."
+    })
+    router.push('/booking/hotel-paradies/thank-you');
+  }
 
   return (
     <Card className="w-full max-w-3xl">
@@ -173,13 +192,13 @@ export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | nu
           <StepIndicator steps={steps} currentStep={currentStep} />
         </div>
         <CardTitle className="font-headline text-2xl">
-            {currentStep === 0 && 'Booking Details'}
+            {currentStep === 0 && (prefillData ? 'Your Prefilled Booking' : 'Booking Details')}
             {currentStep === 1 && 'Guest Information'}
             {currentStep === 2 && 'Upload Payment'}
             {currentStep === 3 && 'Confirm Booking'}
         </CardTitle>
         <CardDescription>
-            {currentStep === 0 && 'Select your dates and preferences.'}
+            {currentStep === 0 && (prefillData ? 'Your details have been prefilled. Please verify them.' : 'Select your dates and preferences.')}
             {currentStep === 1 && 'Please provide your personal details.'}
             {currentStep === 2 && 'Upload proof of payment to confirm your booking.'}
             {currentStep === 3 && 'Review your booking details below.'}
@@ -198,7 +217,7 @@ export function BookingForm({ prefillData }: { prefillData?: BookingPrefill | nu
         {currentStep < steps.length - 1 ? (
           <Button onClick={nextStep}>Next</Button>
         ) : (
-          <Button>Confirm Booking</Button>
+          <Button onClick={handleConfirmBooking}>Confirm Booking</Button>
         )}
       </CardFooter>
     </Card>

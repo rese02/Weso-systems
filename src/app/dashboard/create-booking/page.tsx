@@ -24,6 +24,7 @@ import {
   User,
   Euro,
   X,
+  Loader2,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,6 +34,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useBookingLinks } from '@/hooks/use-booking-links';
+import type { BookingPrefill } from '@/hooks/use-booking-links';
 
 
 type RoomDetail = {
@@ -47,6 +50,9 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { addLinkFromBooking } = useBookingLinks();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7),
@@ -84,14 +90,53 @@ export default function CreateBookingPage() {
     setRooms(rooms.map((room) => (room.id === id ? { ...room, [field]: value } : room)));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Logic to create booking and generate link would go here
-    toast({
-      title: 'Buchung erstellt & Link generiert',
-      description: 'Der Buchungslink kann nun kopiert und an den Gast gesendet werden.',
-    });
-    router.push('/dashboard');
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const price = formData.get('total-price');
+
+    if (!date?.from || !date?.to || !price) {
+        toast({
+            variant: "destructive",
+            title: "Fehler",
+            description: "Bitte füllen Sie alle erforderlichen Felder aus (Zeitraum, Preis).",
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const prefillData: BookingPrefill = {
+      // For simplicity, we just use the first room's type
+      roomType: rooms[0].roomType, 
+      checkIn: format(date.from, 'yyyy-MM-dd'),
+      checkOut: format(date.to, 'yyyy-MM-dd'),
+      priceTotal: parseFloat(price as string),
+    };
+
+    try {
+        const newLink = await addLinkFromBooking(prefillData, 7);
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const fullLink = `${baseUrl}/booking/hotel-paradies?linkId=${newLink.id}`;
+        
+        await navigator.clipboard.writeText(fullLink);
+
+        toast({
+            title: 'Buchungslink erstellt & kopiert!',
+            description: 'Der Link wurde in Ihre Zwischenablage kopiert. Senden Sie ihn an den Gast.',
+        });
+        router.push('/dashboard');
+
+    } catch (error) {
+        console.error("Failed to create booking link:", error);
+        toast({
+            variant: "destructive",
+            title: "Fehler beim Erstellen des Links",
+            description: "Der Link konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -110,14 +155,14 @@ export default function CreateBookingPage() {
               <User className="inline-block h-4 w-4 mr-1" />
               Vorname
             </Label>
-            <Input id="firstName" placeholder="Vorname des Gastes" />
+            <Input id="firstName" name="firstName" placeholder="Vorname des Gastes" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">
               <User className="inline-block h-4 w-4 mr-1" />
               Nachname
             </Label>
-            <Input id="lastName" placeholder="Nachname des Gastes" />
+            <Input id="lastName" name="lastName" placeholder="Nachname des Gastes" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="date-range">
@@ -182,7 +227,7 @@ export default function CreateBookingPage() {
                 <Euro className="inline-block h-4 w-4 mr-1" />
                 Gesamtpreis (€)
             </Label>
-            <Input id="total-price" type="number" placeholder="Preis in Euro" />
+            <Input id="total-price" name="total-price" type="number" placeholder="Preis in Euro" required />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="language">
@@ -307,15 +352,23 @@ export default function CreateBookingPage() {
           <Label htmlFor="internal-notes">Interne Bemerkungen (Optional)</Label>
           <Textarea
             id="internal-notes"
+            name="internalNotes"
             placeholder="Zusätzliche Informationen für das Hotelpersonal..."
           />
         </div>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.push('/dashboard')}>
+          <Button type="button" variant="outline" onClick={() => router.push('/dashboard')} disabled={isSubmitting}>
             Abbrechen
           </Button>
-          <Button type="submit">Buchung erstellen</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Wird erstellt...
+                </>
+            ) : "Buchungslink erstellen"}
+          </Button>
         </div>
       </form>
     </div>

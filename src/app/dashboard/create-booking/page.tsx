@@ -118,7 +118,7 @@ export default function CreateBookingPage() {
       checkOut: date.to.toISOString(),
       roomType: rooms[0].roomType, // Simplified for now
       priceTotal: parseFloat(price),
-      status: 'Confirmed', // Default status for direct bookings
+      status: 'Open', // Default status for direct bookings, indicating it needs a link to be completed
     };
 
     try {

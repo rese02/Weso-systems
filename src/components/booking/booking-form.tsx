@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
 
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
@@ -93,7 +93,7 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
                 </SelectContent>
              </Select>
          </div>
-         {prefillData?.priceTotal && (
+         {prefillData?.priceTotal != null && (
             <div className="sm:col-span-2 grid gap-2">
                 <Label>Total Price</Label>
                 <Input value={`${prefillData.priceTotal.toFixed(2)} €`} readOnly />
@@ -106,10 +106,10 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
 const Step2GuestInfo = ({ onFileUpload }: { onFileUpload: (name: string, file: File) => void }) => (
     <div className="grid gap-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="grid gap-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" name="firstName" placeholder="John" /></div>
-            <div className="grid gap-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" name="lastName" placeholder="Doe" /></div>
+            <div className="grid gap-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" name="firstName" placeholder="John" required /></div>
+            <div className="grid gap-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" name="lastName" placeholder="Doe" required/></div>
         </div>
-        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="john.doe@example.com" /></div>
+        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="john.doe@example.com" required /></div>
         <div className="grid gap-2">
             <Label htmlFor="id-upload">Upload ID Document</Label>
              <div className="flex items-center justify-center w-full">
@@ -212,13 +212,10 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             uploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploads(prev => {
-                        const newUploads = { ...prev };
-                        if (newUploads[upload.name]) {
-                            newUploads[upload.name].progress = progress;
-                        }
-                        return newUploads;
-                    });
+                    setUploads(prev => ({
+                        ...prev,
+                        [upload.name]: { ...prev[upload.name], progress }
+                    }));
                 }, 
                 (error) => reject(error), 
                 () => {
@@ -231,7 +228,14 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     };
 
   const handleConfirmBooking = async () => {
-    if (!linkId || !hotelId) return;
+    if (!linkId || !hotelId || !prefillData) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Booking information is missing. Please use a valid link.",
+        });
+        return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -247,17 +251,21 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         }, {} as Record<string, string>);
 
         const bookingData = {
-            ...formData,
-            ...prefillData,
-            createdAt: new Date(),
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            checkIn: prefillData.checkIn,
+            checkOut: prefillData.checkOut,
+            roomType: prefillData.roomType,
+            priceTotal: prefillData.priceTotal,
             status: 'Confirmed',
+            createdAt: Timestamp.now(),
             documents: uploadedFileMap,
             bookingLinkId: linkId,
             hotelId,
         };
 
         await addDoc(collection(db, `hotels/${hotelId}/bookings`), bookingData);
-
         await markAsUsed(linkId, hotelId);
 
         toast({
@@ -267,11 +275,12 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         router.push(`/guest/${linkId}/thank-you`);
 
     } catch (error) {
-        console.error("Booking confirmation failed:", error);
+        const err = error as Error;
+        console.error("Booking confirmation failed:", err);
         toast({
             variant: "destructive",
             title: "Error",
-            description: "There was a problem confirming your booking. Please try again."
+            description: err.message || "There was a problem confirming your booking. Please try again."
         });
     } finally {
         setIsSubmitting(false);
@@ -311,7 +320,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         {currentStep < steps.length - 1 ? (
           <Button type="submit" disabled={isSubmitting}>Next</Button>
         ) : (
-          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting}>
+          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress < 100)}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : 'Confirm Booking'}
           </Button>
         )}

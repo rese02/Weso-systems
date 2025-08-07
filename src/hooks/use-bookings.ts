@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
 
 export interface Booking {
   id: string;
@@ -20,7 +20,7 @@ export interface Booking {
     idDoc?: string;
     paymentProof?: string;
   };
-  bookingLinkId: string;
+  bookingLinkId?: string;
   hotelId: string;
 }
 
@@ -54,19 +54,23 @@ export function useBookings(hotelId: string) {
     return () => unsubscribe();
   }, [hotelId]);
 
-  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId'>) => {
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'>) => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
 
     try {
       const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
-      await addDoc(bookingsCollectionRef, {
+      const newBookingDocRef = doc(bookingsCollectionRef); // Create a new doc reference to get an ID first
+      
+      const newBooking = {
         ...bookingData,
+        id: newBookingDocRef.id,
         createdAt: Timestamp.now(),
         hotelId: hotelId,
-        bookingLinkId: '', // No link when created directly
-      });
+      };
+
+      await setDoc(newBookingDocRef, newBooking); // Use setDoc to save the document with the generated ID
     } catch (error) {
       console.error("Error adding booking to Firestore:", error);
       throw error;

@@ -53,21 +53,6 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
     </Card>
 );
 
-const exampleBooking: Booking = {
-    id: 'example-1',
-    firstName: 'Max',
-    lastName: 'Mustermann (Beispiel)',
-    email: 'max@example.com',
-    checkIn: new Date().toISOString(),
-    checkOut: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
-    roomType: 'Suite',
-    priceTotal: 450.00,
-    status: 'Confirmed',
-    createdAt: new (require('firebase/firestore').Timestamp)(Math.floor(Date.now() / 1000), 0),
-    bookingLinkId: 'example-link',
-    hotelId: 'hotelhub-central',
-};
-
 
 export default function HotelierDashboardPage() {
   const { bookings, isLoading, removeBooking, updateBooking } = useBookings('hotelhub-central');
@@ -76,11 +61,9 @@ export default function HotelierDashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const displayBookings = bookings.length === 0 && !isLoading ? [exampleBooking] : bookings;
-
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedBookings(displayBookings.map(b => b.id));
+      setSelectedBookings(bookings.map(b => b.id));
     } else {
       setSelectedBookings([]);
     }
@@ -97,7 +80,7 @@ export default function HotelierDashboardPage() {
   const handleDeleteSelected = async () => {
     const bookingsToDelete = selectedBookings.filter(id => id !== 'example-1');
     if (bookingsToDelete.length === 0) {
-        toast({ title: "Aktion nicht möglich", description: "Die Beispiel-Buchung kann nicht gelöscht werden." });
+        toast({ title: "Aktion nicht möglich", description: "Es wurden keine löschbaren Buchungen ausgewählt." });
         return;
     }
 
@@ -161,7 +144,7 @@ export default function HotelierDashboardPage() {
     }
   }
 
-  const isAllSelected = displayBookings.length > 0 && selectedBookings.length === displayBookings.length;
+  const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
 
 
   return (
@@ -264,13 +247,13 @@ export default function HotelierDashboardPage() {
                         Lade Buchungen...
                     </TableCell>
                 </TableRow>
-              ) : displayBookings.length === 0 ? (
+              ) : bookings.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
                         Noch keine Buchungen erstellt.
                     </TableCell>
                 </TableRow>
-              ) : (displayBookings.map((booking) => {
+              ) : (bookings.map((booking) => {
                 const currentStatus = statusConfig[booking.status] || { variant: 'secondary', icon: CircleOff, label: booking.status, color: 'bg-gray-500' };
                 const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
 
@@ -281,7 +264,6 @@ export default function HotelierDashboardPage() {
                                 onCheckedChange={(checked) => handleSelectSingle(booking.id, !!checked)}
                                 checked={selectedBookings.includes(booking.id)}
                                 aria-label={`Buchung ${booking.id} auswählen`}
-                                disabled={booking.id === 'example-1'}
                             />
                         </TableCell>
                         <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
@@ -302,13 +284,13 @@ export default function HotelierDashboardPage() {
                                         <span className="sr-only">View Details</span>
                                     </Link>
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)} disabled={booking.id === 'example-1'}>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)}>
                                     <Copy className="h-4 w-4" />
                                     <span className="sr-only">Copy Booking Link</span>
                                 </Button>
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost" disabled={booking.id === 'example-1'}>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="sr-only">Toggle menu</span>
                                     </Button>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -91,7 +92,7 @@ export default function HotelierDashboardPage() {
     setSelectedBookings([]);
   }
 
-  const handleCopyLink = (booking: typeof initialBookings[0]) => {
+  const handleCopyLink = async (booking: typeof initialBookings[0]) => {
      const getBaseUrl = () => {
         if (typeof window !== 'undefined') {
             return window.location.origin;
@@ -99,19 +100,27 @@ export default function HotelierDashboardPage() {
         return '';
     }
     
-    const newLink = addLinkFromBooking({
-        roomType: booking.roomType,
-        checkIn: format(parse(booking.checkIn, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
-        checkOut: format(parse(booking.checkOut, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
-        priceTotal: booking.priceTotal,
-    }, 7);
+    try {
+        const newLink = await addLinkFromBooking({
+            roomType: booking.roomType,
+            checkIn: format(parse(booking.checkIn, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
+            checkOut: format(parse(booking.checkOut, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
+            priceTotal: booking.priceTotal,
+        }, 7);
 
-    const fullLink = `${getBaseUrl()}/booking/hotel-paradies?linkId=${newLink.id}`;
-    navigator.clipboard.writeText(fullLink);
-    toast({
-        title: "Link Copied",
-        description: "The booking link has been copied to your clipboard.",
-    });
+        const fullLink = `${getBaseUrl()}/guest/${newLink.id}`;
+        await navigator.clipboard.writeText(fullLink);
+        toast({
+            title: "Link Copied",
+            description: "The booking link has been copied to your clipboard.",
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not create or copy the link.",
+        });
+    }
   }
 
   const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
@@ -279,5 +288,7 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
+
+    
 
     

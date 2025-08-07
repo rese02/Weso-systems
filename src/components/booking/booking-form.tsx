@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from './step-indicator';
@@ -186,7 +186,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { markAsUsed } = useBookingLinks(hotelId);
+  const { markAsUsed } = useBookingLinks();
   const { toast } = useToast();
 
   const handleFileUpload = (name: string, file: File) => {
@@ -204,7 +204,8 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
 
   const uploadFile = (upload: FileUpload, basePath: string): Promise<string> => {
         return new Promise((resolve, reject) => {
-            const filePath = `${basePath}/${upload.name}-${upload.file.name}`;
+            if (!hotelId || !linkId) return reject("Missing hotel or link ID");
+            const filePath = `${hotelId}/bookings/${linkId}/${upload.name}-${upload.file.name}`;
             const storageRef = ref(storage, filePath);
             const uploadTask = uploadBytesResumable(storageRef, upload.file);
 
@@ -263,7 +264,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             title: "Booking Confirmed!",
             description: "Your booking has been successfully processed."
         });
-        router.push(`/booking/${hotelId}/thank-you`);
+        router.push(`/guest/${linkId}/thank-you`);
 
     } catch (error) {
         console.error("Booking confirmation failed:", error);

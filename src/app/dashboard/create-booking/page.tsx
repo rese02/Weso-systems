@@ -117,7 +117,7 @@ export default function CreateBookingPage() {
     try {
         const newLink = await addLinkFromBooking(prefillData, 7);
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const fullLink = `${baseUrl}/booking/hotel-paradies?linkId=${newLink.id}`;
+        const fullLink = `${baseUrl}/guest/${newLink.id}`;
         
         await navigator.clipboard.writeText(fullLink);
 
@@ -374,3 +374,5 @@ export default function CreateBookingPage() {
     </div>
   );
 }
+
+    

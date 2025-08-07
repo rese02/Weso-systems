@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -79,9 +80,9 @@ export default function AdminDashboardPage() {
                     <TableCell className="font-medium">{hotel.name}</TableCell>
                     <TableCell>{hotel.ownerEmail}</TableCell>
                     <TableCell>
-                        <Link href={`/booking/${hotel.id}`} className="underline" target="_blank"> 
+                        <a href={`/dashboard`} className="underline" target="_blank"> 
                         {hotel.domain}
-                        </Link>
+                        </a>
                     </TableCell>
                     <TableCell>
                         <DropdownMenu>
@@ -124,3 +125,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

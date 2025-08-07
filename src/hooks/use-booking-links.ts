@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, getDoc, query, where, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc, query, where, collectionGroup } from 'firebase/firestore';
 import { addDays } from 'date-fns';
 
 export interface BookingPrefill {
@@ -46,8 +47,10 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
   }, [hotelId]);
 
   useEffect(() => {
-    getLinks();
-  }, [getLinks]);
+    if(hotelId) {
+      getLinks();
+    }
+  }, [getLinks, hotelId]);
 
   const addLinkFromBooking = useCallback(async (prefill: BookingPrefill, validityDays: number): Promise<BookingLink> => {
     const now = new Date();
@@ -63,7 +66,7 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
     try {
         const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
         const docRef = await addDoc(linksCollectionRef, newLinkData);
-        const newLink = { ...newLinkData, id: docRef.id };
+        const newLink = { ...newLinkData, id: docRef.id, createdAt: { toDate: () => now }, expiresAt: { toDate: () => addDays(now, validityDays) } } as BookingLink;
         setLinks(prev => [newLink, ...prev]);
         return newLink;
     } catch (error) {
@@ -73,19 +76,27 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
   }, [hotelId]);
 
   const getLink = useCallback(async (linkId: string): Promise<BookingLink | null> => {
+    if (!linkId) return null;
+    setIsLoading(true);
     try {
       // Since we don't know the hotelId on the public page, we query the collection group
-      const q = query(collection(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+      const q = query(collectionGroup(db, 'bookingLinks'));
       const snapshot = await getDocs(q);
       
-      if (snapshot.empty) return null;
+      const foundDoc = snapshot.docs.find(doc => doc.id === linkId);
+
+      if (!foundDoc) {
+        console.log(`No link found with ID: ${linkId}`);
+        return null;
+      }
       
-      const doc = snapshot.docs[0];
-      return { ...doc.data(), id: doc.id } as BookingLink;
+      return { ...foundDoc.data(), id: foundDoc.id } as BookingLink;
 
     } catch (error) {
-        console.error("Error fetching booking link:", error);
+        console.error("Error fetching booking link by ID:", error);
         return null;
+    } finally {
+        setIsLoading(false);
     }
   }, []);
 
@@ -102,3 +113,5 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
 
   return { links, addLinkFromBooking, getLink, markAsUsed, isLoading };
 }
+
+    

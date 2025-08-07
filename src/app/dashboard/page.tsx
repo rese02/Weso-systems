@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -24,22 +23,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { useBookingLinks } from '@/hooks/use-booking-links';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { useBookings } from '@/hooks/use-bookings';
+import type { Booking } from '@/hooks/use-bookings';
 
-
-const initialBookings = [
-    { id: 'BPXMTR', guestName: 'Nawal Safar', checkIn: '21.09.2025', checkOut: '24.09.2025', status: 'Confirmed', lastChange: '05.06.2025, 08:40:18', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 360 },
-    { id: 'RVBEMD', guestName: 'Daniela varnero', checkIn: '25.01.2026', checkOut: '29.01.2026', status: 'Confirmed', lastChange: '04.06.2025, 06:46:55', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 480 },
-    { id: 'BBZGVD', guestName: 'Khalid AlKhozai', checkIn: '24.09.2025', checkOut: '28.09.2025', status: 'Confirmed', lastChange: '28.07.2025, 16:14:34', paymentStatus: 'Partial Payment', roomType: 'suite', priceTotal: 800 },
-    { id: 'CKGUZD', guestName: 'Anetta chodorska', checkIn: '20.12.2025', checkOut: '27.12.2025', status: 'Confirmed', lastChange: '28.07.2025, 14:12:37', paymentStatus: 'Partial Payment', roomType: 'single', priceTotal: 560 },
-    { id: 'MWG9IR', guestName: 'Ligia Baran', checkIn: '03.01.2026', checkOut: '09.01.2026', status: 'Pending', lastChange: '28.07.2025, 06:42:54', paymentStatus: 'Open', roomType: 'single', priceTotal: 480 },
-    { id: 'BC7EGC', guestName: 'Alexis Morant', checkIn: '09.08.2025', checkOut: '10.08.2025', status: 'Confirmed', lastChange: '28.07.2025, 06:32:18', paymentStatus: 'Partial Payment', roomType: 'suite', priceTotal: 200 },
-    { id: 'VV1AAH', guestName: 'bryony skinn', checkIn: '19.03.2026', checkOut: '22.03.2026', status: 'Confirmed', lastChange: '20.07.2025, 15:13:23', paymentStatus: 'Partial Payment', roomType: 'double', priceTotal: 360 },
-    { id: 'B66SZQ', guestName: 'Anthony Stein', checkIn: '13.08.2025', checkOut: '17.08.2025', status: 'Confirmed', lastChange: '17.07.2025, 17:31:57', paymentStatus: 'Partial Payment', roomType: 'single', priceTotal: 320 },
-];
 
 const statusConfig: { [key: string]: { variant: 'default' | 'secondary' | 'outline' | 'destructive', icon: React.ElementType, label: string, color: string } } = {
     'Confirmed': { variant: 'default', icon: CheckCircle2, label: 'Bestätigt', color: 'bg-green-500 hover:bg-green-600' },
@@ -65,7 +55,7 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
 
 
 export default function HotelierDashboardPage() {
-  const [bookings, setBookings] = useState(initialBookings);
+  const { bookings, isLoading, removeBooking } = useBookings();
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const { addLinkFromBooking } = useBookingLinks();
   const { toast } = useToast();
@@ -87,12 +77,24 @@ export default function HotelierDashboardPage() {
     }
   };
 
-  const handleDeleteSelected = () => {
-    setBookings(prev => prev.filter(b => !selectedBookings.includes(b.id)));
-    setSelectedBookings([]);
+  const handleDeleteSelected = async () => {
+    try {
+        await Promise.all(selectedBookings.map(id => removeBooking(id)));
+        setSelectedBookings([]);
+        toast({
+            title: "Buchungen gelöscht",
+            description: "Die ausgewählten Buchungen wurden erfolgreich gelöscht.",
+        });
+    } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Fehler",
+            description: "Die Buchungen konnten nicht gelöscht werden.",
+        });
+    }
   }
 
-  const handleCopyLink = async (booking: typeof initialBookings[0]) => {
+  const handleCopyLink = async (booking: Booking) => {
      const getBaseUrl = () => {
         if (typeof window !== 'undefined') {
             return window.location.origin;
@@ -102,9 +104,9 @@ export default function HotelierDashboardPage() {
     
     try {
         const newLink = await addLinkFromBooking({
-            roomType: booking.roomType,
-            checkIn: format(parse(booking.checkIn, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
-            checkOut: format(parse(booking.checkOut, 'dd.MM.yyyy', new Date()), 'yyyy-MM-dd'),
+            roomType: booking.roomType || 'Standard',
+            checkIn: format(parseISO(booking.checkIn), 'yyyy-MM-dd'),
+            checkOut: format(parseISO(booking.checkOut), 'yyyy-MM-dd'),
             priceTotal: booking.priceTotal,
         }, 7);
 
@@ -124,7 +126,6 @@ export default function HotelierDashboardPage() {
   }
 
   const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
-  const isSomeSelected = selectedBookings.length > 0 && selectedBookings.length < bookings.length;
 
 
   return (
@@ -188,7 +189,7 @@ export default function HotelierDashboardPage() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird die ausgewählte Buchung dauerhaft gelöscht.
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Dadurch werden die ausgewählten Buchungen dauerhaft gelöscht.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -212,20 +213,30 @@ export default function HotelierDashboardPage() {
                         aria-label="Alle auswählen"
                     />
                 </TableHead>
-                <TableHead>Buchungs-ID</TableHead>
                 <TableHead>Gast</TableHead>
                 <TableHead>Check-in</TableHead>
                 <TableHead>Check-out</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Letzte Änderung</TableHead>
-                <TableHead>Zahlungsstatus</TableHead>
+                <TableHead>Gesamtpreis</TableHead>
                 <TableHead><span className="sr-only">Aktionen</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bookings.map((booking) => {
+              {isLoading ? (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                        Lade Buchungen...
+                    </TableCell>
+                </TableRow>
+              ) : bookings.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                        Noch keine Buchungen erstellt.
+                    </TableCell>
+                </TableRow>
+              ) : (bookings.map((booking) => {
                 const currentStatus = statusConfig[booking.status] || { variant: 'secondary', icon: CircleOff, label: booking.status, color: 'bg-gray-500' };
-                const paymentStatus = statusConfig[booking.paymentStatus] || { variant: 'secondary', icon: CircleOff, label: booking.paymentStatus, color: 'bg-gray-500' };
+                const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
 
                 return (
                     <TableRow key={booking.id} data-state={selectedBookings.includes(booking.id) && "selected"}>
@@ -236,23 +247,16 @@ export default function HotelierDashboardPage() {
                                 aria-label={`Buchung ${booking.id} auswählen`}
                             />
                         </TableCell>
-                        <TableCell className="font-medium">{booking.id}</TableCell>
-                        <TableCell>{booking.guestName}</TableCell>
-                        <TableCell>{booking.checkIn}</TableCell>
-                        <TableCell>{booking.checkOut}</TableCell>
+                        <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
+                        <TableCell>{format(parseISO(booking.checkIn), 'dd.MM.yyyy')}</TableCell>
+                        <TableCell>{format(parseISO(booking.checkOut), 'dd.MM.yyyy')}</TableCell>
                         <TableCell>
                           <Badge variant={currentStatus.variant} className={currentStatus.color}>
                               <currentStatus.icon className="mr-1 h-3 w-3" />
                               {currentStatus.label}
                           </Badge>
                         </TableCell>
-                        <TableCell>{booking.lastChange}</TableCell>
-                        <TableCell>
-                          <Badge variant={paymentStatus.variant} className={paymentStatus.color}>
-                              <paymentStatus.icon className="mr-1 h-3 w-3" />
-                              {paymentStatus.label}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{booking.priceTotal.toFixed(2)} €</TableCell>
                         <TableCell>
                             <div className="flex items-center gap-2">
                                 <Button asChild variant="ghost" size="icon">
@@ -280,7 +284,7 @@ export default function HotelierDashboardPage() {
                             </div>
                         </TableCell>
                     </TableRow>
-              )})}
+              )}))}
             </TableBody>
           </Table>
         </CardContent>
@@ -288,7 +292,3 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
-
-    
-
-    

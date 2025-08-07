@@ -58,9 +58,10 @@ export function useBookings(hotelId = 'hotel-paradies') { // Default for now
     const bookingDoc = doc(db, `hotels/${hotelId}/bookings`, bookingId);
     try {
         await deleteDoc(bookingDoc);
-        await getBookings(); // Refresh list after deleting
+        setBookings(prev => prev.filter(b => b.id !== bookingId)); // Optimistic update
     } catch (error) {
         console.error("Error deleting booking from Firestore:", error);
+        getBookings(); // Re-fetch if error
         throw error;
     }
   }, [hotelId, getBookings]);

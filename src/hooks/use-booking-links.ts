@@ -79,17 +79,15 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
     if (!linkId) return null;
     setIsLoading(true);
     try {
-      // Since we don't know the hotelId on the public page, we query the collection group
-      const q = query(collectionGroup(db, 'bookingLinks'));
+      const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId));
       const snapshot = await getDocs(q);
       
-      const foundDoc = snapshot.docs.find(doc => doc.id === linkId);
-
-      if (!foundDoc) {
+      if (snapshot.empty) {
         console.log(`No link found with ID: ${linkId}`);
         return null;
       }
       
+      const foundDoc = snapshot.docs[0];
       return { ...foundDoc.data(), id: foundDoc.id } as BookingLink;
 
     } catch (error) {
@@ -113,5 +111,3 @@ export function useBookingLinks(hotelId = 'hotel-paradies') { // Default for now
 
   return { links, addLinkFromBooking, getLink, markAsUsed, isLoading };
 }
-
-    

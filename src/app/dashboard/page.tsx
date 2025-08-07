@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -21,6 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useBookingLinks } from '@/hooks/use-booking-links';
 import { useToast } from '@/hooks/use-toast';
@@ -277,3 +279,5 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
+
+    

@@ -111,31 +111,40 @@ export default function CreateBookingPage() {
         return;
     }
 
-    const priceTotal = parseFloat(price);
-
-    // Map form state to the booking data model
-    const roomDetailsForDb: BookingRoomDetail[] = rooms.map(r => ({
-        roomType: r.roomType,
-        adults: r.adults,
-        children: r.children,
-        infants: r.infants,
-        childrenAges: r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age))
-    }));
-
-    const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
-      firstName,
-      lastName,
-      email,
-      checkIn: date.from.toISOString(),
-      checkOut: date.to.toISOString(),
-      boardType,
-      priceTotal,
-      status: 'Open',
-      rooms: roomDetailsForDb,
-      internalNotes,
-    };
-
     try {
+        const priceTotal = parseFloat(price);
+        if (isNaN(priceTotal)) {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Please enter a valid price.",
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        // Map form state to the booking data model
+        const roomDetailsForDb: BookingRoomDetail[] = rooms.map(r => ({
+            roomType: r.roomType,
+            adults: Number(r.adults) || 0,
+            children: Number(r.children) || 0,
+            infants: Number(r.infants) || 0,
+            childrenAges: r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age))
+        }));
+
+        const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
+          firstName,
+          lastName,
+          email,
+          checkIn: date.from.toISOString(),
+          checkOut: date.to.toISOString(),
+          boardType,
+          priceTotal,
+          status: 'Open',
+          rooms: roomDetailsForDb,
+          internalNotes,
+        };
+
         await addBooking(newBookingData);
         toast({
             title: 'Booking Created!',

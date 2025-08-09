@@ -5,6 +5,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
 
+export interface RoomDetail {
+  roomType: string;
+  adults: number;
+  children: number;
+  infants: number;
+  childrenAges: number[];
+}
+
 export interface Booking {
   id: string;
   firstName: string;
@@ -12,7 +20,7 @@ export interface Booking {
   email: string;
   checkIn: string; // ISO String
   checkOut: string; // ISO string
-  roomType: string;
+  boardType: string;
   priceTotal: number;
   status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment' | 'Submitted';
   createdAt: Timestamp;
@@ -23,6 +31,8 @@ export interface Booking {
   };
   bookingLinkId?: string;
   hotelId: string;
+  rooms: RoomDetail[];
+  internalNotes?: string;
 }
 
 export function useBookings(hotelId: string) {

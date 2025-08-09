@@ -34,10 +34,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBookings } from '@/hooks/use-bookings';
-import type { Booking } from '@/hooks/use-bookings';
+import type { Booking, RoomDetail as BookingRoomDetail } from '@/hooks/use-bookings';
 
 
-type RoomDetail = {
+type RoomFormDetail = {
   id: number;
   roomType: string;
   adults: number;
@@ -53,11 +53,18 @@ export default function CreateBookingPage() {
   const { addBooking } = useBookings(hotelId); 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Form state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7),
   });
-  const [rooms, setRooms] = useState<RoomDetail[]>([
+  const [boardType, setBoardType] = useState('none');
+  const [price, setPrice] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
+  const [rooms, setRooms] = useState<RoomFormDetail[]>([
     {
       id: 1,
       roomType: 'Standard',
@@ -86,31 +93,34 @@ export default function CreateBookingPage() {
     setRooms(rooms.filter((room) => room.id !== id));
   };
 
-  const handleRoomChange = (id: number, field: keyof RoomDetail, value: any) => {
+  const handleRoomChange = (id: number, field: keyof RoomFormDetail, value: any) => {
     setRooms(rooms.map((room) => (room.id === id ? { ...room, [field]: value } : room)));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
     
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const email = formData.get('email') as string;
-    const priceString = formData.get('total-price') as string;
-
-    if (!date?.from || !date?.to || !priceString || !firstName || !lastName) {
+    if (!date?.from || !date?.to || !price || !firstName || !lastName || rooms.length === 0) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Please fill in all required fields (First Name, Last Name, Date Range, Price).",
+            description: "Please fill in all required fields (First Name, Last Name, Date Range, Price, and at least one room).",
         });
         setIsSubmitting(false);
         return;
     }
 
-    const priceTotal = parseFloat(priceString);
+    const priceTotal = parseFloat(price);
+
+    // Map form state to the booking data model
+    const roomDetailsForDb: BookingRoomDetail[] = rooms.map(r => ({
+        roomType: r.roomType,
+        adults: r.adults,
+        children: r.children,
+        infants: r.infants,
+        childrenAges: r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age))
+    }));
 
     const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
       firstName,
@@ -118,9 +128,11 @@ export default function CreateBookingPage() {
       email,
       checkIn: date.from.toISOString(),
       checkOut: date.to.toISOString(),
-      roomType: rooms[0].roomType,
+      boardType,
       priceTotal,
       status: 'Open',
+      rooms: roomDetailsForDb,
+      internalNotes,
     };
 
     try {
@@ -158,18 +170,18 @@ export default function CreateBookingPage() {
               <User className="inline-block h-4 w-4 mr-1" />
               First Name
             </Label>
-            <Input id="firstName" name="firstName" placeholder="Guest's first name" required/>
+            <Input id="firstName" name="firstName" placeholder="Guest's first name" required value={firstName} onChange={e => setFirstName(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">
               <User className="inline-block h-4 w-4 mr-1" />
               Last Name
             </Label>
-            <Input id="lastName" name="lastName" placeholder="Guest's last name" required/>
+            <Input id="lastName" name="lastName" placeholder="Guest's last name" required value={lastName} onChange={e => setLastName(e.target.value)}/>
           </div>
           <div className="grid gap-2">
              <Label htmlFor="email">Email</Label>
-             <Input id="email" name="email" type="email" placeholder="guest@email.com" />
+             <Input id="email" name="email" type="email" placeholder="guest@email.com" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="date-range">
@@ -217,7 +229,7 @@ export default function CreateBookingPage() {
                 <Bed className="inline-block h-4 w-4 mr-1" />
                 Board Type
             </Label>
-            <Select>
+            <Select onValueChange={setBoardType} value={boardType}>
               <SelectTrigger>
                 <SelectValue placeholder="None" />
               </SelectTrigger>
@@ -234,7 +246,7 @@ export default function CreateBookingPage() {
                 <Euro className="inline-block h-4 w-4 mr-1" />
                 Total Price (€)
             </Label>
-            <Input id="total-price" name="total-price" type="number" placeholder="Price in Euro" required />
+            <Input id="total-price" name="total-price" type="number" placeholder="Price in Euro" required value={price} onChange={e => setPrice(e.target.value)} />
           </div>
         </div>
 
@@ -344,6 +356,8 @@ export default function CreateBookingPage() {
             id="internal-notes"
             name="internalNotes"
             placeholder="Additional information for hotel staff..."
+            value={internalNotes}
+            onChange={e => setInternalNotes(e.target.value)}
           />
         </div>
 
@@ -364,5 +378,3 @@ export default function CreateBookingPage() {
     </div>
   );
 }
-
-    

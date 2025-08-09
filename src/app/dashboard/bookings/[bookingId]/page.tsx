@@ -28,10 +28,11 @@ const DetailRow = ({ label, value, isButton = false }: { label: string, value: s
 );
 
 export default function BookingDetailsPage({ params }: { params: { bookingId: string } }) {
+  const { bookingId } = params;
   const hotelId = 'hotelhub-central'; 
   const { bookings, isLoading } = useBookings(hotelId);
   
-  const booking = bookings.find(b => b.id === params.bookingId);
+  const booking = bookings.find(b => b.id === bookingId);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /> <span>Loading booking details...</span></div>;

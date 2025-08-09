@@ -12,6 +12,7 @@ export interface BookingPrefill {
     checkIn: string; // ISO date string
     checkOut: string; // ISO date string
     priceTotal: number;
+    bookingId: string; // The ID of the booking document to be updated
 }
 
 export interface BookingLink {
@@ -78,7 +79,18 @@ export function useBookingLinks(hotelId = 'hotelhub-central') {
       }
       
       const linkDoc = querySnapshot.docs[0];
-      return { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
+      const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
+      
+      // Also fetch the original booking to ensure it exists
+      const bookingDocRef = doc(db, `hotels/${linkData.hotelId}/bookings`, linkData.bookingId!);
+      const bookingSnap = await getDoc(bookingDocRef);
+      if (!bookingSnap.exists()) {
+        console.error(`Booking with ID ${linkData.bookingId} not found for this link.`);
+        return null;
+      }
+
+      return linkData;
+
 
     } catch (error) {
       console.error("Error fetching booking link by ID with collection group:", error);

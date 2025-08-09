@@ -114,6 +114,7 @@ export default function HotelierDashboardPage() {
                 checkIn: booking.checkIn,
                 checkOut: booking.checkOut,
                 priceTotal: booking.priceTotal,
+                bookingId: booking.id, // Pass the bookingId to the link
             };
             const newLink = await addLinkFromBooking(prefillData, 7, booking.id);
             linkId = newLink.id;
@@ -303,5 +304,3 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
-
-    

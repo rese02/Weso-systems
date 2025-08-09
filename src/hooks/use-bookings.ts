@@ -16,6 +16,7 @@ export interface Booking {
   priceTotal: number;
   status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment' | 'Submitted';
   createdAt: Timestamp;
+  submittedAt?: Timestamp;
   documents?: {
     idDoc?: string;
     paymentProof?: string;
@@ -107,5 +108,3 @@ export function useBookings(hotelId: string) {
 
   return { bookings, isLoading, removeBooking, addBooking, updateBooking };
 }
-
-    

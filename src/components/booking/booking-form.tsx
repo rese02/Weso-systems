@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection, Timestamp, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
 
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
@@ -53,7 +53,7 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus />
+                    <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus disabled />
                 </PopoverContent>
             </Popover>
         </div>
@@ -67,18 +67,18 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus />
+                    <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus disabled/>
                 </PopoverContent>
             </Popover>
         </div>
          <div className="grid gap-2">
              <Label htmlFor="room-type">Room Type</Label>
-             <Select defaultValue={prefillData?.roomType}>
+             <Select defaultValue={prefillData?.roomType} disabled>
                 <SelectTrigger><SelectValue placeholder="Select a room" /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="single">Single Room</SelectItem>
-                    <SelectItem value="double">Double Room</SelectItem>
-                    <SelectItem value="suite">Suite</SelectItem>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Komfort">Comfort</SelectItem>
+                    <SelectItem value="Suite">Suite</SelectItem>
                 </SelectContent>
              </Select>
          </div>
@@ -106,8 +106,8 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) 
 const Step2GuestInfo = ({ onFileUpload }: { onFileUpload: (name: string, file: File) => void }) => (
     <div className="grid gap-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="grid gap-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" name="firstName" placeholder="John" required /></div>
-            <div className="grid gap-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" name="lastName" placeholder="Doe" required/></div>
+            <div className="grid gap-2"><Label htmlFor="firstName">First Name</Label><Input id="firstName" name="firstName" placeholder="John" required /></div>
+            <div className="grid gap-2"><Label htmlFor="lastName">Last Name</Label><Input id="lastName" name="lastName" placeholder="Doe" required/></div>
         </div>
         <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="john.doe@example.com" required /></div>
         <div className="grid gap-2">
@@ -205,7 +205,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   const uploadFile = (upload: FileUpload): Promise<{name: string, url: string}> => {
         return new Promise((resolve, reject) => {
             if (!hotelId || !linkId) return reject("Missing hotel or link ID");
-            const filePath = `${hotelId}/bookings/${linkId}/${upload.name}-${upload.file.name}`;
+            const filePath = `hotels/${hotelId}/bookings/${linkId}/${upload.name}-${upload.file.name}`;
             const storageRef = ref(storage, filePath);
             const uploadTask = uploadBytesResumable(storageRef, upload.file);
 
@@ -220,9 +220,20 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
                         return newUploads;
                     });
                 }, 
-                (error) => reject(error), 
+                (error) => {
+                    console.error(`Upload failed for ${upload.name}:`, error);
+                    reject(error)
+                }, 
                 () => {
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log(`File ${upload.name} available at`, downloadURL);
+                        setUploads(prev => {
+                           const newUploads = {...prev};
+                           if (newUploads[upload.name]) {
+                               newUploads[upload.name] = { ...newUploads[upload.name], url: downloadURL };
+                           }
+                           return newUploads;
+                        });
                         resolve({ name: upload.name, url: downloadURL });
                     });
                 }
@@ -250,31 +261,27 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             return acc;
         }, {} as Record<string, string>);
 
-        const bookingCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
-        const newBookingRef = doc(bookingCollectionRef); // Create a new doc ref to get ID
+        if (!prefillData.bookingId) {
+            throw new Error("Booking ID is missing from prefill data.");
+        }
+        
+        const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
 
-        const bookingData = {
-            id: newBookingRef.id,
+        const updateData = {
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email,
-            checkIn: prefillData.checkIn,
-            checkOut: prefillData.checkOut,
-            roomType: prefillData.roomType,
-            priceTotal: prefillData.priceTotal,
-            status: 'Confirmed',
-            createdAt: Timestamp.now(),
+            status: 'Submitted' as const,
+            submittedAt: Timestamp.now(),
             documents: uploadedFileMap,
-            bookingLinkId: linkId,
-            hotelId,
         };
         
-        await setDoc(newBookingRef, bookingData); // Use setDoc with the new ref
+        await updateDoc(bookingDocRef, updateData);
         await markAsUsed(linkId, hotelId);
 
         toast({
-            title: "Booking Confirmed!",
-            description: "Your booking has been successfully processed."
+            title: "Booking Submitted!",
+            description: "Your booking details have been sent to the hotel."
         });
         router.push(`/guest/${linkId}/thank-you`);
 
@@ -283,8 +290,8 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         console.error("Booking confirmation failed:", err);
         toast({
             variant: "destructive",
-            title: "Error confirming booking",
-            description: err.message || "There was a problem confirming your booking. Please try again."
+            title: "Error submitting booking",
+            description: err.message || "There was a problem submitting your booking. Please try again."
         });
     } finally {
         setIsSubmitting(false);
@@ -325,7 +332,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
           <Button type="submit" disabled={isSubmitting}>Next</Button>
         ) : (
           <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress > 0 && u.progress < 100)}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : 'Confirm Booking'}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : 'Submit Booking'}
           </Button>
         )}
       </CardFooter>

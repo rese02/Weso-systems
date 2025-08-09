@@ -77,7 +77,7 @@ export function useBookings(hotelId: string) {
       const newBookingData = {
         ...bookingData,
         createdAt: Timestamp.now(),
-        hotelId: hotelId,
+        hotelId: hotelId, // This was the missing critical part
       };
 
       const docRef = await addDoc(bookingsCollectionRef, newBookingData);

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -13,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
   const [hotelName, setHotelName] = useState('Your Hotel');
   const { linkId } = params;
-  const { getLink } = useBookingLinks(); // Using the hook without hotelId here
+  const { getLink } = useBookingLinks('unused-but-required'); // Hook needs a hotelId, but getLink doesn't use it.
   const [linkData, setLinkData] = useState<BookingLink | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +30,7 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
         const fetchedLink = await getLink(linkId);
 
         if (fetchedLink) {
-          if (fetchedLink.used) {
+          if (fetchedLink.status === 'used') {
             setError('This booking link has already been used.');
           } else if (new Date() > fetchedLink.expiresAt.toDate()) {
             setError('This booking link has expired.');
@@ -96,9 +95,7 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
           Complete the steps below to finalize your reservation.
         </p>
       </div>
-      <BookingForm prefillData={linkData?.prefill} linkId={linkData?.id} hotelId={linkData?.hotelId} />
+      {linkData && <BookingForm prefillData={linkData.prefill} linkId={linkData.id} hotelId={linkData.hotelId} />}
     </div>
   );
 }
-
-    

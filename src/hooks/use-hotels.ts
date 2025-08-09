@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
 
 export interface Hotel {
   id: string;
   name: string;
   ownerEmail: string;
   domain: string;
-  createdAt?: any; 
+  createdAt?: Timestamp; 
 }
 
 export function useHotels() {
@@ -38,9 +38,9 @@ export function useHotels() {
     getHotels();
   }, [getHotels]);
 
-  const addHotel = useCallback(async (hotel: Omit<Hotel, 'id'>) => {
+  const addHotel = useCallback(async (hotel: Omit<Hotel, 'id' | 'createdAt'>) => {
     try {
-        await addDoc(hotelsCollectionRef, { ...hotel, createdAt: new Date() });
+        await addDoc(hotelsCollectionRef, { ...hotel, createdAt: Timestamp.now() });
         await getHotels(); // Refresh list after adding
     } catch (error) {
         console.error("Error adding hotel to Firestore:", error);
@@ -51,6 +51,8 @@ export function useHotels() {
   const removeHotel = useCallback(async (hotelId: string) => {
     const hotelDoc = doc(db, 'hotels', hotelId);
     try {
+        // In a real app, you would also delete all sub-collections (bookings, etc.)
+        // This requires a Cloud Function for proper cleanup.
         await deleteDoc(hotelDoc);
         await getHotels(); // Refresh list after deleting
     } catch (error) {

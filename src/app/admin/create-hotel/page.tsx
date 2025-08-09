@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -34,7 +33,7 @@ export default function CreateHotelPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newHotel: Omit<Hotel, 'id'> = {
+    const newHotel: Omit<Hotel, 'id' | 'createdAt'> = {
       name: formData.get('hotel-name') as string,
       ownerEmail: formData.get('email') as string,
       domain: formData.get('domain') as string,
@@ -51,9 +50,9 @@ export default function CreateHotelPage() {
 
     try {
       // In a real app, you would also securely handle the password,
-      // likely by creating a Firebase Auth user and sending an invite link.
-      // For this prototype, we just add it to the hotel data.
-      await addHotel({ ...newHotel, password: generatedPassword });
+      // likely by creating a Firebase Auth user for the hotelier.
+      // For this prototype, we just add the hotel data.
+      await addHotel(newHotel);
       toast({
           title: "Hotel Created",
           description: "The new hotel system has been successfully created.",

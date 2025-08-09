@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
 
+// Corresponds to the Firestore data model /hotels/{hotelId}/bookings/{bookingId}
 export interface RoomDetail {
   roomType: string;
   adults: number;
@@ -14,26 +14,34 @@ export interface RoomDetail {
 }
 
 export interface Booking {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  id: string; // The Firestore document ID
+  
+  // State and Metadata
+  status: 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';
+  createdAt: Timestamp;
+  submittedAt?: Timestamp;
+  bookingLinkId?: string;
+
+  // Prefill/Core data
   checkIn: string; // ISO String
   checkOut: string; // ISO string
   boardType: string;
   priceTotal: number;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment' | 'Submitted';
-  createdAt: Timestamp;
-  submittedAt?: Timestamp;
-  documents?: {
-    idDoc?: string;
-    paymentProof?: string;
-  };
-  bookingLinkId?: string;
-  hotelId: string;
   rooms: RoomDetail[];
   internalNotes?: string;
+
+  // Guest-provided data
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  
+  // References to documents in Storage
+  documents?: {
+    idDoc?: string; // URL to the file in Firebase Storage
+    paymentProof?: string; // URL to the file in Firebase Storage
+  };
 }
+
 
 export function useBookings(hotelId: string) {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -66,16 +74,14 @@ export function useBookings(hotelId: string) {
     return () => unsubscribe();
   }, [hotelId]);
 
-  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'>) => {
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt'>) => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
     const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
-    // Combine the form data with the server-side generated data
     const newBookingData = {
       ...bookingData,
       createdAt: Timestamp.now(),
-      hotelId: hotelId,
     };
     const docRef = await addDoc(bookingsCollectionRef, newBookingData);
     return { id: docRef.id, ...newBookingData } as Booking;

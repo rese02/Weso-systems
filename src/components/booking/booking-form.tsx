@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -21,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection, Timestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { Timestamp, doc, updateDoc } from 'firebase/firestore';
 
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
@@ -186,7 +185,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { markAsUsed } = useBookingLinks();
+  const { markAsUsed } = useBookingLinks(hotelId || 'unused');
   const { toast } = useToast();
 
   const handleFileUpload = (name: string, file: File) => {
@@ -267,11 +266,11 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         
         const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
 
-        const updateData = {
+        const updateData: any = {
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email,
-            status: 'Submitted' as const,
+            status: 'Submitted',
             submittedAt: Timestamp.now(),
             documents: uploadedFileMap,
         };

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
 
 export interface Booking {
   id: string;

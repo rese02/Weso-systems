@@ -113,7 +113,6 @@ export default function CreateBookingPage() {
 
     const priceTotal = parseFloat(priceString);
 
-    // This matches the Omit type in use-bookings.ts
     const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
       firstName: firstName,
       lastName: lastName,

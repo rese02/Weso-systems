@@ -71,6 +71,7 @@ export function useBookings(hotelId: string) {
       throw new Error("Hotel ID is not specified.");
     }
     const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
+    // Combine the form data with the server-side generated data
     const newBookingData = {
       ...bookingData,
       createdAt: Timestamp.now(),

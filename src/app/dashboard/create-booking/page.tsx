@@ -99,7 +99,6 @@ export default function CreateBookingPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
     if (!date?.from || !date?.to || !price || !firstName || !lastName || rooms.length === 0) {
         toast({
@@ -107,9 +106,10 @@ export default function CreateBookingPage() {
             title: "Error",
             description: "Please fill in all required fields (First Name, Last Name, Date Range, Price, and at least one room).",
         });
-        setIsSubmitting(false);
         return;
     }
+
+    setIsSubmitting(true);
 
     try {
         const priceTotal = parseFloat(price);
@@ -129,7 +129,7 @@ export default function CreateBookingPage() {
             adults: Number(r.adults) || 0,
             children: Number(r.children) || 0,
             infants: Number(r.infants) || 0,
-            childrenAges: r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age))
+            childrenAges: r.childrenAges ? r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age)) : []
         }));
 
         const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
@@ -156,7 +156,7 @@ export default function CreateBookingPage() {
         toast({
             variant: "destructive",
             title: "Error Creating Booking",
-            description: "The booking could not be created. Please try again.",
+            description: (error as Error).message || "The booking could not be created. Please try again.",
         });
     } finally {
         setIsSubmitting(false);

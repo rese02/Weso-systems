@@ -70,23 +70,14 @@ export function useBookings(hotelId: string) {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
-
-    try {
-      const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
-      
-      const newBookingData = {
-        ...bookingData, // Correctly spread the incoming form data
-        createdAt: Timestamp.now(),
-        hotelId: hotelId,
-      };
-
-      const docRef = await addDoc(bookingsCollectionRef, newBookingData);
-      return { id: docRef.id, ...newBookingData } as Booking;
-
-    } catch (error) {
-      console.error("Error adding booking to Firestore:", error);
-      throw error;
-    }
+    const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
+    const newBookingData = {
+      ...bookingData,
+      createdAt: Timestamp.now(),
+      hotelId: hotelId,
+    };
+    const docRef = await addDoc(bookingsCollectionRef, newBookingData);
+    return { id: docRef.id, ...newBookingData } as Booking;
   }, [hotelId]);
 
 

@@ -27,8 +27,7 @@ const DetailRow = ({ label, value, isButton = false }: { label: string, value: s
     </>
 );
 
-export default function BookingDetailsPage({ params }: { params: { bookingId: string } }) {
-  const { bookingId } = params;
+export default function BookingDetailsPage({ params: { bookingId } }: { params: { bookingId: string } }) {
   const hotelId = 'hotelhub-central'; 
   const { bookings, isLoading } = useBookings(hotelId);
   

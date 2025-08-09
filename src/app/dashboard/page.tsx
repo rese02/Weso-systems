@@ -55,9 +55,10 @@ const StatCard = ({ title, value, description, icon: Icon, trendIcon: TrendIcon 
 
 
 export default function HotelierDashboardPage() {
-  const { bookings, isLoading, removeBooking, updateBooking } = useBookings('hotelhub-central');
+  const hotelId = 'hotelhub-central'; // In a real app, get this from auth context
+  const { bookings, isLoading, removeBooking, updateBooking } = useBookings(hotelId);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
-  const { addLinkFromBooking } = useBookingLinks('hotelhub-central');
+  const { addLinkFromBooking } = useBookingLinks(hotelId);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -78,14 +79,8 @@ export default function HotelierDashboardPage() {
   };
 
   const handleDeleteSelected = async () => {
-    const bookingsToDelete = selectedBookings.filter(id => id !== 'example-1');
-    if (bookingsToDelete.length === 0) {
-        toast({ title: "Aktion nicht möglich", description: "Es wurden keine löschbaren Buchungen ausgewählt." });
-        return;
-    }
-
     try {
-        await Promise.all(bookingsToDelete.map(id => removeBooking(id)));
+        await Promise.all(selectedBookings.map(id => removeBooking(id)));
         setSelectedBookings([]);
         toast({
             title: "Buchungen gelöscht",
@@ -101,11 +96,6 @@ export default function HotelierDashboardPage() {
   }
 
   const handleCopyLink = async (booking: Booking) => {
-     if (booking.id === 'example-1') {
-        toast({ title: "Aktion nicht möglich", description: "Für eine Beispiel-Buchung kann kein Link erstellt werden."});
-        return;
-     }
-
      const getBaseUrl = () => {
         if (typeof window !== 'undefined') {
             return window.location.origin;
@@ -311,3 +301,5 @@ export default function HotelierDashboardPage() {
     </div>
   );
 }
+
+    

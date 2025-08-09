@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc } from 'firebase/firestore';
 
 export interface Booking {
   id: string;
@@ -32,6 +32,7 @@ export function useBookings(hotelId: string) {
     if (!hotelId) {
       setIsLoading(false);
       setBookings([]);
+      console.warn("useBookings: hotelId is not provided.");
       return;
     }
 
@@ -61,16 +62,16 @@ export function useBookings(hotelId: string) {
 
     try {
       const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
-      const newBookingDocRef = doc(bookingsCollectionRef); // Create a new doc reference to get an ID first
       
       const newBooking = {
         ...bookingData,
-        id: newBookingDocRef.id,
         createdAt: Timestamp.now(),
         hotelId: hotelId,
       };
 
-      await setDoc(newBookingDocRef, newBooking); // Use setDoc to save the document with the generated ID
+      // addDoc will auto-generate an ID.
+      await addDoc(bookingsCollectionRef, newBooking);
+
     } catch (error) {
       console.error("Error adding booking to Firestore:", error);
       throw error;
@@ -106,3 +107,5 @@ export function useBookings(hotelId: string) {
 
   return { bookings, isLoading, removeBooking, addBooking, updateBooking };
 }
+
+    

@@ -18,7 +18,6 @@ import {
   Bed,
   Calendar as CalendarIcon,
   Info,
-  Languages,
   PlusCircle,
   Trash2,
   User,
@@ -50,7 +49,9 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addBooking } = useBookings('hotelhub-central');
+  // IMPORTANT: Assume a hotelId for the logged-in hotelier. In a real app, this would come from auth context.
+  const hotelId = 'hotelhub-central';
+  const { addBooking } = useBookings(hotelId); 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [date, setDate] = useState<DateRange | undefined>({
@@ -100,7 +101,6 @@ export default function CreateBookingPage() {
     const email = formData.get('email') as string;
     const priceString = formData.get('total-price') as string;
 
-
     if (!date?.from || !date?.to || !priceString || !firstName || !lastName) {
         toast({
             variant: "destructive",
@@ -113,7 +113,8 @@ export default function CreateBookingPage() {
 
     const priceTotal = parseFloat(priceString);
 
-    const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'bookingLinkId' > = {
+    // This matches the Omit type in use-bookings.ts
+    const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
       firstName: firstName,
       lastName: lastName,
       email: email,
@@ -366,3 +367,5 @@ export default function CreateBookingPage() {
     </div>
   );
 }
+
+    

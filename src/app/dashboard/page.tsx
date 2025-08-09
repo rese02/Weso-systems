@@ -110,11 +110,11 @@ export default function HotelierDashboardPage() {
 
         if (!linkId) {
             const prefillData = {
-                roomType: booking.roomType || 'Standard',
+                roomType: booking.rooms[0]?.roomType || 'Standard',
                 checkIn: booking.checkIn,
                 checkOut: booking.checkOut,
                 priceTotal: booking.priceTotal,
-                bookingId: booking.id, // Pass the bookingId to the link
+                bookingId: booking.id,
             };
             const newLink = await addLinkFromBooking(prefillData, 7, booking.id);
             linkId = newLink.id;
@@ -259,7 +259,7 @@ export default function HotelierDashboardPage() {
                                 aria-label={`Select booking ${booking.id}`}
                             />
                         </TableCell>
-                        <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
+                        <TableCell className="font-medium">{guestName || booking.email || "N/A"}</TableCell>
                         <TableCell>{format(parseISO(booking.checkIn), 'dd.MM.yyyy')}</TableCell>
                         <TableCell>{format(parseISO(booking.checkOut), 'dd.MM.yyyy')}</TableCell>
                         <TableCell>

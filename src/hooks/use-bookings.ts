@@ -75,9 +75,9 @@ export function useBookings(hotelId: string) {
       const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
       
       const newBookingData = {
-        ...bookingData,
+        ...bookingData, // Correctly spread the incoming form data
         createdAt: Timestamp.now(),
-        hotelId: hotelId, // This was the missing critical part
+        hotelId: hotelId,
       };
 
       const docRef = await addDoc(bookingsCollectionRef, newBookingData);

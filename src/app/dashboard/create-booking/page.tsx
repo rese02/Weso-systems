@@ -49,7 +49,6 @@ type RoomDetail = {
 export default function CreateBookingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  // IMPORTANT: Assume a hotelId for the logged-in hotelier. In a real app, this would come from auth context.
   const hotelId = 'hotelhub-central';
   const { addBooking } = useBookings(hotelId); 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,8 +103,8 @@ export default function CreateBookingPage() {
     if (!date?.from || !date?.to || !priceString || !firstName || !lastName) {
         toast({
             variant: "destructive",
-            title: "Fehler",
-            description: "Bitte füllen Sie alle erforderlichen Felder aus (Vorname, Nachname, Zeitraum, Preis).",
+            title: "Error",
+            description: "Please fill in all required fields (First Name, Last Name, Date Range, Price).",
         });
         setIsSubmitting(false);
         return;
@@ -114,30 +113,29 @@ export default function CreateBookingPage() {
     const priceTotal = parseFloat(priceString);
 
     const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
+      firstName,
+      lastName,
+      email,
       checkIn: date.from.toISOString(),
       checkOut: date.to.toISOString(),
       roomType: rooms[0].roomType,
-      priceTotal: priceTotal,
-      status: 'Open', 
+      priceTotal,
+      status: 'Open',
     };
 
     try {
         await addBooking(newBookingData);
         toast({
-            title: 'Buchung erstellt!',
-            description: 'Die neue Buchung wurde erfolgreich in der Datenbank gespeichert.',
+            title: 'Booking Created!',
+            description: 'The new booking has been successfully saved to the database.',
         });
         router.push('/dashboard');
-
     } catch (error) {
         console.error("Failed to create booking:", error);
         toast({
             variant: "destructive",
-            title: "Fehler beim Erstellen der Buchung",
-            description: "Die Buchung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+            title: "Error Creating Booking",
+            description: "The booking could not be created. Please try again.",
         });
     } finally {
         setIsSubmitting(false);
@@ -147,7 +145,7 @@ export default function CreateBookingPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold font-headline md:text-4xl">Neue Buchung erstellen</h1>
+        <h1 className="text-3xl font-bold font-headline md:text-4xl">Create New Booking</h1>
         <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')}>
           <X className="h-5 w-5" />
         </Button>
@@ -158,25 +156,25 @@ export default function CreateBookingPage() {
           <div className="grid gap-2">
             <Label htmlFor="firstName">
               <User className="inline-block h-4 w-4 mr-1" />
-              Vorname
+              First Name
             </Label>
-            <Input id="firstName" name="firstName" placeholder="Vorname des Gastes" required/>
+            <Input id="firstName" name="firstName" placeholder="Guest's first name" required/>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">
               <User className="inline-block h-4 w-4 mr-1" />
-              Nachname
+              Last Name
             </Label>
-            <Input id="lastName" name="lastName" placeholder="Nachname des Gastes" required/>
+            <Input id="lastName" name="lastName" placeholder="Guest's last name" required/>
           </div>
           <div className="grid gap-2">
              <Label htmlFor="email">Email</Label>
-             <Input id="email" name="email" type="email" placeholder="gast@email.com" />
+             <Input id="email" name="email" type="email" placeholder="guest@email.com" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="date-range">
               <CalendarIcon className="inline-block h-4 w-4 mr-1" />
-              Zeitraum (Anreise - Abreise)
+              Date Range (Arrival - Departure)
             </Label>
             <Popover>
               <PopoverTrigger asChild>
@@ -198,7 +196,7 @@ export default function CreateBookingPage() {
                       format(date.from, 'LLL dd, y')
                     )
                   ) : (
-                    <span>Wählen Sie ein Datum</span>
+                    <span>Pick a date</span>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -217,26 +215,26 @@ export default function CreateBookingPage() {
           <div className="grid gap-2">
             <Label>
                 <Bed className="inline-block h-4 w-4 mr-1" />
-                Verpflegung
+                Board Type
             </Label>
             <Select>
               <SelectTrigger>
-                <SelectValue placeholder="Keine" />
+                <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Keine</SelectItem>
-                <SelectItem value="breakfast">Frühstück</SelectItem>
-                <SelectItem value="half-board">Halbpension</SelectItem>
-                <SelectItem value="full-board">Vollpension</SelectItem>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="breakfast">Breakfast</SelectItem>
+                <SelectItem value="half-board">Half Board</SelectItem>
+                <SelectItem value="full-board">Full Board</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="total-price">
                 <Euro className="inline-block h-4 w-4 mr-1" />
-                Gesamtpreis (€)
+                Total Price (€)
             </Label>
-            <Input id="total-price" name="total-price" type="number" placeholder="Preis in Euro" required />
+            <Input id="total-price" name="total-price" type="number" placeholder="Price in Euro" required />
           </div>
         </div>
 
@@ -246,7 +244,7 @@ export default function CreateBookingPage() {
             {rooms.map((room, index) => (
             <div key={room.id} className="p-4 border rounded-lg space-y-4 relative bg-card">
                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">Zimmer {index + 1} Details</h3>
+                    <h3 className="font-semibold text-lg">Room {index + 1} Details</h3>
                     {rooms.length > 1 && (
                         <Button
                         type="button"
@@ -261,23 +259,23 @@ export default function CreateBookingPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <div className="grid gap-2">
-                    <Label htmlFor={`room-type-${room.id}`}>Zimmertyp</Label>
+                    <Label htmlFor={`room-type-${room.id}`}>Room Type</Label>
                     <Select
                     defaultValue={room.roomType}
                     onValueChange={(value) => handleRoomChange(room.id, 'roomType', value)}
                     >
                     <SelectTrigger>
-                        <SelectValue placeholder="Typ wählen" />
+                        <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="Standard">Standard</SelectItem>
-                        <SelectItem value="Komfort">Komfort</SelectItem>
+                        <SelectItem value="Komfort">Comfort</SelectItem>
                         <SelectItem value="Suite">Suite</SelectItem>
                     </SelectContent>
                     </Select>
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor={`adults-${room.id}`}>Erwachsene</Label>
+                    <Label htmlFor={`adults-${room.id}`}>Adults</Label>
                     <Input
                     id={`adults-${room.id}`}
                     type="number"
@@ -287,7 +285,7 @@ export default function CreateBookingPage() {
                     />
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor={`children-${room.id}`}>Kinder (3+)</Label>
+                    <Label htmlFor={`children-${room.id}`}>Children (3+)</Label>
                     <Input
                     id={`children-${room.id}`}
                     type="number"
@@ -298,14 +296,14 @@ export default function CreateBookingPage() {
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor={`infants-${room.id}`} className="flex items-center">
-                        Kleinkinder
+                        Infants
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Info className="h-3 w-3 ml-1 text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>0-2 Jahre</p>
+                                <p>0-2 years</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -320,46 +318,46 @@ export default function CreateBookingPage() {
                  </div>
                 </div>
                  <div className="grid gap-2">
-                    <Label htmlFor={`children-ages-${room.id}`}>Alter Kinder (3+)</Label>
+                    <Label htmlFor={`children-ages-${room.id}`}>Ages of Children (3+)</Label>
                     <Input
                         id={`children-ages-${room.id}`}
-                        placeholder="z.B. 4, 8"
+                        placeholder="e.g. 4, 8"
                         value={room.childrenAges}
                         onChange={(e) => handleRoomChange(room.id, 'childrenAges', e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">Kommagetrennt, falls zutreffend.</p>
+                    <p className="text-xs text-muted-foreground">Comma-separated, if applicable.</p>
                 </div>
             </div>
             ))}
 
             <Button type="button" variant="outline" onClick={addRoom}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Weiteres Zimmer hinzufügen
+                Add another room
             </Button>
         </div>
 
         <Separator />
         
         <div className="grid gap-2">
-          <Label htmlFor="internal-notes">Interne Bemerkungen (Optional)</Label>
+          <Label htmlFor="internal-notes">Internal Notes (Optional)</Label>
           <Textarea
             id="internal-notes"
             name="internalNotes"
-            placeholder="Zusätzliche Informationen für das Hotelpersonal..."
+            placeholder="Additional information for hotel staff..."
           />
         </div>
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.push('/dashboard')} disabled={isSubmitting}>
-            Abbrechen
+            Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
                 <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird erstellt...
+                    Creating...
                 </>
-            ) : "Buchung erstellen"}
+            ) : "Create Booking"}
           </Button>
         </div>
       </form>

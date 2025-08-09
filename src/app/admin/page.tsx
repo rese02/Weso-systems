@@ -35,43 +35,43 @@ export default function AdminDashboardPage() {
   }
 
   if (isLoading) {
-    return <div>Lade Hotels...</div>
+    return <div>Loading hotels...</div>
   }
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
       <div className="flex items-center justify-between">
           <div className="grid gap-1">
-              <h1 className="text-3xl font-bold font-headline md:text-4xl">Hotelübersicht</h1>
-              <p className="text-muted-foreground">Verwalten Sie hier alle Ihre Kundenhotels.</p>
+              <h1 className="text-3xl font-bold font-headline md:text-4xl">Hotel Overview</h1>
+              <p className="text-muted-foreground">Manage all your client hotels here.</p>
           </div>
           <Button asChild>
               <Link href="/admin/create-hotel">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Neues Hotel erstellen
+                  Create New Hotel
               </Link>
           </Button>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Verwaltete Hotels</CardTitle>
-          <CardDescription>Eine Liste aller Hotelbuchungssysteme Ihrer Agentur.</CardDescription>
+          <CardTitle>Managed Hotels</CardTitle>
+          <CardDescription>A list of all hotel booking systems for your agency.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Hotelname</TableHead>
-                <TableHead>Besitzer E-Mail</TableHead>
+                <TableHead>Hotel Name</TableHead>
+                <TableHead>Owner Email</TableHead>
                 <TableHead>Domain</TableHead>
-                <TableHead><span className="sr-only">Aktionen</span></TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {hotels.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                        Noch keine Hotels erstellt.
+                        No hotels created yet.
                     </TableCell>
                 </TableRow>
               ) : (
@@ -89,26 +89,26 @@ export default function AdminDashboardPage() {
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Menü umschalten</span>
+                            <span className="sr-only">Toggle menu</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard anzeigen</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Einstellungen bearbeiten</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/dashboard')}>View Dashboard</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Edit Settings</DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Löschen</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Delete</DropdownMenuItem>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                    <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird das Hotel dauerhaft gelöscht.
+                                        This action cannot be undone. This will permanently delete the hotel.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)}>Löschen</AlertDialogAction>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)}>Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

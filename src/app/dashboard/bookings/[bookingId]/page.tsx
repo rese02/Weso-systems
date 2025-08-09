@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,20 +10,20 @@ import { ArrowLeft, Edit, User, Users, FileText, BedDouble } from 'lucide-react'
 const bookingDetails = {
     id: 'BC7EGC',
     guestName: 'Alexis Morant',
-    checkIn: '09. Aug. 2025',
-    checkOut: '10. Aug. 2025',
+    checkIn: 'Aug 09, 2025',
+    checkOut: 'Aug 10, 2025',
     totalPrice: '210,00 €',
-    board: 'Frühstück',
+    board: 'Breakfast',
     status: 'Confirmed',
     mainGuest: {
         firstName: 'Alexis',
         lastName: 'Morant',
         email: 'alexismorant11@gmail.com',
         phone: '0034679434378',
-        age: 'Nicht angegeben',
+        age: 'Not provided',
         idFront: true,
         idBack: true,
-        notes: 'Nicht angegeben',
+        notes: 'Not provided',
     },
     companions: [
         {
@@ -34,9 +35,9 @@ const bookingDetails = {
     ],
     administrative: {
         room1: {
-            type: 'Komfort',
-            number: 'Nicht zugewiesen',
-            status: 'Sauber',
+            type: 'Comfort',
+            number: 'Not assigned',
+            status: 'Clean',
         }
     }
 };
@@ -65,19 +66,19 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
         <div className="flex items-center justify-between">
           <div className="grid gap-1">
-              <h1 className="text-3xl font-bold font-headline md:text-4xl">Buchungsdetails</h1>
-              <p className="text-muted-foreground">Detaillierte Informationen für Buchung ID: {booking.id}</p>
+              <h1 className="text-3xl font-bold font-headline md:text-4xl">Booking Details</h1>
+              <p className="text-muted-foreground">Detailed information for Booking ID: {booking.id}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
                 <Link href="/dashboard">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Zurück zur Buchungsübersicht
+                    Back to Booking Overview
                 </Link>
             </Button>
              <Button>
                 <Edit className="mr-2 h-4 w-4" />
-                Bearbeiten
+                Edit
             </Button>
           </div>
         </div>
@@ -88,7 +89,7 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                     <div>
                         <h2 className="text-2xl font-bold font-headline">{booking.guestName}</h2>
                         <p className="text-sm text-muted-foreground">
-                            Check-in: {booking.checkIn} - Check-out: {booking.checkOut} - Gesamtpreis: {booking.totalPrice} - Verpflegung: {booking.board}
+                            Check-in: {booking.checkIn} - Check-out: {booking.checkOut} - Total Price: {booking.totalPrice} - Board: {booking.board}
                         </p>
                     </div>
                     <Badge variant={statusVariant[booking.status] || 'default'} className="w-fit h-fit">{booking.status}</Badge>
@@ -99,24 +100,24 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
                         <User className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Hauptgast Informationen</h3>
+                        <h3 className="font-semibold text-lg">Main Guest Information</h3>
                     </div>
                     <Separator />
                     <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                        <DetailRow label="Vorname" value={booking.mainGuest.firstName} />
-                        <DetailRow label="Nachname" value={booking.mainGuest.lastName} />
-                        <DetailRow label="E-Mail" value={booking.mainGuest.email} />
-                        <DetailRow label="Telefon" value={booking.mainGuest.phone} />
-                        <DetailRow label="Alter" value={booking.mainGuest.age} />
-                        <DetailRow label="Ausweis Vorderseite" value={
+                        <DetailRow label="First Name" value={booking.mainGuest.firstName} />
+                        <DetailRow label="Last Name" value={booking.mainGuest.lastName} />
+                        <DetailRow label="Email" value={booking.mainGuest.email} />
+                        <DetailRow label="Phone" value={booking.mainGuest.phone} />
+                        <DetailRow label="Age" value={booking.mainGuest.age} />
+                        <DetailRow label="ID Front" value={
                             <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                <FileText className="mr-2 h-4 w-4" />Dokument ansehen</Button>
+                                <FileText className="mr-2 h-4 w-4" />View Document</Button>
                         } isButton/>
-                        <DetailRow label="Ausweis Rückseite" value={
+                        <DetailRow label="ID Back" value={
                              <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                <FileText className="mr-2 h-4 w-4" />Dokument ansehen</Button>
+                                <FileText className="mr-2 h-4 w-4" />View Document</Button>
                         } isButton/>
-                        <DetailRow label="Anmerkungen des Gastes" value={booking.mainGuest.notes} />
+                        <DetailRow label="Guest Notes" value={booking.mainGuest.notes} />
                     </div>
                 </div>
 
@@ -124,22 +125,22 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Mitreisende Personen</h3>
+                        <h3 className="font-semibold text-lg">Companions</h3>
                     </div>
                      <Separator />
                     {booking.companions.map((companion, index) => (
                         <div key={index} className="space-y-4 pt-2">
-                             <h4 className="font-medium">Begleitung {index + 1}</h4>
+                             <h4 className="font-medium">Companion {index + 1}</h4>
                              <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                                <DetailRow label="Vorname" value={companion.firstName} />
-                                <DetailRow label="Nachname" value={companion.lastName} />
-                                <DetailRow label="Ausweis Vorderseite" value={
+                                <DetailRow label="First Name" value={companion.firstName} />
+                                <DetailRow label="Last Name" value={companion.lastName} />
+                                <DetailRow label="ID Front" value={
                                     <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                        <FileText className="mr-2 h-4 w-4" />Dokument ansehen</Button>
+                                        <FileText className="mr-2 h-4 w-4" />View Document</Button>
                                 } isButton/>
-                                <DetailRow label="Ausweis Rückseite" value={
+                                <DetailRow label="ID Back" value={
                                     <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                        <FileText className="mr-2 h-4 w-4" />Dokument ansehen</Button>
+                                        <FileText className="mr-2 h-4 w-4" />View Document</Button>
                                 } isButton/>
                              </div>
                         </div>
@@ -150,15 +151,15 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
                         <BedDouble className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Administrative Buchungsdetails</h3>
+                        <h3 className="font-semibold text-lg">Administrative Booking Details</h3>
                     </div>
                     <Separator />
                      <div className="space-y-4 pt-2">
-                        <h4 className="font-medium">Zimmer 1</h4>
+                        <h4 className="font-medium">Room 1</h4>
                         <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                            <DetailRow label="Zimmertyp" value={booking.administrative.room1.type} />
-                            <DetailRow label="Zimmernummer" value={booking.administrative.room1.number} />
-                            <DetailRow label="Zimmerstatus" value={booking.administrative.room1.status} />
+                            <DetailRow label="Room Type" value={booking.administrative.room1.type} />
+                            <DetailRow label="Room Number" value={booking.administrative.room1.number} />
+                            <DetailRow label="Room Status" value={booking.administrative.room1.status} />
                         </div>
                     </div>
                 </div>

@@ -14,7 +14,7 @@ export interface Booking {
   checkOut: string; // ISO string
   roomType: string;
   priceTotal: number;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment';
+  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Open' | 'Partial Payment' | 'Submitted';
   createdAt: Timestamp;
   documents?: {
     idDoc?: string;
@@ -63,14 +63,14 @@ export function useBookings(hotelId: string) {
     try {
       const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
       
-      const newBooking = {
+      const newBookingData = {
         ...bookingData,
         createdAt: Timestamp.now(),
         hotelId: hotelId,
       };
 
-      // addDoc will auto-generate an ID.
-      await addDoc(bookingsCollectionRef, newBooking);
+      const docRef = await addDoc(bookingsCollectionRef, newBookingData);
+      return { id: docRef.id, ...newBookingData } as Booking;
 
     } catch (error) {
       console.error("Error adding booking to Firestore:", error);

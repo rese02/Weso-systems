@@ -1,66 +1,49 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, User, Users, FileText, BedDouble } from 'lucide-react';
-
-// Mock data, in a real app this would be fetched from a database
-const bookingDetails = {
-    id: 'BC7EGC',
-    guestName: 'Alexis Morant',
-    checkIn: 'Aug 09, 2025',
-    checkOut: 'Aug 10, 2025',
-    totalPrice: '210,00 €',
-    board: 'Breakfast',
-    status: 'Confirmed',
-    mainGuest: {
-        firstName: 'Alexis',
-        lastName: 'Morant',
-        email: 'alexismorant11@gmail.com',
-        phone: '0034679434378',
-        age: 'Not provided',
-        idFront: true,
-        idBack: true,
-        notes: 'Not provided',
-    },
-    companions: [
-        {
-            firstName: 'Raquel',
-            lastName: 'Jounou',
-            idFront: true,
-            idBack: true,
-        }
-    ],
-    administrative: {
-        room1: {
-            type: 'Comfort',
-            number: 'Not assigned',
-            status: 'Clean',
-        }
-    }
-};
-
+import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2 } from 'lucide-react';
+import { useBookings } from '@/hooks/use-bookings';
+import { format, parseISO } from 'date-fns';
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'destructive' } = {
     'Confirmed': 'default',
     'Paid': 'default',
     'Checked-in': 'outline',
     'Checked-out': 'secondary',
-    'Pending': 'destructive'
-}
+    'Pending': 'destructive',
+    'Submitted': 'outline',
+    'Open': 'secondary',
+};
 
 const DetailRow = ({ label, value, isButton = false }: { label: string, value: string | React.ReactNode, isButton?: boolean }) => (
     <>
         <div className="text-sm text-muted-foreground">{label}</div>
-        {isButton ? value : <div className="text-sm text-right sm:text-left">{value}</div>}
+        {isButton ? value : <div className="text-sm text-right sm:text-left break-all">{value || 'Not provided'}</div>}
     </>
 );
 
 export default function BookingDetailsPage({ params }: { params: { bookingId: string } }) {
-  // We use mock data, but in a real app you'd fetch the booking by params.bookingId
-  const booking = bookingDetails;
+  const hotelId = 'hotelhub-central'; 
+  const { bookings, isLoading } = useBookings(hotelId);
+  
+  const booking = bookings.find(b => b.id === params.bookingId);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /> <span>Loading booking details...</span></div>;
+  }
+
+  if (!booking) {
+      return <div>Booking not found.</div>
+  }
+
+  const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
+  const checkInDate = booking.checkIn ? format(parseISO(booking.checkIn), 'dd.MM.yyyy') : 'N/A';
+  const checkOutDate = booking.checkOut ? format(parseISO(booking.checkOut), 'dd.MM.yyyy') : 'N/A';
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
@@ -87,12 +70,12 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold font-headline">{booking.guestName}</h2>
+                        <h2 className="text-2xl font-bold font-headline">{guestName || 'Awaiting Guest Details'}</h2>
                         <p className="text-sm text-muted-foreground">
-                            Check-in: {booking.checkIn} - Check-out: {booking.checkOut} - Total Price: {booking.totalPrice} - Board: {booking.board}
+                            Check-in: {checkInDate} - Check-out: {checkOutDate} - Total Price: {booking.priceTotal.toFixed(2)} € - Board: {booking.boardType}
                         </p>
                     </div>
-                    <Badge variant={statusVariant[booking.status] || 'default'} className="w-fit h-fit">{booking.status}</Badge>
+                    <Badge variant={statusVariant[booking.status] || 'secondary'} className="w-fit h-fit">{booking.status}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -104,47 +87,41 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                     </div>
                     <Separator />
                     <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                        <DetailRow label="First Name" value={booking.mainGuest.firstName} />
-                        <DetailRow label="Last Name" value={booking.mainGuest.lastName} />
-                        <DetailRow label="Email" value={booking.mainGuest.email} />
-                        <DetailRow label="Phone" value={booking.mainGuest.phone} />
-                        <DetailRow label="Age" value={booking.mainGuest.age} />
-                        <DetailRow label="ID Front" value={
-                            <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                <FileText className="mr-2 h-4 w-4" />View Document</Button>
-                        } isButton/>
-                        <DetailRow label="ID Back" value={
-                             <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                <FileText className="mr-2 h-4 w-4" />View Document</Button>
-                        } isButton/>
-                        <DetailRow label="Guest Notes" value={booking.mainGuest.notes} />
+                        <DetailRow label="First Name" value={booking.firstName} />
+                        <DetailRow label="Last Name" value={booking.lastName} />
+                        <DetailRow label="Email" value={booking.email} />
+                        <DetailRow label="Phone" value={"Not provided"} />
+                        <DetailRow label="Age" value={"Not provided"} />
+                         {booking.documents?.idDoc && (
+                            <DetailRow label="ID Document" value={
+                                <Button asChild variant="outline" size="sm" className="w-full sm:w-fit justify-start">
+                                    <a href={booking.documents.idDoc} target="_blank" rel="noopener noreferrer">
+                                        <FileText className="mr-2 h-4 w-4" />View Document
+                                    </a>
+                                </Button>
+                            } isButton/>
+                        )}
+                         {booking.documents?.paymentProof && (
+                            <DetailRow label="Payment Proof" value={
+                                <Button asChild variant="outline" size="sm" className="w-full sm:w-fit justify-start">
+                                    <a href={booking.documents.paymentProof} target="_blank" rel="noopener noreferrer">
+                                        <FileText className="mr-2 h-4 w-4" />View Document
+                                    </a>
+                                </Button>
+                            } isButton/>
+                        )}
+                        <DetailRow label="Guest Notes" value={booking.internalNotes || "Not provided"} />
                     </div>
                 </div>
 
-                {/* Companions Info */}
+                {/* Companions Info - Placeholder for now */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary" />
                         <h3 className="font-semibold text-lg">Companions</h3>
                     </div>
                      <Separator />
-                    {booking.companions.map((companion, index) => (
-                        <div key={index} className="space-y-4 pt-2">
-                             <h4 className="font-medium">Companion {index + 1}</h4>
-                             <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                                <DetailRow label="First Name" value={companion.firstName} />
-                                <DetailRow label="Last Name" value={companion.lastName} />
-                                <DetailRow label="ID Front" value={
-                                    <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                        <FileText className="mr-2 h-4 w-4" />View Document</Button>
-                                } isButton/>
-                                <DetailRow label="ID Back" value={
-                                    <Button variant="outline" size="sm" className="w-full sm:w-fit justify-start">
-                                        <FileText className="mr-2 h-4 w-4" />View Document</Button>
-                                } isButton/>
-                             </div>
-                        </div>
-                    ))}
+                    <p className="text-sm text-muted-foreground">Companion details will be available after the guest completes the form.</p>
                 </div>
 
                  {/* Administrative Details */}
@@ -154,14 +131,19 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                         <h3 className="font-semibold text-lg">Administrative Booking Details</h3>
                     </div>
                     <Separator />
-                     <div className="space-y-4 pt-2">
-                        <h4 className="font-medium">Room 1</h4>
-                        <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
-                            <DetailRow label="Room Type" value={booking.administrative.room1.type} />
-                            <DetailRow label="Room Number" value={booking.administrative.room1.number} />
-                            <DetailRow label="Room Status" value={booking.administrative.room1.status} />
+                    {booking.rooms.map((room, index) => (
+                         <div key={index} className="space-y-4 pt-2">
+                            <h4 className="font-medium">Room {index + 1}</h4>
+                            <div className="grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] items-center gap-x-4 gap-y-2">
+                                <DetailRow label="Room Type" value={room.roomType} />
+                                <DetailRow label="Adults" value={`${room.adults}`} />
+                                <DetailRow label="Children" value={`${room.children}`} />
+                                <DetailRow label="Infants" value={`${room.infants}`} />
+                                <DetailRow label="Room Number" value={"Not assigned"} />
+                                <DetailRow label="Room Status" value={"Clean"} />
+                            </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </CardContent>
         </Card>

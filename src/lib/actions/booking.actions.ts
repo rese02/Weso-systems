@@ -161,7 +161,11 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
         
         const bookings = snapshot.docs.map(doc => {
             const data = doc.data();
-            return { id: doc.id, ...data } as Booking;
+            // Ensure createdAt and updatedAt are Timestamps for consistent sorting later
+            const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : new Timestamp(0, 0);
+            const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt : createdAt;
+
+            return { id: doc.id, ...data, createdAt, updatedAt } as Booking;
         });
         
         return { success: true, bookings };

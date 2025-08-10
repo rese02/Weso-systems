@@ -9,7 +9,7 @@ import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Dat
 import { getBookingsForHotel } from '@/lib/actions/booking.actions';
 import type { Booking, BookingStatus } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 const StatCard = ({ title, value, description, icon: Icon, isLoading, valuePrefix = '' }: { title: string, value: string, description: string, icon: React.ElementType, isLoading: boolean, valuePrefix?: string }) => (
@@ -75,18 +75,20 @@ export default function HotelierDashboardPage() {
     const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
     const pendingActions = allBookings.filter(b => b.status === 'Sent' || b.status === 'Submitted').length;
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.priceTotal, 0);
+    const arrivalsToday = allBookings.filter(b => b.status === 'Confirmed' && isToday(parseISO(b.checkIn))).length;
+
 
     return { 
         totalRevenue: totalRevenue.toFixed(2),
         totalBookings: allBookings.length,
-        confirmedBookings: confirmedBookings.length,
+        arrivalsToday: arrivalsToday,
         pendingActions
     };
   }, [allBookings]);
   
   const recentActivities = useMemo(() => {
     return [...allBookings]
-      .sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0))
+      .sort((a, b) => (b.updatedAt?.toMillis() || b.createdAt.toMillis()) - (a.updatedAt?.toMillis() || a.createdAt.toMillis()))
       .slice(0, 3);
   }, [allBookings]);
 
@@ -101,7 +103,7 @@ export default function HotelierDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Gesamtumsatz" value={stats.totalRevenue} valuePrefix="€ " description="Aus bestätigten Buchungen" icon={Euro} isLoading={isLoading} />
             <StatCard title="Gesamtbuchungen" value={String(stats.totalBookings)} description="Alle Zeiten" icon={BookCopy} isLoading={isLoading} />
-            <StatCard title="Bestätigte Buchungen" value={String(stats.confirmedBookings)} description="Bereit zur Anreise" icon={CheckCircle2} isLoading={isLoading} />
+            <StatCard title="Heutige Anreisen" value={String(stats.arrivalsToday)} description="Bestätigt für heute" icon={CheckCircle2} isLoading={isLoading} />
             <StatCard title="Ausstehende Aktionen" value={String(stats.pendingActions)} description="Warten auf Gastdaten/Bestätigung" icon={Clock} isLoading={isLoading} />
         </div>
         
@@ -167,5 +169,3 @@ export default function HotelierDashboardPage() {
        </div>
     </div>
   );
-
-    

@@ -16,7 +16,7 @@ export default function CreateBookingPage() {
                      <h1 className="text-3xl font-bold font-headline md:text-4xl">Neue Buchung erstellen</h1>
                      <p className="text-muted-foreground">Füllen Sie die Felder aus, um eine neue Buchung anzulegen und einen Gast-Link zu generieren.</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} aria-label="Zurück zum Dashboard">
+                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/bookings')} aria-label="Zurück zum Dashboard">
                     <XIcon className="h-5 w-5" />
                 </Button>
             </div>

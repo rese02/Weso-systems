@@ -19,6 +19,7 @@ export interface Booking {
   // State and Metadata
   status: BookingStatus;
   createdAt: Timestamp;
+  updatedAt?: Timestamp; // Added for tracking last modification
   submittedAt?: Timestamp;
   bookingLinkId?: string;
   guestLanguage?: string;

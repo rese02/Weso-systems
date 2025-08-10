@@ -118,8 +118,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
   }), [checkInDateValue, checkOutDateValue]);
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
-    form.setValue("checkInDate", range?.from, { shouldValidate: true, shouldDirty: true });
-    form.setValue("checkOutDate", range?.to, { shouldValidate: true, shouldDirty: true });
+    if (range?.from) form.setValue("checkInDate", range.from, { shouldValidate: true, shouldDirty: true });
+    if (range?.to) form.setValue("checkOutDate", range.to, { shouldValidate: true, shouldDirty: true });
   };
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (formData) => {

@@ -9,7 +9,7 @@ export interface Hotel {
   name: string;
   ownerEmail: string;
   domain: string;
-  createdAt?: Timestamp; 
+  createdAt?: string; // Changed to string for serialization
 }
 
 export interface RoomDetails {
@@ -26,9 +26,9 @@ export interface Booking {
   id: string;
   hotelId: string;
   status: BookingStatus;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
-  submittedAt?: Timestamp;
+  createdAt: string; // Changed to string for serialization
+  updatedAt?: string; // Changed to string for serialization
+  submittedAt?: string; // Changed to string for serialization
   bookingLinkId?: string;
   guestLanguage?: string;
   checkIn: string; // ISO String

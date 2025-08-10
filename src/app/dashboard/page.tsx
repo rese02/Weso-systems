@@ -37,7 +37,7 @@ const SystemStatusItem = ({ name, icon: Icon }: { name: string, icon: React.Elem
 );
 
 const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string }) => {
-    const updatedAt = booking.updatedAt ? format(booking.updatedAt.toDate(), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.createdAt as unknown as string), 'dd.M.yyyy', { locale: de });
+    const updatedAt = booking.updatedAt ? format(parseISO(booking.updatedAt), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.createdAt), 'dd.M.yyyy', { locale: de });
     const guestName = booking.firstName && booking.lastName ? `${booking.firstName} ${booking.lastName}` : `ID ${booking.id.substring(0, 6).toUpperCase()}`;
     return (
         <Link href={`/dashboard/bookings/${booking.id}?hotelId=${hotelId}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md">
@@ -107,8 +107,8 @@ export default function HotelierDashboardPage() {
   const recentActivities = useMemo(() => {
     // Ensure createdAt is a Date object for sorting if updatedAt is missing
     const sortedBookings = [...allBookings].sort((a, b) => {
-        const dateA = a.updatedAt ? a.updatedAt.toMillis() : new Date(a.createdAt as any).getTime();
-        const dateB = b.updatedAt ? b.updatedAt.toMillis() : new Date(b.createdAt as any).getTime();
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.createdAt).getTime();
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.createdAt).getTime();
         return dateB - dateA;
     });
     return sortedBookings.slice(0, 3);
@@ -144,7 +144,7 @@ export default function HotelierDashboardPage() {
                     <CardDescription>Führen Sie gängige Aufgaben schnell aus.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                    <Button size="lg" className="justify-start bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40" asChild>
+                    <Button size="lg" className="justify-start bg-accent hover:bg-accent/90" asChild>
                          <Link href={`/dashboard/create-booking?hotelId=${hotelId}`}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Neue Buchung erstellen

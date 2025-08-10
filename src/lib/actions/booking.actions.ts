@@ -160,9 +160,18 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
         
         const bookings = snapshot.docs.map(doc => {
             const data = doc.data();
+            // Convert Timestamp fields to ISO strings for serialization
+            const serializableData: { [key: string]: any } = {};
+            for (const key in data) {
+                if (data[key] instanceof Timestamp) {
+                    serializableData[key] = data[key].toDate().toISOString();
+                } else {
+                    serializableData[key] = data[key];
+                }
+            }
             return { 
                 id: doc.id,
-                ...data,
+                ...serializableData,
              } as Booking;
         });
         
@@ -188,7 +197,17 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
             return { success: false, error: "Booking not found." };
         }
         
-        const booking = { id: snapshot.id, ...snapshot.data() } as Booking;
+        const data = snapshot.data();
+        const serializableData: { [key: string]: any } = {};
+        for (const key in data) {
+            if (data[key] instanceof Timestamp) {
+                serializableData[key] = data[key].toDate().toISOString();
+            } else {
+                serializableData[key] = data[key];
+            }
+        }
+        
+        const booking = { id: snapshot.id, ...serializableData } as Booking;
         
         return { success: true, booking: booking };
 

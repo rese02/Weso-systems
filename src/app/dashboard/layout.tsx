@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   BookCopy,
@@ -42,19 +43,19 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Bookings">
-                  <Link href="/dashboard/bookings">
-                    <BookCopy />
-                    <span>Buchungen</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="New Booking">
                   <Link href="/dashboard/create-booking">
                     <PlusCircle />
                     <span>Neue Buchung</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Bookings">
+                  <Link href="/dashboard/bookings">
+                    <BookCopy />
+                    <span>Buchungen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -78,3 +79,5 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
+
+    

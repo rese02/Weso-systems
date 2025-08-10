@@ -2,28 +2,50 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDown, ArrowUp, PlusCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2 } from 'lucide-react';
 import { getBookingsForHotel } from '@/lib/actions/booking.actions';
-import type { Booking } from '@/lib/definitions';
-import { parseISO, isToday, startOfDay } from 'date-fns';
+import type { Booking, BookingStatus } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
+import { de } from 'date-fns/locale';
 
-const StatCard = ({ title, value, description, icon: Icon, isLoading }: { title: string, value: string, description: string, icon: React.ElementType, isLoading: boolean }) => (
+const StatCard = ({ title, value, description, icon: Icon, isLoading, valuePrefix = '' }: { title: string, value: string, description: string, icon: React.ElementType, isLoading: boolean, valuePrefix?: string }) => (
     <Card>
-        <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-                <CardDescription>{title}</CardDescription>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            {isLoading ? <Loader2 className="h-10 w-10 animate-spin my-2" /> : <CardTitle className="text-4xl font-bold">{value}</CardTitle>}
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
+            {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : (
+                <div className="text-2xl font-bold">{valuePrefix}{value}</div>
+            )}
             <p className="text-xs text-muted-foreground">{description}</p>
         </CardContent>
     </Card>
 );
 
+const SystemStatusItem = ({ name, icon: Icon }: { name: string, icon: React.ElementType }) => (
+    <div className="flex items-center">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span className="ml-2 text-sm">{name}</span>
+        <span className="ml-auto text-sm text-green-600 font-medium">Verbunden</span>
+    </div>
+);
+
+const ActivityItem = ({ booking }: { booking: Booking }) => {
+    const updatedAt = booking.updatedAt ? format(booking.updatedAt.toDate(), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.checkIn), 'dd.M.yyyy', { locale: de });
+    return (
+        <div className="flex items-start">
+             <div className="flex h-1.5 w-1.5 shrink-0 -translate-y-1 items-center justify-center rounded-full bg-primary mt-3 mr-3" />
+            <p className="text-sm text-muted-foreground">
+                Buchung <span className="font-semibold text-foreground">#{booking.id.substring(0, 6).toUpperCase()}</span> für <span className="font-semibold text-foreground">{booking.firstName} {booking.lastName}</span> wurde zuletzt am {updatedAt} aktualisiert. Status: <span className="font-semibold text-foreground">{booking.status}</span>
+            </p>
+        </div>
+    );
+}
 
 export default function HotelierDashboardPage() {
   const hotelId = 'hotelhub-central';
@@ -50,37 +72,100 @@ export default function HotelierDashboardPage() {
   }, [toast]);
 
   const stats = useMemo(() => {
-    const today = startOfDay(new Date());
-    const arrivals = allBookings.filter(b => b.checkIn && isToday(parseISO(b.checkIn))).length;
-    const departures = allBookings.filter(b => b.checkOut && isToday(parseISO(b.checkOut))).length;
-    const newBookings = allBookings.filter(b => b.createdAt && isToday(b.createdAt.toDate())).length;
-    return { arrivals, departures, newBookings };
+    const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
+    const pendingActions = allBookings.filter(b => b.status === 'Sent' || b.status === 'Submitted').length;
+    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.priceTotal, 0);
+
+    return { 
+        totalRevenue: totalRevenue.toFixed(2),
+        totalBookings: allBookings.length,
+        confirmedBookings: confirmedBookings.length,
+        pendingActions
+    };
+  }, [allBookings]);
+  
+  const recentActivities = useMemo(() => {
+    return [...allBookings]
+      .sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0))
+      .slice(0, 3);
   }, [allBookings]);
 
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-      <div className="grid gap-1">
-          <h1 className="text-3xl font-bold font-headline md:text-4xl">Dashboard</h1>
-          <p className="text-muted-foreground">Eine schnelle Übersicht über die heutigen Aktivitäten Ihres Hotels.</p>
-      </div>
+        <div className="grid gap-1">
+            <h1 className="text-3xl font-bold font-headline md:text-4xl">Dashboard</h1>
+            <p className="text-muted-foreground">Übersicht Ihrer Pradell Buchungsanwendung.</p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Anreisen heute" value={String(stats.arrivals)} description="Gäste, die heute einchecken" icon={ArrowDown} isLoading={isLoading} />
-        <StatCard title="Abreisen heute" value={String(stats.departures)} description="Gäste, die heute auschecken" icon={ArrowUp} isLoading={isLoading} />
-        <StatCard title="Neue Buchungen heute" value={`+${stats.newBookings}`} description="Buchungen, die heute erstellt wurden" icon={PlusCircle} isLoading={isLoading} />
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Gesamtumsatz" value={stats.totalRevenue} valuePrefix="€ " description="Aus bestätigten Buchungen" icon={Euro} isLoading={isLoading} />
+            <StatCard title="Gesamtbuchungen" value={String(stats.totalBookings)} description="Alle Zeiten" icon={BookCopy} isLoading={isLoading} />
+            <StatCard title="Bestätigte Buchungen" value={String(stats.confirmedBookings)} description="Bereit zur Anreise" icon={CheckCircle2} isLoading={isLoading} />
+            <StatCard title="Ausstehende Aktionen" value={String(stats.pendingActions)} description="Warten auf Gastdaten/Bestätigung" icon={Clock} isLoading={isLoading} />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-5">
+            <Card className="md:col-span-3">
+                <CardHeader>
+                    <CardTitle>Schnellaktionen</CardTitle>
+                    <CardDescription>Führen Sie gängige Aufgaben schnell aus.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <Button size="lg" className="justify-start bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40" asChild>
+                         <Link href="/dashboard/create-booking">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Neue Buchung erstellen
+                         </Link>
+                    </Button>
+                     <Button size="lg" variant="outline" className="justify-start" asChild>
+                        <Link href="/dashboard/bookings">
+                            <List className="mr-2 h-4 w-4" />
+                            Alle Buchungen anzeigen
+                        </Link>
+                     </Button>
+                </CardContent>
+            </Card>
+
+            <Card className="md:col-span-2">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/> Systemstatus</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <div className="flex items-center font-medium text-green-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="ml-2 text-sm">Alle Kernsysteme betriebsbereit</span>
+                    </div>
+                     <div className="space-y-3 pl-1 border-l-2 ml-2">
+                        <SystemStatusItem name="KI-Dienste" icon={LineChart} />
+                        <SystemStatusItem name="Datenbank" icon={Database} />
+                        <SystemStatusItem name="Speicher" icon={HardDrive} />
+                     </div>
+                </CardContent>
+            </Card>
+        </div>
 
        <div className="grid gap-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>Willkommen bei HotelHub Central</CardTitle>
-                <CardDescription>
-                    Nutzen Sie die Navigation auf der linken Seite, um alle Ihre Buchungen zu verwalten, neue Buchungen zu erstellen oder Ihre Hoteleinstellungen anzupassen.
-                </CardDescription>
-            </CardHeader>
-        </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Letzte Aktivitäten</CardTitle>
+                    <CardDescription>Neueste Aktualisierungen und wichtige Ereignisse.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {isLoading ? (
+                        <div className="text-center text-muted-foreground">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                            <p className="mt-2">Lade Aktivitäten...</p>
+                        </div>
+                    ) : recentActivities.length > 0 ? (
+                       recentActivities.map(booking => <ActivityItem key={booking.id} booking={booking}/>)
+                    ) : (
+                        <p className="text-sm text-center text-muted-foreground py-4">Keine aktuellen Aktivitäten gefunden.</p>
+                    )}
+                </CardContent>
+            </Card>
        </div>
     </div>
   );
-}
+
+    

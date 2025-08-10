@@ -37,7 +37,8 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        const q = query(hotelsCollectionRef, orderBy('createdAt', 'desc'));
+        // Removing the orderBy clause to prevent crashes if old documents are missing the 'createdAt' field.
+        const q = query(hotelsCollectionRef);
         const querySnapshot = await getDocs(q);
         const hotels = querySnapshot.docs.map((doc) => ({
             ...doc.data(),

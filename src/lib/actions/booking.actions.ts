@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -16,7 +17,7 @@ const BookingFormSchema = z.object({
   price: z.number(),
   guestLanguage: z.string(),
   rooms: z.array(z.object({
-    roomType: z.string(),
+    roomType: z.string(), // Correctly expect roomType
     adults: z.number().int(),
     children: z.number().int().optional(),
     infants: z.number().int().optional(),

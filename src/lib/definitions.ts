@@ -92,10 +92,9 @@ export const ZIMMERTYP_FORM_OPTIONS: { value: ZimmertypForm; label: string }[] =
   { value: 'Einzelzimmer', label: 'Einzelzimmer' },
 ];
 
-export type GuestLanguage = 'de' | 'en' | 'it' | 'fr';
+export type GuestLanguage = 'de' | 'en' | 'it';
 export const GUEST_LANGUAGE_OPTIONS: { value: GuestLanguage; label: string }[] = [
     { value: 'de', label: 'Deutsch' },
     { value: 'en', label: 'Englisch' },
     { value: 'it', label: 'Italienisch' },
-    { value: 'fr', label: 'Französisch' },
 ];

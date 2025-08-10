@@ -18,7 +18,7 @@ import { Separator } from '../ui/separator';
 import type { BookingLink } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
-import { storage, db } from '@/lib/firebase';
+import { storage, db } from '@/lib/firebase.client'; // <--- CORRECTED IMPORT
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Timestamp, doc, updateDoc, writeBatch } from 'firebase/firestore';
 
@@ -218,7 +218,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
                     });
                 }, 
                 (error) => {
-                    console.error(`Upload failed for ${upload.name}:`, error);
+                    console.error(`Upload failed for ${upload.name}:`, error.code, error.message);
                     reject(error)
                 }, 
                 () => {
@@ -343,5 +343,3 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     </form>
   );
 }
-
-    

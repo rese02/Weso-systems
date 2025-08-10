@@ -19,7 +19,7 @@ export interface RoomDetails {
   adults: number;
   children: number;
   infants: number;
-  childrenAges: number[];
+  childrenAges?: number[];
 }
 
 export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';
@@ -49,11 +49,12 @@ export interface Booking {
 }
 
 export interface BookingPrefill {
-    roomType: string;
     checkIn: string; // ISO date string
     checkOut: string; // ISO date string
+    boardType: string;
     priceTotal: number;
     bookingId: string;
+    rooms: RoomDetails[];
 }
 
 export interface BookingLink {

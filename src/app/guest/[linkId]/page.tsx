@@ -7,11 +7,10 @@ import { Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
 import type { BookingLinkWithHotel } from '@/lib/definitions';
-import { useParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function GuestBookingPage() {
-  const params = use(useParams());
-  const linkId = Array.isArray(params.linkId) ? params.linkId[0] : params.linkId;
+export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
+  const { linkId } = use(paramsPromise);
   
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +64,15 @@ export default function GuestBookingPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-4 mb-8 text-center">
-            <Building2 className="h-12 w-12 text-destructive" />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Ungültiger Link</h1>
-            <p className="text-muted-foreground max-w-md">{error}</p>
-        </div>
+        <Card className="w-full max-w-md text-center">
+            <CardHeader>
+                <Building2 className="h-12 w-12 text-destructive mx-auto" />
+                <CardTitle className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Ungültiger Link</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground max-w-md">{error}</p>
+            </CardContent>
+        </Card>
       </div>
     )
   }
@@ -78,9 +81,9 @@ export default function GuestBookingPage() {
     <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
       <div className="flex flex-col items-center gap-4 mb-8 text-center">
         <Building2 className="h-12 w-12 text-primary" />
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Booking for {linkData?.hotelName}</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Buchung für {linkData?.hotelName}</h1>
         <p className="text-muted-foreground max-w-md">
-          Complete the steps below to finalize your reservation.
+          Vervollständigen Sie die folgenden Schritte, um Ihre Reservierung abzuschließen.
         </p>
       </div>
       {linkData && <BookingForm prefillData={linkData.prefill} linkId={linkData.id} hotelId={linkData.hotelId} />}

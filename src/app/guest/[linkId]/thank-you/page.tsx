@@ -2,29 +2,27 @@
 import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function ThankYouPage() {
   return (
     <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="mt-4 text-2xl font-bold font-headline">Thank You!</CardTitle>
+          <CardTitle className="mt-4 text-2xl font-bold font-headline">Vielen Dank!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Your booking has been successfully confirmed. A confirmation email with all the details has been sent to your address.
-          </p>
+          <CardDescription>
+            Ihre Buchungsdaten wurden erfolgreich an das Hotel übermittelt. Sie erhalten in Kürze eine Bestätigungs-E-Mail mit allen Details.
+          </CardDescription>
           <Button asChild>
-            <Link href="/">Back to Homepage</Link>
+            <Link href="/">Zur Startseite</Link>
           </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    

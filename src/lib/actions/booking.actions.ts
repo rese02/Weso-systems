@@ -65,11 +65,12 @@ export async function createBookingWithLink(
         const now = new Date();
         
         const prefill: BookingPrefill = {
-            roomType: newBooking.rooms[0]?.roomType || 'Standard',
             checkIn: newBooking.checkIn,
             checkOut: newBooking.checkOut,
+            boardType: newBooking.boardType,
             priceTotal: newBooking.priceTotal,
             bookingId: newBookingRef.id,
+            rooms: newBooking.rooms,
         };
 
         const newLink: Omit<BookingLink, 'id'> = {
@@ -256,23 +257,30 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-    const q = query(linksCollectionGroup, where(doc(collectionGroup(db, 'bookingLinks'), linkId).id, '==', linkId), limit(1));
-
     let linkDoc;
     // This is a workaround for development environments where collection group queries
     // can be slow to index. In production, the first branch should almost always work.
+    try {
+        const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
+        const q = query(linksCollectionGroup, where('__name__', '==', linkId), limit(1));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            linkDoc = querySnapshot.docs[0];
+        }
+    } catch (e) {
+        // Fallback for environments where collectionGroup queries might fail or be slow
+        console.warn("Collection group query failed, using fallback. This may be slow.", e);
+    }
     
-    // The collectionGroup query seems to have issues in some emulated environments.
-    // A more robust, albeit less efficient, fallback is to iterate.
-    // This should only be hit if the collection group index is not yet ready.
-    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-    for (const hotelDoc of hotelsSnapshot.docs) {
-        const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
-        const potentialLinkSnap = await getDoc(potentialLinkRef);
-        if (potentialLinkSnap.exists()) {
-            linkDoc = potentialLinkSnap;
-            break;
+    if (!linkDoc) {
+        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+        for (const hotelDoc of hotelsSnapshot.docs) {
+            const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
+            const potentialLinkSnap = await getDoc(potentialLinkRef);
+            if (potentialLinkSnap.exists()) {
+                linkDoc = potentialLinkSnap;
+                break;
+            }
         }
     }
 

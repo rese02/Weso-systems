@@ -6,18 +6,19 @@ import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query,
 import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, RoomDetails } from '@/lib/definitions';
 import { addDays } from 'date-fns';
+import { ZIMMERTYP_FORM_OPTIONS } from '../definitions';
 
-// Schema for booking creation form
+// Schema for booking creation form - This runs on the server!
 const BookingFormSchema = z.object({
   guestFirstName: z.string().min(1),
   guestLastName: z.string().min(1),
-  checkInDate: z.date(),
-  checkOutDate: z.date(),
+  checkInDate: z.date(), // Expect a Date object from the form
+  checkOutDate: z.date(), // Expect a Date object from the form
   verpflegungsart: z.string(),
   price: z.number(),
   guestLanguage: z.string(),
   rooms: z.array(z.object({
-    roomType: z.string(), // Correctly expect roomType
+    roomType: z.enum(ZIMMERTYP_FORM_OPTIONS.map(o => o.value) as [string, ...string[]]),
     adults: z.number().int(),
     children: z.number().int().optional(),
     infants: z.number().int().optional(),
@@ -39,6 +40,13 @@ export async function createBookingWithLink(
         return { success: false, error: "Hotel ID is required." };
     }
 
+    const validation = BookingFormSchema.safeParse(bookingData);
+    if (!validation.success) {
+        return { success: false, error: `Validation failed: ${validation.error.message}` };
+    }
+    
+    const validatedData = validation.data;
+
     const batch = writeBatch(db);
 
     try {
@@ -49,15 +57,15 @@ export async function createBookingWithLink(
             hotelId,
             status: 'Sent', // 'Sent' because we are creating a link right away
             createdAt: Timestamp.now(),
-            firstName: bookingData.guestFirstName,
-            lastName: bookingData.guestLastName,
-            checkIn: bookingData.checkInDate.toISOString(),
-            checkOut: bookingData.checkOutDate.toISOString(),
-            boardType: bookingData.verpflegungsart,
-            priceTotal: bookingData.price,
-            internalNotes: bookingData.interneBemerkungen,
-            guestLanguage: bookingData.guestLanguage,
-            rooms: bookingData.rooms.map(r => ({
+            firstName: validatedData.guestFirstName,
+            lastName: validatedData.guestLastName,
+            checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
+            checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
+            boardType: validatedData.verpflegungsart,
+            priceTotal: validatedData.price,
+            internalNotes: validatedData.interneBemerkungen,
+            guestLanguage: validatedData.guestLanguage,
+            rooms: validatedData.rooms.map(r => ({
                 roomType: r.roomType,
                 adults: r.adults,
                 children: r.children || 0,
@@ -115,20 +123,27 @@ export async function updateBooking(
     if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
+    
+    const validation = BookingFormSchema.safeParse(bookingData);
+    if (!validation.success) {
+        return { success: false, error: `Validation failed: ${validation.error.message}` };
+    }
+    
+    const validatedData = validation.data;
 
     try {
         const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
 
         const updatedBookingData = {
-            firstName: bookingData.guestFirstName,
-            lastName: bookingData.guestLastName,
-            checkIn: bookingData.checkInDate.toISOString(),
-            checkOut: bookingData.checkOutDate.toISOString(),
-            boardType: bookingData.verpflegungsart,
-            priceTotal: bookingData.price,
-            internalNotes: bookingData.interneBemerkungen,
-            guestLanguage: bookingData.guestLanguage,
-            rooms: bookingData.rooms.map(r => ({
+            firstName: validatedData.guestFirstName,
+            lastName: validatedData.guestLastName,
+            checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
+            checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
+            boardType: validatedData.verpflegungsart,
+            priceTotal: validatedData.price,
+            internalNotes: validatedData.interneBemerkungen,
+            guestLanguage: validatedData.guestLanguage,
+            rooms: validatedData.rooms.map(r => ({
                 roomType: r.roomType,
                 adults: r.adults,
                 children: r.children || 0,

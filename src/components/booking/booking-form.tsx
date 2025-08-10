@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Timestamp, doc, updateDoc, collectionGroup, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { Timestamp, doc, updateDoc, writeBatch } from 'firebase/firestore';
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
 
@@ -201,8 +201,8 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
 
   const uploadFile = (upload: FileUpload): Promise<{name: string, url: string}> => {
         return new Promise((resolve, reject) => {
-            if (!hotelId || !linkId) return reject("Missing hotel or link ID");
-            const filePath = `hotels/${hotelId}/bookings/${prefillData?.bookingId}/${upload.name}-${upload.file.name}`;
+            if (!hotelId || !linkId || !prefillData?.bookingId) return reject("Missing hotel, link or booking ID");
+            const filePath = `hotels/${hotelId}/bookings/${prefillData.bookingId}/public/${linkId}/${upload.name}-${upload.file.name}`;
             const storageRef = ref(storage, filePath);
             const uploadTask = uploadBytesResumable(storageRef, upload.file);
 

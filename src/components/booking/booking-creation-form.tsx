@@ -20,33 +20,11 @@ import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect } from 'react';
 import type { Booking } from '@/lib/definitions';
-import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues } from '@/lib/definitions';
+import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues, bookingFormSchema } from '@/lib/definitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
 
-const roomSchema = z.object({
-  roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
-  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0, "Anzahl Erwachsene darf nicht negativ sein."),
-  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
-  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
-  childrenAges: z.array(z.number()).optional(),
-});
-
-const bookingFormSchema = z.object({
-  firstName: z.string().min(1, 'Vorname ist erforderlich'),
-  lastName: z.string().min(1, 'Nachname ist erforderlich'),
-  checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
-  checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
-  verpflegungsart: z.string(),
-  price: z.coerce.number({invalid_type_error: "Preis muss eine Zahl sein."}).min(0, 'Preis muss eine positive Zahl sein'),
-  guestLanguage: z.string(),
-  rooms: z.array(roomSchema).min(1, "Mindestens ein Zimmer muss hinzugefügt werden."),
-  interneBemerkungen: z.string().max(500, "Bemerkungen dürfen max. 500 Zeichen lang sein.").optional(),
-}).refine(data => data.checkOutDate > data.checkInDate, {
-  message: "Abreisedatum muss nach dem Anreisedatum liegen.",
-  path: ["checkOutDate"],
-});
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 

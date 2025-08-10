@@ -61,7 +61,7 @@ export type BookingLinkWithHotel = BookingLink & { hotelName: string };
 
 // --- Form Schemas and Options ---
 
-// For the Admin/Hotelier Booking Creation/Edit Form
+// Schema for the Admin/Hotelier Booking Creation/Edit Form
 export const roomFormSchema = z.object({
   roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
   adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0),
@@ -78,9 +78,13 @@ export const bookingFormSchema = z.object({
   verpflegungsart: z.string(),
   price: z.coerce.number(),
   guestLanguage: z.string(),
-  rooms: z.array(roomFormSchema),
-  interneBemerkungen: z.string().optional(),
+  rooms: z.array(roomFormSchema).min(1, "Mindestens ein Zimmer muss hinzugefügt werden."),
+  interneBemerkungen: z.string().max(500, "Bemerkungen dürfen max. 500 Zeichen lang sein.").optional(),
+}).refine(data => data.checkOutDate > data.checkInDate, {
+  message: "Abreisedatum muss nach dem Anreisedatum liegen.",
+  path: ["checkOutDate"],
 });
+
 
 export type BookingFormValues = z.infer<typeof bookingFormSchema>;
 export type RoomDetailsFormValues = z.infer<typeof roomFormSchema>;

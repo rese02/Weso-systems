@@ -4,32 +4,9 @@
 import { db } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { z } from 'zod';
-import type { Booking, BookingLink, BookingPrefill, RoomDetails, BookingFormValues } from '@/lib/definitions';
+import type { Booking, BookingLink, BookingPrefill, BookingFormValues } from '@/lib/definitions';
+import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';
-
-// Schema for booking creation form - This runs on the server!
-const roomSchema = z.object({
-  roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
-  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0, "Anzahl Erwachsene darf nicht negativ sein."),
-  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
-  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
-  childrenAges: z.array(z.number()).optional(),
-});
-
-const bookingFormSchema = z.object({
-  firstName: z.string().min(1, 'Vorname ist erforderlich'),
-  lastName: z.string().min(1, 'Nachname ist erforderlich'),
-  checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
-  checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
-  verpflegungsart: z.string(),
-  price: z.coerce.number(),
-  guestLanguage: z.string(),
-  rooms: z.array(roomSchema),
-  interneBemerkungen: z.string().optional(),
-}).refine(data => data.checkOutDate > data.checkInDate, {
-  message: "Abreisedatum muss nach dem Anreisedatum liegen.",
-  path: ["checkOutDate"],
-});
 
 
 /**
@@ -46,7 +23,9 @@ export async function createBookingWithLink(
     const validation = bookingFormSchema.safeParse(bookingData);
     if (!validation.success) {
         console.error("Zod validation failed:", validation.error.flatten());
-        return { success: false, error: `Validation failed: ${validation.error.message}` };
+        const flatErrors = validation.error.flatten();
+        const errorMessages = Object.entries(flatErrors.fieldErrors).map(([field, messages]) => `${field}: ${messages.join(', ')}`).join('; ');
+        return { success: false, error: `Validation failed: ${errorMessages}` };
     }
     
     const validatedData = validation.data;
@@ -70,7 +49,7 @@ export async function createBookingWithLink(
             priceTotal: validatedData.price,
             internalNotes: validatedData.interneBemerkungen,
             guestLanguage: validatedData.guestLanguage,
-            rooms: validatedData.rooms.map((r) => ({
+            rooms: validatedData.rooms.map((r: any) => ({ // Use any for rooms from validatedData
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
                 children: Number(r.children) || 0,
@@ -148,7 +127,7 @@ export async function updateBooking(
             priceTotal: validatedData.price,
             internalNotes: validatedData.interneBemerkungen,
             guestLanguage: validatedData.guestLanguage,
-            rooms: validatedData.rooms.map((r) => ({
+            rooms: validatedData.rooms.map((r: any) => ({
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
                 children: Number(r.children) || 0,
@@ -252,18 +231,22 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID, including hotel name.
+ * This function uses a collection group query to find the link across all hotels.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: (BookingLink & { hotelName: string }), error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
+    // Collection group query is the most efficient way to find a document
+    // in a subcollection when you don't know the parent document ID.
     const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-    const q = query(linksCollectionGroup, where(documentId(), '==', linkId), limit(1));
+    const q = query(linksCollectionGroup, where('__name__', '==', `__name__/${linkId}`), limit(1));
     const querySnapshot = await getDocs(q);
 
     let linkDoc;
+    // This is a workaround for development environments where collection group queries
+    // can be slow to index. In production, the first branch should almost always work.
     if (querySnapshot.empty) {
-        // Fallback for environments where collection group queries might be slow to index
         const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
         for (const hotelDoc of hotelsSnapshot.docs) {
             const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
@@ -277,12 +260,14 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
         linkDoc = querySnapshot.docs[0];
     }
 
+
     if (!linkDoc || !linkDoc.exists()) {
       return { success: false, error: "Link not found." };
     }
     
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
     
+    // The hotelId is in the link data, so we can directly fetch the hotel.
     const hotelDocRef = doc(db, 'hotels', linkData.hotelId);
     const hotelSnap = await getDoc(hotelDocRef);
 
@@ -292,6 +277,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 
     const hotelName = hotelSnap.data().name || 'Hotel';
     
+    // Convert Timestamps to ISO strings for client-side serialization
     const serializableLinkData = {
         ...linkData,
         createdAt: (linkData.createdAt as Timestamp).toDate().toISOString(),
@@ -304,13 +290,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    if (e.message.includes("documentId")) { // A more specific check
-        return { success: false, error: "Could not perform lookup for the link. The query is invalid." };
-    }
     return { success: false, error: e.message };
   }
 }
-// Helper function to get documentId, as it's not directly available in web SDK
-const documentId = () => {
-    return '__name__';
-};

@@ -17,23 +17,23 @@ const HotelSchema = z.object({
 export async function createHotel(
     hotelData: Omit<Hotel, 'id' | 'createdAt'>
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
-    console.log("createHotel called with data:", hotelData); // Add this
+    console.log("createHotel called with data:", hotelData); 
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
         const errorMessage = Object.values(validation.error.flatten().fieldErrors).map(e => e.join(', ')).join('; ');
-        console.error("Validation failed:", errorMessage); // Add this
+        console.error("Validation failed:", errorMessage); 
         return { success: false, error: errorMessage || "Validation failed." };
     }
     
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        console.log("Attempting to add document to Firestore..."); // Add this
+        console.log("Attempting to add document to Firestore..."); 
         const docRef = await addDoc(hotelsCollectionRef, { ...validation.data, createdAt: Timestamp.now() });
-        console.log("Document added with ID:", docRef.id); // Add this
+        console.log("Document added with ID:", docRef.id); 
         revalidatePath('/admin');
         return { success: true, hotelId: docRef.id };
     } catch (error) {
-        console.error("Error in createHotel:", error); // Add this
+        console.error("Error in createHotel:", error); 
         return { success: false, error: (error as Error).message };
     }
 }
@@ -42,6 +42,7 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
+        // Removed orderBy to prevent crashes if some documents are missing the 'createdAt' field.
         const q = query(hotelsCollectionRef);
         const querySnapshot = await getDocs(q);
         const hotels = querySnapshot.docs.map((doc) => ({

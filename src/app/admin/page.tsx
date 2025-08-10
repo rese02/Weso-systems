@@ -35,11 +35,31 @@ export default async function AdminDashboardPage() {
   }
 
   if (error) {
-    return <div className="text-destructive">Error loading hotels: {error}</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Error</CardTitle>
+          <CardDescription>Could not load hotel data.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-destructive">{error}</p>
+        </CardContent>
+      </Card>
+    );
   }
   
   if (!hotels) {
-      return <div>Loading hotels...</div>;
+      return (
+        <Card>
+           <CardHeader>
+                <CardTitle>Loading...</CardTitle>
+                <CardDescription>Fetching hotel data.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p>Please wait.</p>
+            </CardContent>
+        </Card>
+      );
   }
 
   return (
@@ -76,7 +96,7 @@ export default async function AdminDashboardPage() {
               {hotels.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
-                        No hotels created yet.
+                        No hotels created yet. <Link href="/admin/create-hotel" className="font-medium text-primary underline">Create one now</Link>.
                     </TableCell>
                 </TableRow>
               ) : (
@@ -106,7 +126,7 @@ export default async function AdminDashboardPage() {
                             <DropdownMenuItem asChild><Link href={`/dashboard/settings?hotelId=${hotel.id}`}>Edit Settings</Link></DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Delete</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete</DropdownMenuItem>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>

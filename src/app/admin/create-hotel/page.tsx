@@ -52,7 +52,7 @@ export default function CreateHotelPage() {
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
     const hotelData = {
-      name: formData.get('hotel-name') as string,
+      name: formData.get('name') as string,
       ownerEmail: formData.get('email') as string,
       domain: formData.get('domain') as string,
     };
@@ -112,7 +112,7 @@ export default function CreateHotelPage() {
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
               <Label htmlFor="hotel-name">Hotel Name</Label>
-              <Input id="hotel-name" name="hotel-name" placeholder="e.g., Hotel Paradise" />
+              <Input id="hotel-name" name="name" placeholder="e.g., Hotel Paradise" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="domain">Domain or Subdomain</Label>

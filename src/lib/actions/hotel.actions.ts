@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -25,7 +25,13 @@ export async function createHotel(
     
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        const docRef = await addDoc(hotelsCollectionRef, { ...validation.data, createdAt: Timestamp.now() });
+        const docRef = await addDoc(hotelsCollectionRef, { 
+            ...validation.data, 
+            createdAt: Timestamp.now(),
+            // Default settings for a new hotel
+            boardTypes: ['Breakfast', 'Half-Board', 'Full-Board'],
+            roomCategories: ['Single Room', 'Double Room', 'Suite']
+        });
         revalidatePath('/admin');
         return { success: true, hotelId: docRef.id };
     } catch (error) {
@@ -34,27 +40,21 @@ export async function createHotel(
 }
 
 
-export async function getHotels(): Promise<{ hotels?: any[]; error?: string }> {
+export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        const q = query(hotelsCollectionRef);
+        const q = query(hotelsCollectionRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         
         const hotels = querySnapshot.docs.map((doc) => {
             const data = doc.data();
             return {
-                ...data,
                 id: doc.id,
-                // Convert Timestamp to a serializable format (ISO string)
-                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : null,
-            };
-        });
-
-        // Sort in code to handle documents without createdAt gracefully
-        hotels.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
+                name: data.name,
+                ownerEmail: data.ownerEmail,
+                domain: data.domain,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
+            } as Hotel;
         });
         
         return { hotels };
@@ -81,7 +81,7 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
 }
 
 
-export async function getHotelById(hotelId: string): Promise<{ hotel?: Hotel, error?: string }> {
+export async function getHotelById(hotelId: string): Promise<{ hotel?: any, error?: string }> {
     if (!hotelId) return { error: "Hotel ID is required." };
     try {
         const hotelRef = doc(db, 'hotels', hotelId);
@@ -96,11 +96,38 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: Hotel, er
             id: snapshot.id, 
             ...data,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
-        } as Hotel;
+        };
 
         return { hotel };
     } catch (error) {
         console.error("Error fetching hotel by ID:", error);
         return { error: (error as Error).message };
     }
+}
+
+const SettingsSchema = z.object({
+    name: z.string().min(1, 'Hotel name is required.'),
+    boardTypes: z.array(z.string()).optional(),
+    roomCategories: z.array(z.string()).optional(),
+});
+
+export async function updateHotelSettings(hotelId: string, settings: any): Promise<{success: boolean, error?: string}> {
+    if(!hotelId) return { success: false, error: 'Hotel ID is required.'};
+
+    const validation = SettingsSchema.safeParse(settings);
+    if (!validation.success) {
+        return { success: false, error: 'Validation failed.' };
+    }
+
+    try {
+        const hotelRef = doc(db, 'hotels', hotelId);
+        await updateDoc(hotelRef, validation.data);
+        revalidatePath(`/dashboard/${hotelId}/settings`);
+        revalidatePath(`/dashboard/${hotelId}`);
+
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: (error as Error).message };
+    }
+
 }

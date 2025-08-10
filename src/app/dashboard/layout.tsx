@@ -41,7 +41,7 @@ export default async function DashboardLayout({
       <SidebarProvider>
         <Sidebar>
           <SidebarHeader>
-            <div className="flex flex-col text-sidebar-foreground">
+            <div className="flex flex-col text-sidebar-foreground p-2">
               <span className="text-lg font-bold font-headline">{hotel.name}</span>
             </div>
           </SidebarHeader>

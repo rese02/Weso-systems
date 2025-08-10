@@ -155,7 +155,7 @@ export default function BookingsListPage({ params }: { params: { hotelId: string
                 <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
             </Button>
-            <Button asChild className="bg-accent hover:bg-accent/90">
+            <Button asChild>
                 <Link href={`/dashboard/${hotelId}/create-booking`}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Create New Booking

@@ -3,10 +3,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2 } from 'lucide-react';
+import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2, Users } from 'lucide-react';
 import { getBookingsForHotel } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
@@ -30,17 +30,17 @@ const StatCard = ({ title, value, description, icon: Icon, isLoading, valuePrefi
 
 const SystemStatusItem = ({ name, icon: Icon }: { name: string, icon: React.ElementType }) => (
     <div className="flex items-center">
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 text-primary" />
         <span className="ml-2 text-sm">{name}</span>
-        <span className="ml-auto text-sm text-green-600 font-medium">Verbunden</span>
+        <span className="ml-auto text-sm text-primary font-medium">Verbunden</span>
     </div>
 );
 
 const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string }) => {
-    const updatedAt = booking.updatedAt ? format(parseISO(booking.updatedAt), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.createdAt), 'dd.M.yyyy', { locale: de });
+    const updatedAt = booking.updatedAt ? format(parseISO(booking.updatedAt), 'dd. M. yyyy', { locale: de }) : format(parseISO(booking.createdAt), 'dd. M. yyyy', { locale: de });
     const guestName = booking.firstName && booking.lastName ? `${booking.firstName} ${booking.lastName}` : `ID ${booking.id.substring(0, 6).toUpperCase()}`;
     return (
-        <Link href={`/dashboard/${hotelId}/bookings/${booking.id}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md">
+        <Link href={`/dashboard/${hotelId}/bookings/${booking.id}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md transition-colors">
              <div className="flex h-1.5 w-1.5 shrink-0 -translate-y-1 items-center justify-center rounded-full bg-primary mt-3 mr-3" />
             <p className="text-sm text-muted-foreground">
                 Buchung für <span className="font-semibold text-foreground">{guestName}</span> wurde zuletzt am {updatedAt} aktualisiert. Status: <span className="font-semibold text-foreground">{booking.status}</span>
@@ -49,9 +49,10 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
     );
 }
 
-export default function HotelierDashboardPage({ params }: { params: { hotelId: string }}) {
+export default function HotelierDashboardPage() {
   const router = useRouter();
-  const hotelId = params.hotelId;
+  const params = useParams();
+  const hotelId = Array.isArray(params.hotelId) ? params.hotelId[0] : params.hotelId;
 
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,8 +141,8 @@ export default function HotelierDashboardPage({ params }: { params: { hotelId: s
                     <CardTitle>Schnellaktionen</CardTitle>
                     <CardDescription>Führen Sie gängige Aufgaben schnell aus.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4">
-                    <Button size="lg" className="justify-start bg-accent hover:bg-accent/90" asChild>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <Button size="lg" className="justify-start" asChild>
                          <Link href={`/dashboard/${hotelId}/create-booking`}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Neue Buchung erstellen
@@ -161,11 +162,11 @@ export default function HotelierDashboardPage({ params }: { params: { hotelId: s
                     <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/> Systemstatus</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                    <div className="flex items-center font-medium text-green-600">
+                    <div className="flex items-center font-medium text-primary">
                         <CheckCircle2 className="h-4 w-4" />
-                        <span className="ml-2 text-sm">Alle Kernsysteme betriebsbereit</span>
+                        <span className="ml-2 text-sm">Alle Systeme betriebsbereit</span>
                     </div>
-                     <div className="space-y-3 pl-1 border-l-2 ml-2">
+                     <div className="space-y-3 pl-1 border-l-2 ml-2 border-primary/20">
                         <SystemStatusItem name="KI-Dienste" icon={LineChart} />
                         <SystemStatusItem name="Datenbank" icon={Database} />
                         <SystemStatusItem name="Speicher" icon={HardDrive} />

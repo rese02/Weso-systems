@@ -10,6 +10,8 @@ export interface Hotel {
   ownerEmail: string;
   domain: string;
   createdAt?: string; // Changed to string for serialization
+  boardTypes?: string[];
+  roomCategories?: string[];
 }
 
 export interface RoomDetails {

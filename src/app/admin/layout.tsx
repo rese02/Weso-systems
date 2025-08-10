@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   PlusCircle,
   ShieldCheck,
-  User,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -31,7 +30,7 @@ export default function AdminLayout({
         <Sidebar>
           <SidebarHeader>
             <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
-              <Building2 className="h-6 w-6 text-primary" />
+              <Building2 className="h-6 w-6 text-sidebar-primary" />
               <span className="text-lg font-bold font-headline">WESO B-system</span>
             </Link>
           </SidebarHeader>

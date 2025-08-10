@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2 } from 'lucide-react';
@@ -51,13 +51,15 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
 
 export default function HotelierDashboardPage() {
   const searchParams = useSearchParams();
-  const hotelId = searchParams.get('hotelId') || 'hotelhub-central'; // Fallback for direct access
+  const router = useRouter();
+  const hotelId = searchParams.get('hotelId');
 
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
+    if (!hotelId) return;
     setIsLoading(true);
     const result = await getBookingsForHotel(hotelId);
     if (result.success && result.bookings) {
@@ -73,8 +75,19 @@ export default function HotelierDashboardPage() {
   }, [hotelId, toast]);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    if (!hotelId) {
+       // In a real app, you might get the hotelId from auth context if the URL param is missing.
+       // For now, we redirect to the admin page to select a hotel.
+       toast({
+        variant: "destructive",
+        title: "Kein Hotel ausgewählt",
+        description: "Bitte wählen Sie ein Hotel aus dem Admin-Bereich.",
+      });
+      router.push('/admin');
+    } else {
+        fetchBookings();
+    }
+  }, [hotelId, fetchBookings, toast, router]);
 
   const stats = useMemo(() => {
     const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
@@ -92,11 +105,23 @@ export default function HotelierDashboardPage() {
   }, [allBookings]);
   
   const recentActivities = useMemo(() => {
-    return [...allBookings]
-      .sort((a, b) => (b.updatedAt?.toMillis() || (b.createdAt as unknown as Timestamp).toMillis()) - (a.updatedAt?.toMillis() || (a.createdAt as unknown as Timestamp).toMillis()))
-      .slice(0, 3);
+    // Ensure createdAt is a Date object for sorting if updatedAt is missing
+    const sortedBookings = [...allBookings].sort((a, b) => {
+        const dateA = a.updatedAt ? a.updatedAt.toMillis() : new Date(a.createdAt as any).getTime();
+        const dateB = b.updatedAt ? b.updatedAt.toMillis() : new Date(b.createdAt as any).getTime();
+        return dateB - dateA;
+    });
+    return sortedBookings.slice(0, 3);
   }, [allBookings]);
 
+  if (!hotelId) {
+    return (
+         <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" /> 
+            <span className="ml-2">Kein Hotel ausgewählt. Umleitung...</span>
+        </div>
+    )
+  }
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
@@ -174,3 +199,5 @@ export default function HotelierDashboardPage() {
        </div>
     </div>
   );
+
+    

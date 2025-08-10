@@ -343,3 +343,5 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
     </form>
   );
 }
+
+    

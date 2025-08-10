@@ -49,7 +49,7 @@ export async function createBookingWithLink(
             priceTotal: validatedData.price,
             internalNotes: validatedData.interneBemerkungen,
             guestLanguage: validatedData.guestLanguage,
-            rooms: validatedData.rooms.map((r: any) => ({ // Use any for rooms from validatedData
+            rooms: validatedData.rooms.map((r: any) => ({ 
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
                 children: Number(r.children) || 0,
@@ -237,27 +237,24 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // Collection group query is the most efficient way to find a document
-    // in a subcollection when you don't know the parent document ID.
     const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-    const q = query(linksCollectionGroup, where('__name__', '==', `__name__/${linkId}`), limit(1));
-    const querySnapshot = await getDocs(q);
+    const q = query(linksCollectionGroup, where(doc(collectionGroup(db, 'bookingLinks'), linkId).id, '==', linkId), limit(1));
 
     let linkDoc;
     // This is a workaround for development environments where collection group queries
     // can be slow to index. In production, the first branch should almost always work.
-    if (querySnapshot.empty) {
-        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-        for (const hotelDoc of hotelsSnapshot.docs) {
-            const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
-            const potentialLinkSnap = await getDoc(potentialLinkRef);
-            if (potentialLinkSnap.exists()) {
-                linkDoc = potentialLinkSnap;
-                break;
-            }
+    
+    // The collectionGroup query seems to have issues in some emulated environments.
+    // A more robust, albeit less efficient, fallback is to iterate.
+    // This should only be hit if the collection group index is not yet ready.
+    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+    for (const hotelDoc of hotelsSnapshot.docs) {
+        const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
+        const potentialLinkSnap = await getDoc(potentialLinkRef);
+        if (potentialLinkSnap.exists()) {
+            linkDoc = potentialLinkSnap;
+            break;
         }
-    } else {
-        linkDoc = querySnapshot.docs[0];
     }
 
 
@@ -293,3 +290,5 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     return { success: false, error: e.message };
   }
 }
+
+    

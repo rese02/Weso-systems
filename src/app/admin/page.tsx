@@ -113,7 +113,6 @@ export default async function AdminDashboardPage() {
                         {hotel.createdAt ? format(hotel.createdAt.toDate(), 'PPP') : 'N/A'}
                     </TableCell>
                     <TableCell>
-                      <form>
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -126,7 +125,7 @@ export default async function AdminDashboardPage() {
                             <DropdownMenuItem asChild><Link href={`/dashboard/settings?hotelId=${hotel.id}`}>Edit Settings</Link></DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete</DropdownMenuItem>
+                                    <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
@@ -136,14 +135,15 @@ export default async function AdminDashboardPage() {
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction formAction={async () => { "use server"; await handleDelete(hotel.id); }}>Delete</AlertDialogAction>
+                                      <form action={async () => { "use server"; await handleDelete(hotel.id); }}>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction type="submit">Delete</AlertDialogAction>
+                                      </form>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>
                         </DropdownMenu>
-                      </form>
                     </TableCell>
                     </TableRow>
                 ))

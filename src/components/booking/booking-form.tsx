@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -14,14 +15,12 @@ import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
-import type { BookingPrefill } from '@/hooks/use-booking-links';
-import { useBookingLinks } from '@/hooks/use-booking-links';
+import type { BookingLink } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Timestamp, doc, updateDoc } from 'firebase/firestore';
-
+import { Timestamp, doc, updateDoc, collectionGroup, query, where, getDocs, writeBatch } from 'firebase/firestore';
 
 const steps = ['Details', 'Guest Info', 'Payment', 'Review'];
 
@@ -32,7 +31,7 @@ type FileUpload = {
     name: string;
 }
 
-const Step1Details = ({ prefillData }: { prefillData?: BookingPrefill | null }) => {
+const Step1Details = ({ prefillData }: { prefillData?: BookingLink['prefill'] | null }) => {
     const [checkInDate, setCheckInDate] = useState<Date | undefined>(
         prefillData?.checkIn ? parseISO(prefillData.checkIn) : undefined
     );
@@ -147,7 +146,7 @@ const Step3Payment = ({ onFileUpload }: { onFileUpload: (name: string, file: Fil
     </div>
 );
 
-const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<string, FileUpload>, formData: any, prefillData?: BookingPrefill | null }) => (
+const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<string, FileUpload>, formData: any, prefillData?: BookingLink['prefill'] | null }) => (
      <div className="space-y-6">
         <div>
             <h3 className="text-lg font-bold font-headline">Review Your Booking</h3>
@@ -179,13 +178,12 @@ const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<strin
 );
 
 
-export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: BookingPrefill | null, linkId?: string, hotelId?: string }) {
+export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: BookingLink['prefill'] | null, linkId?: string, hotelId?: string }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
   const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { markAsUsed } = useBookingLinks(hotelId || 'unused');
   const { toast } = useToast();
 
   const handleFileUpload = (name: string, file: File) => {
@@ -204,7 +202,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
   const uploadFile = (upload: FileUpload): Promise<{name: string, url: string}> => {
         return new Promise((resolve, reject) => {
             if (!hotelId || !linkId) return reject("Missing hotel or link ID");
-            const filePath = `hotels/${hotelId}/bookings/${linkId}/${upload.name}-${upload.file.name}`;
+            const filePath = `hotels/${hotelId}/bookings/${prefillData?.bookingId}/${upload.name}-${upload.file.name}`;
             const storageRef = ref(storage, filePath);
             const uploadTask = uploadBytesResumable(storageRef, upload.file);
 
@@ -225,7 +223,6 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
                 }, 
                 () => {
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                        console.log(`File ${upload.name} available at`, downloadURL);
                         setUploads(prev => {
                            const newUploads = {...prev};
                            if (newUploads[upload.name]) {
@@ -263,9 +260,11 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
         if (!prefillData.bookingId) {
             throw new Error("Booking ID is missing from prefill data.");
         }
-        
-        const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
 
+        const batch = writeBatch(db);
+        
+        // 1. Update booking document
+        const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
         const updateData: any = {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -274,9 +273,14 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             submittedAt: Timestamp.now(),
             documents: uploadedFileMap,
         };
+        batch.update(bookingDocRef, updateData);
+
+        // 2. Update booking link status
+        const linkDocRef = doc(db, `hotels/${hotelId}/bookingLinks`, linkId);
+        batch.update(linkDocRef, { status: 'used' });
         
-        await updateDoc(bookingDocRef, updateData);
-        await markAsUsed(linkId, hotelId);
+        // 3. Commit batch
+        await batch.commit();
 
         toast({
             title: "Booking Submitted!",

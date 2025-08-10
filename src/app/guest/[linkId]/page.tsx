@@ -1,63 +1,48 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Building2 } from 'lucide-react';
-import { useBookingLinks } from '@/hooks/use-booking-links';
-import type { BookingLink } from '@/hooks/use-booking-links';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
+import type { BookingLinkWithHotel } from '@/lib/definitions';
+import { useParams } from 'next/navigation';
 
-export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
-  const [hotelName, setHotelName] = useState('Your Hotel');
-  const { linkId } = params;
-  const [linkData, setLinkData] = useState<BookingLink | null>(null);
+export default function GuestBookingPage() {
+  const params = useParams();
+  const linkId = Array.isArray(params.linkId) ? params.linkId[0] : params.linkId;
+  
+  const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLinkAndHotel = async () => {
+    const fetchLinkDetails = async () => {
       if (!linkId) {
-        setError('No booking link provided.');
+        setError('Kein Buchungslink angegeben.');
         setIsLoading(false);
         return;
       }
 
-      try {
-        const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-        const q = query(linksCollectionGroup, where('__name__', '==', linkId), limit(1));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-          const linkDoc = querySnapshot.docs[0];
-          const fetchedLink = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
-          
-          if (fetchedLink.status === 'used') {
-            setError('This booking link has already been used.');
-          } else if (new Date() > fetchedLink.expiresAt.toDate()) {
-            setError('This booking link has expired.');
-          } else {
-            setLinkData(fetchedLink);
-            // Now fetch hotel data using the hotelId from the link
-            const hotelDocRef = doc(db, 'hotels', fetchedLink.hotelId);
-            const hotelSnap = await getDoc(hotelDocRef);
-            if (hotelSnap.exists()) {
-                setHotelName(hotelSnap.data().name);
-            }
-          }
+      setIsLoading(true);
+      const result = await getBookingLinkDetails(linkId);
+      
+      if (result.success && result.data) {
+        if (result.data.status === 'used') {
+          setError('Dieser Buchungslink wurde bereits verwendet.');
+        } else if (new Date() > new Date(result.data.expiresAt)) {
+          setError('Dieser Buchungslink ist abgelaufen.');
         } else {
-          setError('Invalid booking link.');
+          setLinkData(result.data);
         }
-      } catch (e) {
-        console.error(e);
-        setError('An error occurred while validating the link.');
-      } finally {
-        setIsLoading(false);
+      } else {
+        setError(result.error || 'Ungültiger oder nicht gefundener Buchungslink.');
       }
+      setIsLoading(false);
     };
 
-    fetchLinkAndHotel();
+    fetchLinkDetails();
   }, [linkId]);
 
 
@@ -82,7 +67,7 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
       <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4 mb-8 text-center">
             <Building2 className="h-12 w-12 text-destructive" />
-            <h1 className="text-4xl font-bold font-headline">Invalid Link</h1>
+            <h1 className="text-4xl font-bold font-headline">Ungültiger Link</h1>
             <p className="text-muted-foreground max-w-md">{error}</p>
         </div>
       </div>
@@ -93,7 +78,7 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
     <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
       <div className="flex flex-col items-center gap-4 mb-8 text-center">
         <Building2 className="h-12 w-12 text-primary" />
-        <h1 className="text-4xl font-bold font-headline">Booking for {hotelName}</h1>
+        <h1 className="text-4xl font-bold font-headline">Booking for {linkData?.hotelName}</h1>
         <p className="text-muted-foreground max-w-md">
           Complete the steps below to finalize your reservation.
         </p>

@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2 } from 'lucide-react';
-import { useBookings } from '@/hooks/use-bookings';
+import { getBookingsForHotel } from '@/lib/actions/booking.actions';
+import type { Booking } from '@/lib/definitions';
 import { format, parseISO } from 'date-fns';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'destructive' } = {
     'Confirmed': 'default',
@@ -19,6 +22,7 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'des
     'Pending': 'destructive',
     'Submitted': 'outline',
     'Open': 'secondary',
+    'Sent': 'outline',
 };
 
 const DetailRow = ({ label, value, isButton = false }: { label: string, value: string | React.ReactNode, isButton?: boolean }) => (
@@ -31,9 +35,30 @@ const DetailRow = ({ label, value, isButton = false }: { label: string, value: s
 export default function BookingDetailsPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const hotelId = 'hotelhub-central'; 
-  const { bookings, isLoading } = useBookings(hotelId);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
-  const booking = bookings.find(b => b.id === bookingId);
+  useEffect(() => {
+    const fetchBooking = async () => {
+        if (!bookingId) return;
+        setIsLoading(true);
+        const result = await getBookingsForHotel(hotelId);
+        if (result.success && result.bookings) {
+            const foundBooking = result.bookings.find(b => b.id === bookingId);
+            if(foundBooking) {
+                setBooking(foundBooking);
+            } else {
+                 toast({ variant: "destructive", title: "Error", description: "Booking not found." });
+            }
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        }
+        setIsLoading(false);
+    }
+    fetchBooking();
+  }, [bookingId, toast]);
+
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /> <span>Loading booking details...</span></div>;

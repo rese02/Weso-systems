@@ -2,12 +2,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowUp, ArrowDown, CheckCircle2, Clock, CircleOff, Search, Copy, Send } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowUp, ArrowDown, CheckCircle2, Clock, CircleOff, Search, Copy, Send, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,11 +24,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useBookingLinks } from '@/hooks/use-booking-links';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
-import { useBookings } from '@/hooks/use-bookings';
-import type { Booking } from '@/hooks/use-bookings';
+import { deleteBooking, getBookingsForHotel } from '@/lib/actions/booking.actions';
+import type { Booking } from '@/lib/definitions';
 
 
 const statusConfig: { [key: string]: { variant: 'default' | 'secondary' | 'destructive' | 'outline', icon: React.ElementType, label: string } } = {
@@ -58,11 +57,31 @@ const StatCard = ({ title, value, description, icon: Icon }: { title: string, va
 
 export default function HotelierDashboardPage() {
   const hotelId = 'hotelhub-central'; // In a real app, get this from auth context
-  const { bookings, isLoading, removeBooking, updateBooking } = useBookings(hotelId);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
-  const { addLinkFromBooking } = useBookingLinks(hotelId);
   const { toast } = useToast();
   const router = useRouter();
+
+  const fetchBookings = async () => {
+    setIsLoading(true);
+    const result = await getBookingsForHotel(hotelId);
+    if (result.success && result.bookings) {
+      setBookings(result.bookings);
+    } else {
+      toast({
+        title: "Fehler beim Laden",
+        description: result.error || "Buchungen konnten nicht geladen werden.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -81,23 +100,29 @@ export default function HotelierDashboardPage() {
   };
 
   const handleDeleteSelected = async () => {
-    try {
-        await Promise.all(selectedBookings.map(id => removeBooking(id)));
-        setSelectedBookings([]);
-        toast({
-            title: "Bookings Deleted",
-            description: "The selected bookings have been successfully deleted.",
-        });
-    } catch (error) {
-         toast({
-            variant: "destructive",
-            title: "Error",
-            description: "The bookings could not be deleted.",
-        });
+    const promises = selectedBookings.map(id => deleteBooking({ bookingId: id, hotelId }));
+    const results = await Promise.all(promises);
+    
+    const failedDeletions = results.filter(r => !r.success);
+
+    if (failedDeletions.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Fehler beim Löschen",
+        description: `${failedDeletions.length} Buchung(en) konnten nicht gelöscht werden.`,
+      });
+    } else {
+       toast({
+          title: "Buchungen gelöscht",
+          description: "Die ausgewählten Buchungen wurden erfolgreich gelöscht.",
+      });
     }
+    
+    setSelectedBookings([]);
+    await fetchBookings();
   }
 
-  const handleCopyLink = async (booking: Booking) => {
+  const handleCopyLink = (booking: Booking) => {
      const getBaseUrl = () => {
         if (typeof window !== 'undefined') {
             return window.location.origin;
@@ -105,36 +130,21 @@ export default function HotelierDashboardPage() {
         return '';
     }
     
-    try {
-        let linkId = booking.bookingLinkId;
-
-        if (!linkId) {
-            const prefillData = {
-                roomType: booking.rooms[0]?.roomType || 'Standard',
-                checkIn: booking.checkIn,
-                checkOut: booking.checkOut,
-                priceTotal: booking.priceTotal,
-                bookingId: booking.id,
-            };
-            const newLink = await addLinkFromBooking(prefillData, 7, booking.id);
-            linkId = newLink.id;
-            await updateBooking(booking.id, { bookingLinkId: linkId, status: 'Sent' });
-        }
-
-        const fullLink = `${getBaseUrl()}/guest/${linkId}`;
-        await navigator.clipboard.writeText(fullLink);
-        toast({
-            title: "Link Copied",
-            description: "The booking link for the guest has been copied to your clipboard.",
-        });
-    } catch (error) {
-        console.error("Could not create or copy the link:", error);
+    if (!booking.bookingLinkId) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "The link could not be created or copied.",
+            title: "Fehler",
+            description: "Für diese Buchung existiert kein Link. Möglicherweise wurde sie noch nicht gespeichert.",
         });
+        return;
     }
+
+    const fullLink = `${getBaseUrl()}/guest/${booking.bookingLinkId}`;
+    navigator.clipboard.writeText(fullLink);
+    toast({
+        title: "Link kopiert",
+        description: "Der Buchungslink für den Gast wurde in die Zwischenablage kopiert.",
+    });
   }
 
   const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
@@ -148,8 +158,8 @@ export default function HotelierDashboardPage() {
               <p className="text-muted-foreground">Manage all your bookings here.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={fetchBookings} disabled={isLoading}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
             </Button>
             <Button asChild className="bg-accent hover:bg-accent/90">
@@ -237,7 +247,7 @@ export default function HotelierDashboardPage() {
               {isLoading ? (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                        Loading bookings...
+                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                     </TableCell>
                 </TableRow>
               ) : bookings.length === 0 ? (
@@ -259,7 +269,7 @@ export default function HotelierDashboardPage() {
                                 aria-label={`Select booking ${booking.id}`}
                             />
                         </TableCell>
-                        <TableCell className="font-medium">{guestName || booking.email || "N/A"}</TableCell>
+                        <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
                         <TableCell>{format(parseISO(booking.checkIn), 'dd.MM.yyyy')}</TableCell>
                         <TableCell>{format(parseISO(booking.checkOut), 'dd.MM.yyyy')}</TableCell>
                         <TableCell>
@@ -277,7 +287,7 @@ export default function HotelierDashboardPage() {
                                         <span className="sr-only">View Details</span>
                                     </Link>
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)}>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}>
                                     <Copy className="h-4 w-4" />
                                     <span className="sr-only">Copy Booking Link</span>
                                 </Button>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, type SubmitHandler, useFieldArray } from 'react-hook-form';
@@ -92,8 +91,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
       form.reset({
         guestFirstName: existingBooking.firstName || '',
         guestLastName: existingBooking.lastName || '',
-        checkInDate: parseISO(existingBooking.checkIn),
-        checkOutDate: parseISO(existingBooking.checkOut),
+        checkInDate: existingBooking.checkIn ? parseISO(existingBooking.checkIn) : undefined,
+        checkOutDate: existingBooking.checkOut ? parseISO(existingBooking.checkOut) : undefined,
         verpflegungsart: existingBooking.boardType,
         price: existingBooking.priceTotal,
         guestLanguage: existingBooking.guestLanguage || 'de',
@@ -124,6 +123,12 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (formData) => {
     setIsLoading(true);
+
+    if (!formData.checkInDate || !formData.checkOutDate) {
+        toast({ variant: 'destructive', title: 'Fehler', description: 'Bitte An- und Abreisedatum auswählen.'});
+        setIsLoading(false);
+        return;
+    }
     
     const action = isEditMode && existingBooking
         ? updateBooking({ hotelId, bookingId: existingBooking.id, bookingData: formData })

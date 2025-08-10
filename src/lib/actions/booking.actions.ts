@@ -17,11 +17,11 @@ const BookingFormSchema = z.object({
   price: z.number(),
   guestLanguage: z.string(),
   rooms: z.array(z.object({
-    zimmertyp: z.string(),
+    roomType: z.string(),
     adults: z.number().int(),
     children: z.number().int().optional(),
     infants: z.number().int().optional(),
-    kinderAlter: z.string().optional(),
+    childrenAges: z.array(z.number()).optional(),
   })),
   interneBemerkungen: z.string().optional(),
 });
@@ -58,11 +58,11 @@ export async function createBookingWithLink(
             internalNotes: bookingData.interneBemerkungen,
             guestLanguage: bookingData.guestLanguage,
             rooms: bookingData.rooms.map(r => ({
-                roomType: r.zimmertyp,
+                roomType: r.roomType,
                 adults: r.adults,
                 children: r.children || 0,
                 infants: r.infants || 0,
-                childrenAges: r.kinderAlter?.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age)) || [],
+                childrenAges: r.childrenAges || [],
             })),
             // bookingLinkId will be set later
         };
@@ -105,6 +105,49 @@ export async function createBookingWithLink(
     }
 }
 
+
+/**
+ * Updates an existing booking.
+ */
+export async function updateBooking(
+    { hotelId, bookingId, bookingData }: { hotelId: string, bookingId: string, bookingData: BookingFormValues }
+): Promise<{ success: boolean; error?: string }> {
+    if (!hotelId || !bookingId) {
+        return { success: false, error: "Hotel ID and Booking ID are required." };
+    }
+
+    try {
+        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+
+        const updatedBookingData = {
+            firstName: bookingData.guestFirstName,
+            lastName: bookingData.guestLastName,
+            checkIn: bookingData.checkInDate.toISOString(),
+            checkOut: bookingData.checkOutDate.toISOString(),
+            boardType: bookingData.verpflegungsart,
+            priceTotal: bookingData.price,
+            internalNotes: bookingData.interneBemerkungen,
+            guestLanguage: bookingData.guestLanguage,
+            rooms: bookingData.rooms.map(r => ({
+                roomType: r.roomType,
+                adults: r.adults,
+                children: r.children || 0,
+                infants: r.infants || 0,
+                childrenAges: r.childrenAges || [],
+            })),
+            updatedAt: Timestamp.now(), // Add an update timestamp
+        };
+        
+        await updateDoc(bookingRef, updatedBookingData);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating booking:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+
 /**
  * Fetches all bookings for a given hotel.
  */
@@ -118,7 +161,6 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
         
         const bookings = snapshot.docs.map(doc => {
             const data = doc.data();
-            // Ensure timestamps are converted to serializable format if needed, though we parse on client
             return { id: doc.id, ...data } as Booking;
         });
         
@@ -137,12 +179,9 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
     try {
-        // In a real app, you would also delete related data like the bookingLink or files in storage.
-        // This often requires a Cloud Function for cascading deletes.
         const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
         await deleteDoc(bookingRef);
         
-        // Also delete the associated booking link if it exists
         const linkQuery = query(collection(db, `hotels/${hotelId}/bookingLinks`), where("bookingId", "==", bookingId));
         const linkSnapshot = await getDocs(linkQuery);
         if (!linkSnapshot.empty) {
@@ -160,25 +199,17 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID, including hotel name.
- * This uses a collectionGroup query to find the link across all hotels,
- * which is less secure if link IDs aren't globally unique, but simpler for now.
- * A better approach would be to have the hotel identifier in the URL.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: (BookingLink & { hotelName: string }), error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // This query is inefficient and potentially insecure in a large multi-tenant app.
-    // It scans all bookingLinks across all hotels.
-    // A better URL structure would be /guest/{hotelId}/{linkId}
     const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-    const q = query(linksCollectionGroup, where(document.id, '==', linkId), limit(1));
+    const q = query(linksCollectionGroup, where('__name__', '==', `/${linkId}`), limit(1));
     const querySnapshot = await getDocs(q);
-    
-    // Fallback in case the above query fails due to path complexities with document.id
+
     let linkDoc;
     if (querySnapshot.empty) {
-        // This is a workaround and VERY inefficient. Not for production.
         const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
         for (const hotelDoc of hotelsSnapshot.docs) {
             const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
@@ -207,7 +238,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 
     const hotelName = hotelSnap.data().name || 'Hotel';
     
-    // Convert Timestamps to ISO strings for client-side usage
     const serializableLinkData = {
         ...linkData,
         createdAt: (linkData.createdAt as Timestamp).toDate().toISOString(),
@@ -219,8 +249,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 
   } catch (error) {
     console.error("Error fetching link details:", error);
-    // Firestore's `document.id` cannot be used in `where` clauses. This is a known limitation.
-    // The error message will likely be "Invalid query." We provide a more user-friendly message.
     if (error instanceof Error && error.message.includes("Invalid query")) {
         return { success: false, error: "Could not perform lookup for the link. The query is invalid." };
     }

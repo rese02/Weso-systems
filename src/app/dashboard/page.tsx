@@ -2,12 +2,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowUp, ArrowDown, CheckCircle2, Clock, CircleOff, Search, Copy, Send, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, ArrowDown, ArrowUp, CheckCircle2, Clock, CircleOff, Search, Copy, Send, Loader2, Edit } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,22 +22,23 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isToday, startOfDay } from 'date-fns';
 import { deleteBooking, getBookingsForHotel } from '@/lib/actions/booking.actions';
-import type { Booking } from '@/lib/definitions';
+import type { Booking, BookingStatus } from '@/lib/definitions';
 
 
-const statusConfig: { [key: string]: { variant: 'default' | 'secondary' | 'destructive' | 'outline', icon: React.ElementType, label: string } } = {
+const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary' | 'destructive' | 'outline', icon: React.ElementType, label: string } } = {
     'Open': { variant: 'secondary', icon: CircleOff, label: 'Open' },
     'Sent': { variant: 'outline', icon: Send, label: 'Sent' },
     'Submitted': { variant: 'outline', icon: Clock, label: 'Submitted' },
     'Confirmed': { variant: 'default', icon: CheckCircle2, label: 'Confirmed' },
     'Cancelled': { variant: 'destructive', icon: CircleOff, label: 'Cancelled' },
+    'Checked-in': { variant: 'outline', icon: CheckCircle2, label: 'Checked-in' },
+    'Checked-out': { variant: 'secondary', icon: CheckCircle2, label: 'Checked-out' },
     'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Partial Payment' },
-}
+};
 
 const StatCard = ({ title, value, description, icon: Icon }: { title: string, value: string, description: string, icon: React.ElementType }) => (
     <Card>
@@ -56,10 +57,12 @@ const StatCard = ({ title, value, description, icon: Icon }: { title: string, va
 
 
 export default function HotelierDashboardPage() {
-  const hotelId = 'hotelhub-central'; // In a real app, get this from auth context
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const hotelId = 'hotelhub-central'; 
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -67,7 +70,7 @@ export default function HotelierDashboardPage() {
     setIsLoading(true);
     const result = await getBookingsForHotel(hotelId);
     if (result.success && result.bookings) {
-      setBookings(result.bookings);
+      setAllBookings(result.bookings);
     } else {
       toast({
         title: "Fehler beim Laden",
@@ -82,10 +85,28 @@ export default function HotelierDashboardPage() {
     fetchBookings();
   }, []);
 
+  const filteredBookings = useMemo(() => {
+    return allBookings
+      .filter(booking => {
+        const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim().toLowerCase();
+        return guestName.includes(searchTerm.toLowerCase());
+      })
+      .filter(booking => {
+        return statusFilter === 'all' || booking.status === statusFilter;
+      });
+  }, [allBookings, searchTerm, statusFilter]);
+  
+  const stats = useMemo(() => {
+    const today = startOfDay(new Date());
+    const arrivals = allBookings.filter(b => isToday(parseISO(b.checkIn))).length;
+    const departures = allBookings.filter(b => isToday(parseISO(b.checkOut))).length;
+    const newBookings = allBookings.filter(b => isToday(b.createdAt.toDate())).length;
+    return { arrivals, departures, newBookings };
+  }, [allBookings]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedBookings(bookings.map(b => b.id));
+      setSelectedBookings(filteredBookings.map(b => b.id));
     } else {
       setSelectedBookings([]);
     }
@@ -101,53 +122,26 @@ export default function HotelierDashboardPage() {
 
   const handleDeleteSelected = async () => {
     const promises = selectedBookings.map(id => deleteBooking({ bookingId: id, hotelId }));
-    const results = await Promise.all(promises);
-    
-    const failedDeletions = results.filter(r => !r.success);
-
-    if (failedDeletions.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Fehler beim Löschen",
-        description: `${failedDeletions.length} Buchung(en) konnten nicht gelöscht werden.`,
-      });
-    } else {
-       toast({
-          title: "Buchungen gelöscht",
-          description: "Die ausgewählten Buchungen wurden erfolgreich gelöscht.",
-      });
-    }
-    
+    await Promise.all(promises);
+    toast({ title: "Buchungen gelöscht", description: `${selectedBookings.length} Buchung(en) wurden entfernt.` });
     setSelectedBookings([]);
     await fetchBookings();
   }
 
   const handleCopyLink = (booking: Booking) => {
-     const getBaseUrl = () => {
-        if (typeof window !== 'undefined') {
-            return window.location.origin;
-        }
-        return '';
-    }
+     const getBaseUrl = () => window.location.origin;
     
     if (!booking.bookingLinkId) {
-        toast({
-            variant: "destructive",
-            title: "Fehler",
-            description: "Für diese Buchung existiert kein Link. Möglicherweise wurde sie noch nicht gespeichert.",
-        });
+        toast({ variant: "destructive", title: "Fehler", description: "Für diese Buchung existiert kein Link." });
         return;
     }
 
     const fullLink = `${getBaseUrl()}/guest/${booking.bookingLinkId}`;
     navigator.clipboard.writeText(fullLink);
-    toast({
-        title: "Link kopiert",
-        description: "Der Buchungslink für den Gast wurde in die Zwischenablage kopiert.",
-    });
+    toast({ title: "Link kopiert", description: "Der Buchungslink wurde in die Zwischenablage kopiert." });
   }
 
-  const isAllSelected = bookings.length > 0 && selectedBookings.length === bookings.length;
+  const isAllSelected = filteredBookings.length > 0 && selectedBookings.length === filteredBookings.length;
 
 
   return (
@@ -172,9 +166,9 @@ export default function HotelierDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Arrivals Today" value="0" description="(0 bookings) guests are checking in" icon={ArrowDown} />
-        <StatCard title="Departures Today" value="0" description="(0 bookings) guests are checking out" icon={ArrowUp} />
-        <StatCard title="New Bookings" value="+0" description="bookings created today" icon={PlusCircle} />
+        <StatCard title="Arrivals Today" value={String(stats.arrivals)} description={`(${stats.arrivals} bookings) guests are checking in`} icon={ArrowDown} />
+        <StatCard title="Departures Today" value={String(stats.departures)} description={`(${stats.departures} bookings) guests are checking out`} icon={ArrowUp} />
+        <StatCard title="New Bookings" value={`+${stats.newBookings}`} description="bookings created today" icon={PlusCircle} />
       </div>
       
       <Card>
@@ -187,16 +181,17 @@ export default function HotelierDashboardPage() {
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search..." className="pl-8" />
+                        <Input placeholder="Search by name..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
-                    <Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
+                            {Object.entries(statusConfig).map(([key, config]) => (
+                              <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                     {selectedBookings.length > 0 && (
@@ -250,13 +245,13 @@ export default function HotelierDashboardPage() {
                         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                     </TableCell>
                 </TableRow>
-              ) : bookings.length === 0 ? (
+              ) : filteredBookings.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                        No bookings created yet.
+                        {allBookings.length > 0 ? "No bookings match your search." : "No bookings created yet."}
                     </TableCell>
                 </TableRow>
-              ) : (bookings.map((booking) => {
+              ) : (filteredBookings.map((booking) => {
                 const currentStatus = statusConfig[booking.status] || { variant: 'secondary', icon: CircleOff, label: booking.status };
                 const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
 
@@ -281,16 +276,6 @@ export default function HotelierDashboardPage() {
                         <TableCell>{booking.priceTotal.toFixed(2)} €</TableCell>
                         <TableCell>
                             <div className="flex items-center gap-2">
-                                <Button asChild variant="ghost" size="icon">
-                                    <Link href={`/dashboard/bookings/${booking.id}`}>
-                                        <Eye className="h-4 w-4" />
-                                        <span className="sr-only">View Details</span>
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}>
-                                    <Copy className="h-4 w-4" />
-                                    <span className="sr-only">Copy Booking Link</span>
-                                </Button>
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -299,8 +284,9 @@ export default function HotelierDashboardPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Cancel</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}><Eye className="mr-2"/>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}><Edit className="mr-2"/>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}><Copy className="mr-2"/>Copy Link</DropdownMenuItem>
                                 </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>

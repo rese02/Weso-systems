@@ -28,6 +28,7 @@ export async function createHotel(
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
         console.log("Attempting to add document to Firestore..."); 
+        // Corrected: Use validation.data to ensure only validated data is sent to Firestore
         const docRef = await addDoc(hotelsCollectionRef, { ...validation.data, createdAt: Timestamp.now() });
         console.log("Document added with ID:", docRef.id); 
         revalidatePath('/admin');
@@ -42,8 +43,7 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        // Removed orderBy to prevent crashes if some documents are missing the 'createdAt' field.
-        const q = query(hotelsCollectionRef);
+        const q = query(hotelsCollectionRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const hotels = querySnapshot.docs.map((doc) => ({
             ...doc.data(),
@@ -52,7 +52,19 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
         return { hotels };
     } catch (error) {
         console.error("Error fetching hotels:", error);
-        return { error: (error as Error).message };
+        // Fallback for inconsistent data: fetch without ordering if ordering fails
+        try {
+            const hotelsCollectionRef = collection(db, 'hotels');
+            const querySnapshot = await getDocs(hotelsCollectionRef);
+            const hotels = querySnapshot.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+            } as Hotel));
+            return { hotels };
+        } catch (fallbackError) {
+             console.error("Error fetching hotels on fallback:", fallbackError);
+             return { error: (fallbackError as Error).message };
+        }
     }
 }
 
@@ -62,9 +74,6 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         return { success: false, error: 'Hotel ID is required.' };
     }
     try {
-        // Note: In a real-world app, you must implement a Cloud Function to recursively
-        // delete all sub-collections (bookings, bookingLinks, etc.) for this hotel.
-        // Directly deleting a document from the client/server does NOT delete its sub-collections.
         await deleteDoc(doc(db, 'hotels', hotelId));
         revalidatePath('/admin');
         return { success: true };

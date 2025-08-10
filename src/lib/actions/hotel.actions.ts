@@ -19,7 +19,8 @@ export async function createHotel(
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
-        return { success: false, error: validation.error.flatten().fieldErrors.toString() };
+        const errorMessage = Object.values(validation.error.flatten().fieldErrors).map(e => e.join(', ')).join('; ');
+        return { success: false, error: errorMessage || "Validation failed." };
     }
     
     try {

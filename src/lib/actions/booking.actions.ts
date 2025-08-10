@@ -45,9 +45,9 @@ export async function createBookingWithLink(
             lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
             checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
-            boardType: validatedData.verpflegungsart,
-            priceTotal: validatedData.price,
-            internalNotes: validatedData.interneBemerkungen,
+            boardType: validatedData.boardType,
+            priceTotal: validatedData.priceTotal,
+            internalNotes: validatedData.internalNotes,
             guestLanguage: validatedData.guestLanguage,
             rooms: validatedData.rooms.map((r: any) => ({ 
                 roomType: r.roomType || 'Standard',
@@ -123,9 +123,9 @@ export async function updateBooking(
             lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(),
             checkOut: validatedData.checkOutDate.toISOString(),
-            boardType: validatedData.verpflegungsart,
-            priceTotal: validatedData.price,
-            internalNotes: validatedData.interneBemerkungen,
+            boardType: validatedData.boardType,
+            priceTotal: validatedData.priceTotal,
+            internalNotes: validatedData.internalNotes,
             guestLanguage: validatedData.guestLanguage,
             rooms: validatedData.rooms.map((r: any) => ({
                 roomType: r.roomType || 'Standard',
@@ -290,5 +290,3 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     return { success: false, error: e.message };
   }
 }
-
-    

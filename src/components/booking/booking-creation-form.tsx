@@ -54,21 +54,21 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
         lastName: existingBooking.lastName || '',
         checkInDate: existingBooking.checkIn ? parseISO(existingBooking.checkIn) : undefined,
         checkOutDate: existingBooking.checkOut ? parseISO(existingBooking.checkOut) : undefined,
-        verpflegungsart: existingBooking.boardType,
-        price: existingBooking.priceTotal,
+        boardType: existingBooking.boardType,
+        priceTotal: existingBooking.priceTotal,
         guestLanguage: existingBooking.guestLanguage || 'de',
         rooms: existingBooking.rooms.map(r => ({ ...r, childrenAges: r.childrenAges || [] })), // ensure childrenAges is an array
-        interneBemerkungen: existingBooking.internalNotes || '',
+        internalNotes: existingBooking.internalNotes || '',
     } : {
       firstName: '',
       lastName: '',
       checkInDate: undefined,
       checkOutDate: undefined,
-      verpflegungsart: 'Ohne Verpflegung',
-      price: 0,
+      boardType: 'Ohne Verpflegung',
+      priceTotal: 0,
       guestLanguage: 'de',
       rooms: [defaultRoomValues],
-      interneBemerkungen: '',
+      internalNotes: '',
     },
   });
 
@@ -150,8 +150,8 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
           </FormItem>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          <FormField control={form.control} name="verpflegungsart" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Bed className="mr-2 h-4 w-4" />Verpflegung</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Keine" /></SelectTrigger></FormControl> <SelectContent>{VERPFLEGUNGSART_OPTIONS_FORM.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-          <FormField control={form.control} name="price" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Euro className="mr-2 h-4 w-4" />Gesamtpreis (€)</FormLabel> <FormControl><Input type="number" placeholder="0.00" {...field} step="0.01" /></FormControl> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="boardType" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Bed className="mr-2 h-4 w-4" />Verpflegung</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Keine" /></SelectTrigger></FormControl> <SelectContent>{VERPFLEGUNGSART_OPTIONS_FORM.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="priceTotal" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Euro className="mr-2 h-4 w-4" />Gesamtpreis (€)</FormLabel> <FormControl><Input type="number" placeholder="0.00" {...field} step="0.01" /></FormControl> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="guestLanguage" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Languages className="mr-2 h-4 w-4" />Sprache für Gast</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Sprache" /></SelectTrigger></FormControl> <SelectContent>{GUEST_LANGUAGE_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         </div>
         <Separator />
@@ -175,7 +175,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
           <Button type="button" variant="outline" onClick={() => append(defaultRoomValues)} className="w-full md:w-auto"><PlusCircle className="mr-2 h-4 w-4" /> Zimmer hinzufügen</Button>
         </div>
         <Separator />
-        <FormField control={form.control} name="interneBemerkungen" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><MessageSquare className="mr-2 h-4 w-4" />Interne Bemerkungen (Optional)</FormLabel> <FormControl><Textarea placeholder="Zusätzliche Informationen..." {...field} rows={3} /></FormControl> <FormMessage /> </FormItem> )}/>
+        <FormField control={form.control} name="internalNotes" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><MessageSquare className="mr-2 h-4 w-4" />Interne Bemerkungen (Optional)</FormLabel> <FormControl><Textarea placeholder="Zusätzliche Informationen..." {...field} rows={3} /></FormControl> <FormMessage /> </FormItem> )}/>
         <div className="flex justify-end space-x-3 pt-4 border-t">
           <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isLoading}><XIcon className="mr-2 h-4 w-4" /> Abbrechen</Button>
           <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,13 +10,30 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useHotels } from '@/hooks/use-hotels';
 import type { Hotel } from '@/hooks/use-hotels';
-import { Copy } from 'lucide-react';
+import { Copy, PlusCircle, Trash2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function CreateHotelPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { addHotel } = useHotels();
   const [generatedPassword, setGeneratedPassword] = useState('');
+  const [roomCategories, setRoomCategories] = useState(['Single Room', 'Double Room', 'Suite']);
+
+  const addRoomCategory = () => {
+    setRoomCategories([...roomCategories, '']);
+  };
+
+  const removeRoomCategory = (indexToRemove: number) => {
+    setRoomCategories(roomCategories.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleRoomCategoryChange = (index: number, value: string) => {
+    const newCategories = [...roomCategories];
+    newCategories[index] = value;
+    setRoomCategories(newCategories);
+  };
 
   const generatePassword = () => {
     const password = Math.random().toString(36).slice(-8);
@@ -49,9 +67,9 @@ export default function CreateHotelPage() {
     }
 
     try {
-      // In a real app, you would also securely handle the password,
-      // likely by creating a Firebase Auth user for the hotelier.
-      // For this prototype, we just add the hotel data.
+      // In a real app, you would also securely handle the password and other settings,
+      // likely by creating a Firebase Auth user for the hotelier and storing settings
+      // in a dedicated hotel configuration document in Firestore.
       await addHotel(newHotel);
       toast({
           title: "Hotel Created",
@@ -77,7 +95,7 @@ export default function CreateHotelPage() {
         <Card>
           <CardHeader>
             <CardTitle>Hotel Details</CardTitle>
-            <CardDescription>Basic information about the hotel.</CardDescription>
+            <CardDescription>Basic information and credentials for the hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
@@ -106,6 +124,52 @@ export default function CreateHotelPage() {
                 <p className="text-sm text-muted-foreground">A secure password will be generated for the hotelier's first login.</p>
              </div>
           </CardContent>
+          <Separator />
+           <CardHeader>
+            <CardTitle>Booking Configuration</CardTitle>
+            <CardDescription>Define which booking options are available for this hotel.</CardDescription>
+          </CardHeader>
+           <CardContent className="grid gap-6">
+            <div className="grid gap-2">
+              <Label>Board Types</Label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="breakfast" defaultChecked/>
+                  <Label htmlFor="breakfast">Breakfast</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="half-board" defaultChecked/>
+                  <Label htmlFor="half-board">Half Board</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="full-board" defaultChecked/>
+                  <Label htmlFor="full-board">Full Board</Label>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Room Categories</Label>
+              <div className="grid gap-3">
+                {roomCategories.map((category, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={category}
+                      onChange={(e) => handleRoomCategoryChange(index, e.target.value)}
+                      placeholder="e.g., Suite"
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeRoomCategory(index)} disabled={roomCategories.length <= 1}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="outline" size="sm" className="mt-2 w-fit" onClick={addRoomCategory}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Room Category
+              </Button>
+            </div>
+          </CardContent>
+          <Separator />
           <CardContent className="pt-6">
             <div className="flex justify-end gap-2">
                 <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>

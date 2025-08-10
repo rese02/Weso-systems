@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, query, orderBy, Timestamp, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 
 // Corresponds to the Firestore data model /hotels/{hotelId}/bookings/{bookingId}
 export interface RoomDetail {
@@ -76,7 +76,7 @@ export function useBookings(hotelId: string) {
     return () => unsubscribe();
   }, [hotelId]);
 
-  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'status'> & { status?: Booking['status'] }) => {
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'>) => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
@@ -84,7 +84,6 @@ export function useBookings(hotelId: string) {
     const newBookingData = {
       ...bookingData,
       hotelId: hotelId,
-      status: bookingData.status || 'Open', // Ensure status is set, default to 'Open'
       createdAt: Timestamp.now(),
     };
     try {
@@ -92,7 +91,7 @@ export function useBookings(hotelId: string) {
       return { id: docRef.id, ...newBookingData } as Booking;
     } catch (error) {
       console.error("Error adding booking to Firestore:", error);
-      throw error; // Re-throw the error to be caught by the caller
+      throw error;
     }
   }, [hotelId]);
 

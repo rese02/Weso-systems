@@ -123,7 +123,6 @@ export default function CreateBookingPage() {
             return;
         }
 
-        // Map form state to the booking data model
         const roomDetailsForDb: BookingRoomDetail[] = rooms.map(r => ({
             roomType: r.roomType,
             adults: Number(r.adults) || 0,
@@ -132,7 +131,7 @@ export default function CreateBookingPage() {
             childrenAges: r.childrenAges ? r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age)) : []
         }));
 
-        const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'status'> = {
+        const newBookingData = {
           firstName,
           lastName,
           email,
@@ -142,8 +141,9 @@ export default function CreateBookingPage() {
           priceTotal,
           rooms: roomDetailsForDb,
           internalNotes,
+          status: 'Open' as const, // Add status here
         };
-
+        
         await addBooking(newBookingData);
         toast({
             title: 'Booking Created!',

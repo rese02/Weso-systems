@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, collectionGroup, query, where, getDocs, limit } from 'firebase/firestore';
-import { Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, collectionGroup, query, where, getDocs, limit, Timestamp } from 'firebase/firestore';
 import { addDays } from 'date-fns';
 
 // This is the data that will be pre-filled in the guest form.
@@ -70,7 +69,8 @@ export function useBookingLinks(hotelId: string) {
     if (!linkId) return null;
     setIsLoading(true);
     try {
-      const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+      const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
+      const q = query(linksCollectionGroup, where('__name__', '==', linkId), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -81,7 +81,6 @@ export function useBookingLinks(hotelId: string) {
       const linkDoc = querySnapshot.docs[0];
       const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
       
-      // Also fetch the original booking to ensure it exists, using the now-known hotelId
       const bookingDocRef = doc(db, `hotels/${linkData.hotelId}/bookings`, linkData.bookingId);
       const bookingSnap = await getDoc(bookingDocRef);
       if (!bookingSnap.exists()) {

@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
   const [hotelName, setHotelName] = useState('Your Hotel');
   const { linkId } = params;
-  const { getLink } = useBookingLinks('unused-but-required'); // Hook needs a hotelId, but getLink doesn't use it.
   const [linkData, setLinkData] = useState<BookingLink | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,10 +25,14 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
       }
 
       try {
-        // We get the link first to find out the hotelId
-        const fetchedLink = await getLink(linkId);
+        const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
+        const q = query(linksCollectionGroup, where('__name__', '==', linkId), limit(1));
+        const querySnapshot = await getDocs(q);
 
-        if (fetchedLink) {
+        if (!querySnapshot.empty) {
+          const linkDoc = querySnapshot.docs[0];
+          const fetchedLink = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
+          
           if (fetchedLink.status === 'used') {
             setError('This booking link has already been used.');
           } else if (new Date() > fetchedLink.expiresAt.toDate()) {
@@ -55,7 +58,7 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
     };
 
     fetchLinkAndHotel();
-  }, [linkId, getLink]);
+  }, [linkId]);
 
 
   if (isLoading) {

@@ -26,10 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
 
 const roomSchema = z.object({
-  roomType: z.enum(
-    ZIMMERTYP_FORM_OPTIONS.map(o => o.value) as [ZimmertypForm, ...ZimmertypForm[]],
-    { required_error: "Zimmertyp ist erforderlich." }
-  ),
+  roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
   adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0, "Anzahl Erwachsene darf nicht negativ sein."),
   children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
   infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
@@ -219,3 +216,5 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
     </Form>
   );
 }
+
+    

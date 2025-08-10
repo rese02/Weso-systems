@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,6 +16,7 @@ export interface RoomDetail {
 
 export interface Booking {
   id: string; // The Firestore document ID
+  hotelId: string; // The ID of the hotel this booking belongs to
   
   // State and Metadata
   status: 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';
@@ -74,13 +76,14 @@ export function useBookings(hotelId: string) {
     return () => unsubscribe();
   }, [hotelId]);
 
-  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt'>) => {
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'>) => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
     const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
     const newBookingData = {
       ...bookingData,
+      hotelId: hotelId,
       createdAt: Timestamp.now(),
     };
     const docRef = await addDoc(bookingsCollectionRef, newBookingData);

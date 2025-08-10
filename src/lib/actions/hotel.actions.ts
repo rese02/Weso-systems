@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp } from 'firebase/firestore';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -34,20 +34,26 @@ export async function createHotel(
 }
 
 
-export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
+export async function getHotels(): Promise<{ hotels?: any[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
         const q = query(hotelsCollectionRef);
         const querySnapshot = await getDocs(q);
-        const hotels = querySnapshot.docs.map((doc) => ({
-            ...doc.data(),
-            id: doc.id,
-        } as Hotel));
+        
+        const hotels = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                ...data,
+                id: doc.id,
+                // Convert Timestamp to a serializable format (ISO string)
+                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : null,
+            };
+        });
 
         // Sort in code to handle documents without createdAt gracefully
         hotels.sort((a, b) => {
-            const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
-            const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             return dateB - dateA;
         });
         

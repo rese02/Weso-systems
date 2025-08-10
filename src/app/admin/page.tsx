@@ -111,7 +111,7 @@ export default async function AdminDashboardPage() {
                         </Link>
                     </TableCell>
                     <TableCell>
-                        {hotel.createdAt ? format(hotel.createdAt.toDate(), 'PPP') : 'N/A'}
+                        {hotel.createdAt ? format(new Date(hotel.createdAt), 'PPP') : 'N/A'}
                     </TableCell>
                     <TableCell>
                         <DropdownMenu>

@@ -76,7 +76,7 @@ export function useBookings(hotelId: string) {
     return () => unsubscribe();
   }, [hotelId]);
 
-  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'>) => {
+  const addBooking = useCallback(async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'status'> & { status?: Booking['status'] }) => {
     if (!hotelId) {
       throw new Error("Hotel ID is not specified.");
     }
@@ -84,10 +84,16 @@ export function useBookings(hotelId: string) {
     const newBookingData = {
       ...bookingData,
       hotelId: hotelId,
+      status: bookingData.status || 'Open', // Ensure status is set, default to 'Open'
       createdAt: Timestamp.now(),
     };
-    const docRef = await addDoc(bookingsCollectionRef, newBookingData);
-    return { id: docRef.id, ...newBookingData } as Booking;
+    try {
+      const docRef = await addDoc(bookingsCollectionRef, newBookingData);
+      return { id: docRef.id, ...newBookingData } as Booking;
+    } catch (error) {
+      console.error("Error adding booking to Firestore:", error);
+      throw error; // Re-throw the error to be caught by the caller
+    }
   }, [hotelId]);
 
 

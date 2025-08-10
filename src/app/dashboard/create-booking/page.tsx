@@ -132,7 +132,7 @@ export default function CreateBookingPage() {
             childrenAges: r.childrenAges ? r.childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age)) : []
         }));
 
-        const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId'> = {
+        const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'hotelId' | 'status'> = {
           firstName,
           lastName,
           email,
@@ -140,7 +140,6 @@ export default function CreateBookingPage() {
           checkOut: date.to.toISOString(),
           boardType,
           priceTotal,
-          status: 'Open',
           rooms: roomDetailsForDb,
           internalNotes,
         };

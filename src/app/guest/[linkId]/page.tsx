@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,7 +10,7 @@ import type { BookingLinkWithHotel } from '@/lib/definitions';
 import { useParams } from 'next/navigation';
 
 export default function GuestBookingPage() {
-  const params = useParams();
+  const params = use(useParams());
   const linkId = Array.isArray(params.linkId) ? params.linkId[0] : params.linkId;
   
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);

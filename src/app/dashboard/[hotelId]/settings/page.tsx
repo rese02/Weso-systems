@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, use } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,10 +19,10 @@ interface HotelSettings extends Hotel {
     roomCategories?: string[];
 }
 
-export default function SettingsPage({ params }: { params: { hotelId: string }}) {
+export default function SettingsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
   const { toast } = useToast();
   const router = useRouter();
-  const hotelId = params.hotelId;
+  const { hotelId } = use(paramsPromise);
   
   const [hotel, setHotel] = useState<HotelSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,7 +98,7 @@ export default function SettingsPage({ params }: { params: { hotelId: string }})
             });
         }
     });
-  }
+  };
   
   if (isLoading) {
       return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>

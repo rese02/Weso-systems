@@ -18,6 +18,7 @@ import {
 import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 export default async function AdminDashboardPage() {
   const { hotels, error } = await getHotels();
@@ -67,13 +68,14 @@ export default async function AdminDashboardPage() {
                 <TableHead>Hotel Name</TableHead>
                 <TableHead>Owner Email</TableHead>
                 <TableHead>Domain</TableHead>
+                <TableHead>Created At</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {hotels.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                         No hotels created yet.
                     </TableCell>
                 </TableRow>
@@ -83,9 +85,12 @@ export default async function AdminDashboardPage() {
                     <TableCell className="font-medium">{hotel.name}</TableCell>
                     <TableCell>{hotel.ownerEmail}</TableCell>
                     <TableCell>
-                        <Link href={`/dashboard?hotelId=${hotel.id}`} className="underline" target="_blank" rel="noopener noreferrer"> 
+                        <Link href={`http://${hotel.domain}`} className="underline" target="_blank" rel="noopener noreferrer"> 
                           {hotel.domain}
                         </Link>
+                    </TableCell>
+                    <TableCell>
+                        {hotel.createdAt ? format(hotel.createdAt.toDate(), 'PPP') : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <form>
@@ -112,10 +117,7 @@ export default async function AdminDashboardPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction formAction={async () => {
-                                      "use server";
-                                      await handleDelete(hotel.id)
-                                    }} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                    <AlertDialogAction formAction={async () => { "use server"; await handleDelete(hotel.id); }}>Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

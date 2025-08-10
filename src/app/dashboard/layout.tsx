@@ -18,26 +18,38 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { DashboardHeader } from '@/components/dashboard-header';
+import { getHotelById } from '@/lib/actions/hotel.actions';
 
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: { hotelId: string };
 }) {
+  const { hotel, error } = await getHotelById(params.hotelId);
+
+  // In a real app, you'd want a nicer error state
+  if (error || !hotel) {
+    return <div>Error loading hotel: {error || 'Hotel not found'}</div>
+  }
+
+  const hotelId = params.hotelId;
+
   return (
       <SidebarProvider>
         <Sidebar>
           <SidebarHeader>
             <div className="flex flex-col text-sidebar-foreground">
-              <span className="text-lg font-bold font-headline">Pradell</span>
+              <span className="text-lg font-bold font-headline">{hotel.name}</span>
             </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Dashboard">
-                  <Link href="/dashboard">
+                  <Link href={`/dashboard/${hotelId}`}>
                     <LayoutDashboard />
                     <span>Dashboard</span>
                   </Link>
@@ -45,7 +57,7 @@ export default function DashboardLayout({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="New Booking">
-                  <Link href="/dashboard/create-booking">
+                  <Link href={`/dashboard/${hotelId}/create-booking`}>
                     <PlusCircle />
                     <span>Neue Buchung</span>
                   </Link>
@@ -53,7 +65,7 @@ export default function DashboardLayout({
               </SidebarMenuItem>
                <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Bookings">
-                  <Link href="/dashboard/bookings">
+                  <Link href={`/dashboard/${hotelId}/bookings`}>
                     <BookCopy />
                     <span>Buchungen</span>
                   </Link>
@@ -61,7 +73,7 @@ export default function DashboardLayout({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
-                  <Link href="/dashboard/settings">
+                  <Link href={`/dashboard/${hotelId}/settings`}>
                     <Settings />
                     <span>Einstellungen</span>
                   </Link>
@@ -79,5 +91,3 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
-
-    

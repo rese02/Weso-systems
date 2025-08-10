@@ -122,8 +122,8 @@ export default async function AdminDashboardPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild><Link href={`/dashboard?hotelId=${hotel.id}`}>View Dashboard</Link></DropdownMenuItem>
-                            <DropdownMenuItem asChild><Link href={`/dashboard/settings?hotelId=${hotel.id}`}>Edit Settings</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>View Dashboard</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Edit Settings</Link></DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>

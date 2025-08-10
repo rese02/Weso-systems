@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc } from 'firebase/firestore';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -77,5 +77,30 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         return { success: true };
     } catch (error) {
         return { success: false, error: (error as Error).message };
+    }
+}
+
+
+export async function getHotelById(hotelId: string): Promise<{ hotel?: Hotel, error?: string }> {
+    if (!hotelId) return { error: "Hotel ID is required." };
+    try {
+        const hotelRef = doc(db, 'hotels', hotelId);
+        const snapshot = await getDoc(hotelRef);
+
+        if (!snapshot.exists()) {
+            return { error: "Hotel not found." };
+        }
+
+        const data = snapshot.data();
+        const hotel = { 
+            id: snapshot.id, 
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
+        } as Hotel;
+
+        return { hotel };
+    } catch (error) {
+        console.error("Error fetching hotel by ID:", error);
+        return { error: (error as Error).message };
     }
 }

@@ -32,10 +32,8 @@ const DetailRow = ({ label, value, isButton = false }: { label: string, value: s
     </>
 );
 
-export default function BookingDetailsPage() {
-  const params = useParams<{ bookingId: string }>();
-  const searchParams = useSearchParams();
-  const hotelId = searchParams.get('hotelId');
+export default function BookingDetailsPage({ params }: { params: { hotelId: string, bookingId: string }}) {
+  const hotelId = params.hotelId;
   const bookingId = params.bookingId;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -79,13 +77,13 @@ export default function BookingDetailsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
-                <Link href={`/dashboard/bookings?hotelId=${hotelId}`}>
+                <Link href={`/dashboard/${hotelId}/bookings`}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Booking Overview
                 </Link>
             </Button>
              <Button asChild>
-                <Link href={`/dashboard/bookings/${booking.id}/edit?hotelId=${hotelId}`}>
+                <Link href={`/dashboard/${hotelId}/bookings/${booking.id}/edit`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                 </Link>

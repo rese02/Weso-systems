@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2 } from 'lucide-react';
@@ -40,7 +40,7 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
     const updatedAt = booking.updatedAt ? format(parseISO(booking.updatedAt), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.createdAt), 'dd.M.yyyy', { locale: de });
     const guestName = booking.firstName && booking.lastName ? `${booking.firstName} ${booking.lastName}` : `ID ${booking.id.substring(0, 6).toUpperCase()}`;
     return (
-        <Link href={`/dashboard/bookings/${booking.id}?hotelId=${hotelId}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md">
+        <Link href={`/dashboard/${hotelId}/bookings/${booking.id}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md">
              <div className="flex h-1.5 w-1.5 shrink-0 -translate-y-1 items-center justify-center rounded-full bg-primary mt-3 mr-3" />
             <p className="text-sm text-muted-foreground">
                 Buchung für <span className="font-semibold text-foreground">{guestName}</span> wurde zuletzt am {updatedAt} aktualisiert. Status: <span className="font-semibold text-foreground">{booking.status}</span>
@@ -49,10 +49,9 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
     );
 }
 
-export default function HotelierDashboardPage() {
-  const searchParams = useSearchParams();
+export default function HotelierDashboardPage({ params }: { params: { hotelId: string }}) {
   const router = useRouter();
-  const hotelId = searchParams.get('hotelId');
+  const hotelId = params.hotelId;
 
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,8 +75,6 @@ export default function HotelierDashboardPage() {
 
   useEffect(() => {
     if (!hotelId) {
-       // In a real app, you might get the hotelId from auth context if the URL param is missing.
-       // For now, we redirect to the admin page to select a hotel.
        toast({
         variant: "destructive",
         title: "Kein Hotel ausgewählt",
@@ -127,7 +124,7 @@ export default function HotelierDashboardPage() {
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
         <div className="grid gap-1">
             <h1 className="text-3xl font-bold font-headline md:text-4xl">Dashboard</h1>
-            <p className="text-muted-foreground">Übersicht Ihrer Pradell Buchungsanwendung.</p>
+            <p className="text-muted-foreground">Übersicht Ihrer Buchungsanwendung.</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -145,13 +142,13 @@ export default function HotelierDashboardPage() {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <Button size="lg" className="justify-start bg-accent hover:bg-accent/90" asChild>
-                         <Link href={`/dashboard/create-booking?hotelId=${hotelId}`}>
+                         <Link href={`/dashboard/${hotelId}/create-booking`}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Neue Buchung erstellen
                          </Link>
                     </Button>
                      <Button size="lg" variant="outline" className="justify-start" asChild>
-                        <Link href={`/dashboard/bookings?hotelId=${hotelId}`}>
+                        <Link href={`/dashboard/${hotelId}/bookings`}>
                             <List className="mr-2 h-4 w-4" />
                             Alle Buchungen anzeigen
                         </Link>
@@ -199,5 +196,4 @@ export default function HotelierDashboardPage() {
        </div>
     </div>
   );
-
-    
+}

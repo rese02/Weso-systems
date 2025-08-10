@@ -110,7 +110,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
           title: isEditMode ? 'Buchung aktualisiert!' : 'Buchung erstellt!',
           description: `Die Buchung für ${formData.firstName} ${formData.lastName} wurde erfolgreich ${isEditMode ? 'aktualisiert' : 'erstellt'}.`,
         });
-        router.push(`/dashboard/bookings?hotelId=${hotelId}`);
+        router.push(`/dashboard/${hotelId}/bookings`);
         router.refresh(); 
       } else {
         toast({

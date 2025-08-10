@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -40,10 +40,9 @@ const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary'
     'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Partial Payment' },
 };
 
-export default function BookingsListPage() {
+export default function BookingsListPage({ params }: { params: { hotelId: string }}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const hotelId = searchParams.get('hotelId'); // Or get from auth context
+  const hotelId = params.hotelId;
   
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,7 +156,7 @@ export default function BookingsListPage() {
                 Refresh
             </Button>
             <Button asChild className="bg-accent hover:bg-accent/90">
-                <Link href={`/dashboard/create-booking?hotelId=${hotelId}`}>
+                <Link href={`/dashboard/${hotelId}/create-booking`}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Create New Booking
                 </Link>
@@ -278,8 +277,8 @@ export default function BookingsListPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}?hotelId=${hotelId}`)}><Eye className="mr-2"/>View Details</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit?hotelId=${hotelId}`)}><Edit className="mr-2"/>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}`)}><Eye className="mr-2"/>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}/edit`)}><Edit className="mr-2"/>Edit</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}><Copy className="mr-2"/>Copy Link</DropdownMenuItem>
                                 </DropdownMenuContent>
                                 </DropdownMenu>

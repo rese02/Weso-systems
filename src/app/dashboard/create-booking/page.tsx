@@ -3,13 +3,12 @@
 
 import { BookingCreationForm } from '@/components/booking/booking-creation-form';
 import { Button } from '@/components/ui/button';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { XIcon } from 'lucide-react';
 
-export default function CreateBookingPage() {
+export default function CreateBookingPage({ params }: { params: { hotelId: string }}) {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const hotelId = searchParams.get('hotelId');
+    const hotelId = params.hotelId;
 
     if (!hotelId) {
       // Maybe show a proper error message
@@ -23,7 +22,7 @@ export default function CreateBookingPage() {
                      <h1 className="text-3xl font-bold font-headline md:text-4xl">Neue Buchung erstellen</h1>
                      <p className="text-muted-foreground">Füllen Sie die Felder aus, um eine neue Buchung anzulegen und einen Gast-Link zu generieren.</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/bookings?hotelId=${hotelId}`)} aria-label="Zurück zum Dashboard">
+                <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/${hotelId}/bookings`)} aria-label="Zurück zum Dashboard">
                     <XIcon className="h-5 w-5" />
                 </Button>
             </div>

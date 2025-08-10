@@ -4,6 +4,14 @@ import * as z from 'zod';
 
 // --- Base Data Models (as in Firestore) ---
 
+export interface Hotel {
+  id: string;
+  name: string;
+  ownerEmail: string;
+  domain: string;
+  createdAt?: Timestamp; 
+}
+
 export interface RoomDetails {
   roomType: string;
   adults: number;

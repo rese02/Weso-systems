@@ -1,13 +1,9 @@
 
-'use client';
-
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useHotels } from '@/hooks/use-hotels';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,23 +15,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useRouter } from 'next/navigation';
+import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
+import { revalidatePath } from 'next/cache';
+import Link from 'next/link';
 
-
-export default function AdminDashboardPage() {
-  const { hotels, removeHotel, isLoading } = useHotels();
-  const router = useRouter();
+export default async function AdminDashboardPage() {
+  const { hotels, error } = await getHotels();
 
   const handleDelete = async (hotelId: string) => {
+    "use server";
     try {
-        await removeHotel(hotelId);
+        await deleteHotel(hotelId);
+        revalidatePath('/admin');
     } catch (error) {
         console.error("Failed to delete hotel", error);
+        // Optionally, return an error message to display
     }
   }
 
-  if (isLoading) {
-    return <div>Loading hotels...</div>
+  if (error) {
+    return <div className="text-destructive">Error loading hotels: {error}</div>;
+  }
+  
+  if (!hotels) {
+      return <div>Loading hotels...</div>;
   }
 
   return (
@@ -80,11 +83,12 @@ export default function AdminDashboardPage() {
                     <TableCell className="font-medium">{hotel.name}</TableCell>
                     <TableCell>{hotel.ownerEmail}</TableCell>
                     <TableCell>
-                        <a href={`/dashboard`} className="underline" target="_blank" rel="noopener noreferrer"> 
+                        <Link href={`/dashboard?hotelId=${hotel.id}`} className="underline" target="_blank" rel="noopener noreferrer"> 
                           {hotel.domain}
-                        </a>
+                        </Link>
                     </TableCell>
                     <TableCell>
+                      <form>
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -93,8 +97,8 @@ export default function AdminDashboardPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard?hotelId=${hotel.id}`)}>View Dashboard</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?hotelId=${hotel.id}`)}>Edit Settings</DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/dashboard?hotelId=${hotel.id}`}>View Dashboard</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/dashboard/settings?hotelId=${hotel.id}`}>Edit Settings</Link></DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Delete</DropdownMenuItem>
@@ -108,12 +112,16 @@ export default function AdminDashboardPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                    <AlertDialogAction formAction={async () => {
+                                      "use server";
+                                      await handleDelete(hotel.id)
+                                    }} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>
                         </DropdownMenu>
+                      </form>
                     </TableCell>
                     </TableRow>
                 ))

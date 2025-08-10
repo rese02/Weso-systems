@@ -8,16 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useHotels } from '@/hooks/use-hotels';
-import type { Hotel } from '@/hooks/use-hotels';
-import { Copy, PlusCircle, Trash2 } from 'lucide-react';
+import { createHotel } from '@/lib/actions/hotel.actions';
+import { Copy, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function CreateHotelPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { addHotel } = useHotels();
+  const [isLoading, setIsLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [roomCategories, setRoomCategories] = useState(['Single Room', 'Double Room', 'Suite']);
 
@@ -50,19 +49,22 @@ export default function CreateHotelPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(e.currentTarget);
-    const newHotel: Omit<Hotel, 'id' | 'createdAt'> = {
+    const hotelData = {
       name: formData.get('hotel-name') as string,
       ownerEmail: formData.get('email') as string,
       domain: formData.get('domain') as string,
     };
     
-    if(!newHotel.name || !newHotel.ownerEmail || !newHotel.domain) {
+    // Simple client-side validation
+    if(!hotelData.name || !hotelData.ownerEmail || !hotelData.domain) {
         toast({
             variant: "destructive",
             title: "Error",
             description: "Please fill in all fields.",
         });
+        setIsLoading(false);
         return;
     }
 
@@ -70,18 +72,28 @@ export default function CreateHotelPage() {
       // In a real app, you would also securely handle the password and other settings,
       // likely by creating a Firebase Auth user for the hotelier and storing settings
       // in a dedicated hotel configuration document in Firestore.
-      await addHotel(newHotel);
-      toast({
-          title: "Hotel Created",
-          description: "The new hotel system has been successfully created.",
-      });
-      router.push('/admin');
+      const result = await createHotel(hotelData);
+      if (result.success) {
+        toast({
+            title: "Hotel Created",
+            description: "The new hotel system has been successfully created.",
+        });
+        router.push('/admin');
+      } else {
+         toast({
+            variant: "destructive",
+            title: "Creation Error",
+            description: result.error || "The hotel could not be created. Please try again.",
+        });
+      }
     } catch (error) {
        toast({
             variant: "destructive",
             title: "Creation Error",
-            description: "The hotel could not be created. Please try again.",
+            description: (error as Error).message || "An unexpected error occurred.",
         });
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -172,8 +184,11 @@ export default function CreateHotelPage() {
           <Separator />
           <CardContent className="pt-6">
             <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit">Create Hotel</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} disabled={isLoading}>Cancel</Button>
+                <Button type="submit" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Hotel
+                </Button>
             </div>
           </CardContent>
         </Card>

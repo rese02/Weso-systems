@@ -34,8 +34,8 @@ const roomSchema = z.object({
 });
 
 const bookingSchema = z.object({
-  guestFirstName: z.string().min(1, 'Vorname ist erforderlich'),
-  guestLastName: z.string().min(1, 'Nachname ist erforderlich'),
+  firstName: z.string().min(1, 'Vorname ist erforderlich'),
+  lastName: z.string().min(1, 'Nachname ist erforderlich'),
   checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
   checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
   verpflegungsart: z.string(),
@@ -72,8 +72,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      guestFirstName: '',
-      guestLastName: '',
+      firstName: '',
+      lastName: '',
       checkInDate: undefined,
       checkOutDate: undefined,
       verpflegungsart: 'Ohne Verpflegung',
@@ -87,8 +87,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
   useEffect(() => {
     if (isEditMode && existingBooking) {
       form.reset({
-        guestFirstName: existingBooking.firstName || '',
-        guestLastName: existingBooking.lastName || '',
+        firstName: existingBooking.firstName || '',
+        lastName: existingBooking.lastName || '',
         checkInDate: existingBooking.checkIn ? parseISO(existingBooking.checkIn) : undefined,
         checkOutDate: existingBooking.checkOut ? parseISO(existingBooking.checkOut) : undefined,
         verpflegungsart: existingBooking.boardType,
@@ -137,7 +137,7 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
       if (result.success) {
         toast({
           title: isEditMode ? 'Buchung aktualisiert!' : 'Buchung erstellt!',
-          description: `Die Buchung für ${formData.guestFirstName} ${formData.guestLastName} wurde erfolgreich ${isEditMode ? 'aktualisiert' : 'erstellt'}.`,
+          description: `Die Buchung für ${formData.firstName} ${formData.lastName} wurde erfolgreich ${isEditMode ? 'aktualisiert' : 'erstellt'}.`,
         });
         router.push('/dashboard/bookings');
         router.refresh(); // Force a refresh to show updated data
@@ -163,8 +163,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          <FormField control={form.control} name="guestFirstName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Vorname</FormLabel> <FormControl><Input placeholder="Vorname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-          <FormField control={form.control} name="guestLastName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Nachname</FormLabel> <FormControl><Input placeholder="Nachname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="firstName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Vorname</FormLabel> <FormControl><Input placeholder="Vorname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="lastName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Nachname</FormLabel> <FormControl><Input placeholder="Nachname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
           <FormItem className="space-y-2">
             <FormLabel className="flex items-center text-muted-foreground"><CalendarIcon className="mr-2 h-4 w-4" />Zeitraum</FormLabel>
             <Popover>
@@ -216,5 +216,3 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
     </Form>
   );
 }
-
-    

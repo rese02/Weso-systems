@@ -9,14 +9,14 @@ import { addDays } from 'date-fns';
 
 // Schema for booking creation form - This runs on the server!
 const BookingFormSchema = z.object({
-  guestFirstName: z.string().min(1),
-  guestLastName: z.string().min(1),
-  checkInDate: z.date(),
-  checkOutDate: z.date(),
+  firstName: z.string().min(1, 'Vorname ist erforderlich'),
+  lastName: z.string().min(1, 'Nachname ist erforderlich'),
+  checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
+  checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
   verpflegungsart: z.string(),
   price: z.coerce.number(),
   guestLanguage: z.string(),
-  rooms: z.array(z.any()), // Use z.any() for flexibility, then manually transform
+  rooms: z.array(z.any()), // Keep flexible for now, transform manually
   interneBemerkungen: z.string().optional(),
 });
 
@@ -51,8 +51,8 @@ export async function createBookingWithLink(
             hotelId,
             status: 'Sent', // 'Sent' because we are creating a link right away
             createdAt: Timestamp.now(),
-            firstName: validatedData.guestFirstName,
-            lastName: validatedData.guestLastName,
+            firstName: validatedData.firstName,
+            lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
             checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
             boardType: validatedData.verpflegungsart,
@@ -130,8 +130,8 @@ export async function updateBooking(
         const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
 
         const updatedBookingData = {
-            firstName: validatedData.guestFirstName,
-            lastName: validatedData.guestLastName,
+            firstName: validatedData.firstName,
+            lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
             checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
             boardType: validatedData.verpflegungsart,
@@ -269,5 +269,3 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     return { success: false, error: (error as Error).message };
   }
 }
-
-    

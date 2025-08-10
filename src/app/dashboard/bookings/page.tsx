@@ -2,8 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,16 +41,19 @@ const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary'
 };
 
 export default function BookingsListPage() {
-  const hotelId = 'hotelhub-central'; 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const hotelId = searchParams.get('hotelId'); // Or get from auth context
+  
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const { toast } = useToast();
-  const router = useRouter();
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
+    if (!hotelId) return;
     setIsLoading(true);
     const result = await getBookingsForHotel(hotelId);
     if (result.success && result.bookings) {
@@ -63,11 +66,20 @@ export default function BookingsListPage() {
       });
     }
     setIsLoading(false);
-  };
+  }, [hotelId, toast]);
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (hotelId) {
+      fetchBookings();
+    } else {
+       toast({
+        title: "Hotel-ID fehlt",
+        description: "Es wurde keine Hotel-ID gefunden, um Buchungen zu laden.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  }, [hotelId, fetchBookings, toast]);
 
   const filteredBookings = useMemo(() => {
     return allBookings
@@ -97,6 +109,7 @@ export default function BookingsListPage() {
   };
 
   const handleDeleteSelected = async () => {
+    if (!hotelId) return;
     const promises = selectedBookings.map(id => deleteBooking({ bookingId: id, hotelId }));
     await Promise.all(promises);
     toast({ title: "Buchungen gelöscht", description: `${selectedBookings.length} Buchung(en) wurden entfernt.` });
@@ -105,7 +118,7 @@ export default function BookingsListPage() {
   }
 
   const handleCopyLink = (booking: Booking) => {
-     const getBaseUrl = () => window.location.origin;
+    const getBaseUrl = () => window.location.origin;
     
     if (!booking.bookingLinkId) {
         toast({ variant: "destructive", title: "Fehler", description: "Für diese Buchung existiert kein Link." });
@@ -119,6 +132,17 @@ export default function BookingsListPage() {
 
   const isAllSelected = filteredBookings.length > 0 && selectedBookings.length === filteredBookings.length;
 
+  if (!hotelId) {
+      return (
+        <div className="flex items-center justify-center h-full">
+            <Card className="p-8 text-center">
+                <CardTitle>Keine Hotel-ID gefunden</CardTitle>
+                <CardDescription>Bitte wählen Sie ein Hotel aus dem Admin-Dashboard aus.</CardDescription>
+                <Button asChild className="mt-4"><Link href="/admin">Zum Admin-Dashboard</Link></Button>
+            </Card>
+        </div>
+      )
+  }
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
@@ -133,7 +157,7 @@ export default function BookingsListPage() {
                 Refresh
             </Button>
             <Button asChild className="bg-accent hover:bg-accent/90">
-                <Link href="/dashboard/create-booking">
+                <Link href={`/dashboard/create-booking?hotelId=${hotelId}`}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Create New Booking
                 </Link>
@@ -181,7 +205,7 @@ export default function BookingsListPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteSelected}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -254,8 +278,8 @@ export default function BookingsListPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}><Eye className="mr-2"/>View Details</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}><Edit className="mr-2"/>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}?hotelId=${hotelId}`)}><Eye className="mr-2"/>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit?hotelId=${hotelId}`)}><Edit className="mr-2"/>Edit</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}><Copy className="mr-2"/>Copy Link</DropdownMenuItem>
                                 </DropdownMenuContent>
                                 </DropdownMenu>
@@ -270,4 +294,3 @@ export default function BookingsListPage() {
     </div>
   );
 }
-

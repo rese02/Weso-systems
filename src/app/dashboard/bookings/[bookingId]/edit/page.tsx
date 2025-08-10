@@ -2,43 +2,46 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { BookingCreationForm } from '@/components/booking/booking-creation-form';
 import { Button } from '@/components/ui/button';
-import { getBookingsForHotel } from '@/lib/actions/booking.actions';
+import { getBookingById } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { Loader2, XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function EditBookingPage() {
     const router = useRouter();
-    const { bookingId } = useParams<{ bookingId: string }>();
-    const hotelId = 'hotelhub-central'; 
+    const params = useParams<{ bookingId: string }>();
+    const searchParams = useSearchParams();
+    const hotelId = searchParams.get('hotelId'); // Or get from auth context
+    const bookingId = params.bookingId;
+
     const [booking, setBooking] = useState<Booking | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
     useEffect(() => {
         const fetchBooking = async () => {
-            if (!bookingId) return;
+            if (!bookingId || !hotelId) {
+                 toast({ variant: "destructive", title: "Error", description: "Booking or Hotel ID is missing." });
+                 router.push('/dashboard/bookings');
+                 return;
+            };
+
             setIsLoading(true);
-            const result = await getBookingsForHotel(hotelId); // This is inefficient but reuses existing action
-            if (result.success && result.bookings) {
-                const foundBooking = result.bookings.find(b => b.id === bookingId);
-                if (foundBooking) {
-                    setBooking(foundBooking);
-                } else {
-                    toast({ variant: "destructive", title: "Error", description: "Booking not found." });
-                    router.push('/dashboard/bookings');
-                }
+            const result = await getBookingById({ hotelId, bookingId }); 
+
+            if (result.success && result.booking) {
+                setBooking(result.booking);
             } else {
-                toast({ variant: "destructive", title: "Error", description: result.error });
-                router.push('/dashboard/bookings');
+                toast({ variant: "destructive", title: "Error", description: result.error || "Booking not found." });
+                router.push(`/dashboard/bookings?hotelId=${hotelId}`);
             }
             setIsLoading(false);
         }
         fetchBooking();
-    }, [bookingId, router, toast]);
+    }, [bookingId, hotelId, router, toast]);
 
     if (isLoading) {
         return (
@@ -50,7 +53,7 @@ export default function EditBookingPage() {
     }
     
     if (!booking) {
-        return null; // Or some other placeholder
+        return null;
     }
 
     return (
@@ -60,11 +63,11 @@ export default function EditBookingPage() {
                      <h1 className="text-3xl font-bold font-headline md:text-4xl">Buchung bearbeiten</h1>
                      <p className="text-muted-foreground">Aktualisieren Sie die Details für die Buchung von {booking.firstName} {booking.lastName}.</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/bookings')} aria-label="Zurück zum Dashboard">
+                <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/bookings?hotelId=${hotelId}`)} aria-label="Zurück zum Dashboard">
                     <XIcon className="h-5 w-5" />
                 </Button>
             </div>
-            <BookingCreationForm existingBooking={booking} />
+            <BookingCreationForm hotelId={hotelId} existingBooking={booking} />
         </div>
     );
 }

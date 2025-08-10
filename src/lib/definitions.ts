@@ -1,7 +1,9 @@
 
 import type { Timestamp } from 'firebase/firestore';
+import * as z from 'zod';
 
-// Corresponds to the Firestore data model /hotels/{hotelId}/bookings/{bookingId}
+// --- Base Data Models (as in Firestore) ---
+
 export interface RoomDetails {
   roomType: string;
   adults: number;
@@ -13,68 +15,77 @@ export interface RoomDetails {
 export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';
 
 export interface Booking {
-  id: string; // The Firestore document ID
-  hotelId: string; // The ID of the hotel this booking belongs to
-  
-  // State and Metadata
+  id: string;
+  hotelId: string;
   status: BookingStatus;
   createdAt: Timestamp;
-  updatedAt?: Timestamp; // Added for tracking last modification
+  updatedAt?: Timestamp;
   submittedAt?: Timestamp;
   bookingLinkId?: string;
   guestLanguage?: string;
-
-  // Prefill/Core data
   checkIn: string; // ISO String
   checkOut: string; // ISO string
   boardType: string;
   priceTotal: number;
   rooms: RoomDetails[];
   internalNotes?: string;
-
-  // Guest-provided data
   firstName?: string;
   lastName?: string;
   email?: string;
-  
-  // References to documents in Storage
   documents?: {
-    idDoc?: string; // URL to the file in Firebase Storage
-    paymentProof?: string; // URL to the file in Firebase Storage
+    idDoc?: string;
+    paymentProof?: string;
   };
 }
 
-
-// --- Guest-facing Form Data ---
-
-// This is the data that will be pre-filled in the guest form.
 export interface BookingPrefill {
     roomType: string;
     checkIn: string; // ISO date string
     checkOut: string; // ISO date string
     priceTotal: number;
-    bookingId: string; // The ID of the booking document to be updated
+    bookingId: string;
 }
 
-// Corresponds to the Firestore data model /hotels/{hotelId}/bookingLinks/{tokenId}
 export interface BookingLink {
-  id: string; // Firestore document ID
-  bookingId: string; // The ID of the booking this link belongs to
-  hotelId: string; // The ID of the hotel this link belongs to
-  
-  createdBy: string; // For now, a placeholder for user UID
+  id: string;
+  bookingId: string;
+  hotelId: string;
+  createdBy: string;
   createdAt: Timestamp | string;
   expiresAt: Timestamp | string;
   status: 'active' | 'used' | 'expired';
-
   prefill: BookingPrefill;
 }
 
-// Type for the data passed to the guest page component
 export type BookingLinkWithHotel = BookingLink & { hotelName: string };
 
+// --- Form Schemas and Options ---
 
-// --- Admin/Hotelier Form Creation Data ---
+// For the Admin/Hotelier Booking Creation/Edit Form
+export const roomFormSchema = z.object({
+  roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
+  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0),
+  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
+  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
+  childrenAges: z.array(z.number()).optional(),
+});
+
+export const bookingFormSchema = z.object({
+  firstName: z.string().min(1, 'Vorname ist erforderlich'),
+  lastName: z.string().min(1, 'Nachname ist erforderlich'),
+  checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
+  checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
+  verpflegungsart: z.string(),
+  price: z.coerce.number(),
+  guestLanguage: z.string(),
+  rooms: z.array(roomFormSchema),
+  interneBemerkungen: z.string().optional(),
+});
+
+export type BookingFormValues = z.infer<typeof bookingFormSchema>;
+export type RoomDetailsFormValues = z.infer<typeof roomFormSchema>;
+
+// --- Select Options for Forms ---
 
 export type Verpflegungsart = 'Ohne Verpflegung' | 'Frühstück' | 'Halbpension' | 'Vollpension';
 export const VERPFLEGUNGSART_OPTIONS_FORM: { value: Verpflegungsart; label: string }[] = [

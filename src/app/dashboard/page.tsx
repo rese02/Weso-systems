@@ -1,13 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Database, HardDrive, LineChart, Loader2 } from 'lucide-react';
 import { getBookingsForHotel } from '@/lib/actions/booking.actions';
-import type { Booking, BookingStatus } from '@/lib/definitions';
+import type { Booking } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -35,41 +36,45 @@ const SystemStatusItem = ({ name, icon: Icon }: { name: string, icon: React.Elem
     </div>
 );
 
-const ActivityItem = ({ booking }: { booking: Booking }) => {
-    const updatedAt = booking.updatedAt ? format(booking.updatedAt.toDate(), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.checkIn), 'dd.M.yyyy', { locale: de });
+const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string }) => {
+    const updatedAt = booking.updatedAt ? format(booking.updatedAt.toDate(), 'dd.M.yyyy', { locale: de }) : format(parseISO(booking.createdAt as unknown as string), 'dd.M.yyyy', { locale: de });
+    const guestName = booking.firstName && booking.lastName ? `${booking.firstName} ${booking.lastName}` : `ID ${booking.id.substring(0, 6).toUpperCase()}`;
     return (
-        <div className="flex items-start">
+        <Link href={`/dashboard/bookings/${booking.id}?hotelId=${hotelId}`} className="flex items-start hover:bg-muted/50 p-2 rounded-md">
              <div className="flex h-1.5 w-1.5 shrink-0 -translate-y-1 items-center justify-center rounded-full bg-primary mt-3 mr-3" />
             <p className="text-sm text-muted-foreground">
-                Buchung <span className="font-semibold text-foreground">#{booking.id.substring(0, 6).toUpperCase()}</span> für <span className="font-semibold text-foreground">{booking.firstName} {booking.lastName}</span> wurde zuletzt am {updatedAt} aktualisiert. Status: <span className="font-semibold text-foreground">{booking.status}</span>
+                Buchung für <span className="font-semibold text-foreground">{guestName}</span> wurde zuletzt am {updatedAt} aktualisiert. Status: <span className="font-semibold text-foreground">{booking.status}</span>
             </p>
-        </div>
+        </Link>
     );
 }
 
 export default function HotelierDashboardPage() {
-  const hotelId = 'hotelhub-central';
+  const searchParams = useSearchParams();
+  const hotelId = searchParams.get('hotelId') || 'hotelhub-central'; // Fallback for direct access
+
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const fetchBookings = useCallback(async () => {
+    setIsLoading(true);
+    const result = await getBookingsForHotel(hotelId);
+    if (result.success && result.bookings) {
+      setAllBookings(result.bookings);
+    } else {
+      toast({
+        title: "Fehler beim Laden",
+        description: result.error || "Buchungen konnten nicht geladen werden.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  }, [hotelId, toast]);
+
   useEffect(() => {
-    const fetchBookings = async () => {
-        setIsLoading(true);
-        const result = await getBookingsForHotel(hotelId);
-        if (result.success && result.bookings) {
-          setAllBookings(result.bookings);
-        } else {
-          toast({
-            title: "Fehler beim Laden",
-            description: result.error || "Buchungen konnten nicht geladen werden.",
-            variant: "destructive",
-          });
-        }
-        setIsLoading(false);
-      };
     fetchBookings();
-  }, [toast]);
+  }, [fetchBookings]);
 
   const stats = useMemo(() => {
     const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
@@ -88,7 +93,7 @@ export default function HotelierDashboardPage() {
   
   const recentActivities = useMemo(() => {
     return [...allBookings]
-      .sort((a, b) => (b.updatedAt?.toMillis() || b.createdAt.toMillis()) - (a.updatedAt?.toMillis() || a.createdAt.toMillis()))
+      .sort((a, b) => (b.updatedAt?.toMillis() || (b.createdAt as unknown as Timestamp).toMillis()) - (a.updatedAt?.toMillis() || (a.createdAt as unknown as Timestamp).toMillis()))
       .slice(0, 3);
   }, [allBookings]);
 
@@ -115,13 +120,13 @@ export default function HotelierDashboardPage() {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <Button size="lg" className="justify-start bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40" asChild>
-                         <Link href="/dashboard/create-booking">
+                         <Link href={`/dashboard/create-booking?hotelId=${hotelId}`}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Neue Buchung erstellen
                          </Link>
                     </Button>
                      <Button size="lg" variant="outline" className="justify-start" asChild>
-                        <Link href="/dashboard/bookings">
+                        <Link href={`/dashboard/bookings?hotelId=${hotelId}`}>
                             <List className="mr-2 h-4 w-4" />
                             Alle Buchungen anzeigen
                         </Link>
@@ -160,7 +165,7 @@ export default function HotelierDashboardPage() {
                             <p className="mt-2">Lade Aktivitäten...</p>
                         </div>
                     ) : recentActivities.length > 0 ? (
-                       recentActivities.map(booking => <ActivityItem key={booking.id} booking={booking}/>)
+                       recentActivities.map(booking => <ActivityItem key={booking.id} booking={booking} hotelId={hotelId} />)
                     ) : (
                         <p className="text-sm text-center text-muted-foreground py-4">Keine aktuellen Aktivitäten gefunden.</p>
                     )}

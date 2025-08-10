@@ -80,8 +80,8 @@ export default function AdminDashboardPage() {
                     <TableCell className="font-medium">{hotel.name}</TableCell>
                     <TableCell>{hotel.ownerEmail}</TableCell>
                     <TableCell>
-                        <a href={`/dashboard`} className="underline" target="_blank"> 
-                        {hotel.domain}
+                        <a href={`/dashboard`} className="underline" target="_blank" rel="noopener noreferrer"> 
+                          {hotel.domain}
                         </a>
                     </TableCell>
                     <TableCell>
@@ -93,8 +93,8 @@ export default function AdminDashboardPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push('/dashboard')}>View Dashboard</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Edit Settings</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard?hotelId=${hotel.id}`)}>View Dashboard</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?hotelId=${hotel.id}`)}>Edit Settings</DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Delete</DropdownMenuItem>
@@ -103,12 +103,12 @@ export default function AdminDashboardPage() {
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the hotel.
+                                        This action cannot be undone. This will permanently delete the hotel and all associated data.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDelete(hotel.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -125,5 +125,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    

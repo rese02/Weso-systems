@@ -13,14 +13,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { createBookingWithLink, updateBooking } from '@/lib/actions/booking.actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, Loader2, User, Bed, Euro, MessageSquare, PlusCircle, XIcon, Save, Home, Trash2, Clock, Languages } from 'lucide-react';
+import { CalendarIcon, Loader2, User, Bed, Euro, MessageSquare, PlusCircle, XIcon, Save, Home, Trash2, Languages } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect } from 'react';
-import type { Verpflegungsart, ZimmertypForm, RoomDetails, GuestLanguage, Booking } from '@/lib/definitions';
-import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS } from '@/lib/definitions';
+import type { Booking } from '@/lib/definitions';
+import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues } from '@/lib/definitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
@@ -33,7 +33,7 @@ const roomSchema = z.object({
   childrenAges: z.array(z.number()).optional(),
 });
 
-const bookingSchema = z.object({
+const bookingFormSchema = z.object({
   firstName: z.string().min(1, 'Vorname ist erforderlich'),
   lastName: z.string().min(1, 'Nachname ist erforderlich'),
   checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
@@ -48,9 +48,9 @@ const bookingSchema = z.object({
   path: ["checkOutDate"],
 });
 
-type BookingFormValues = z.infer<typeof bookingSchema>;
+type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
-const defaultRoomValues: RoomDetails = {
+const defaultRoomValues: RoomDetailsFormValues = {
   roomType: 'Standard',
   adults: 1,
   children: 0,
@@ -59,19 +59,29 @@ const defaultRoomValues: RoomDetails = {
 };
 
 interface BookingCreationFormProps {
+  hotelId: string;
   existingBooking?: Booking | null;
 }
 
-export function BookingCreationForm({ existingBooking = null }: BookingCreationFormProps) {
+export function BookingCreationForm({ hotelId, existingBooking = null }: BookingCreationFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const hotelId = 'hotelhub-central';
   const isEditMode = !!existingBooking;
 
   const form = useForm<BookingFormValues>({
-    resolver: zodResolver(bookingSchema),
-    defaultValues: {
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: isEditMode && existingBooking ? {
+        firstName: existingBooking.firstName || '',
+        lastName: existingBooking.lastName || '',
+        checkInDate: existingBooking.checkIn ? parseISO(existingBooking.checkIn) : undefined,
+        checkOutDate: existingBooking.checkOut ? parseISO(existingBooking.checkOut) : undefined,
+        verpflegungsart: existingBooking.boardType,
+        price: existingBooking.priceTotal,
+        guestLanguage: existingBooking.guestLanguage || 'de',
+        rooms: existingBooking.rooms.map(r => ({ ...r, childrenAges: r.childrenAges || [] })), // ensure childrenAges is an array
+        interneBemerkungen: existingBooking.internalNotes || '',
+    } : {
       firstName: '',
       lastName: '',
       checkInDate: undefined,
@@ -83,23 +93,6 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
       interneBemerkungen: '',
     },
   });
-
-  useEffect(() => {
-    if (isEditMode && existingBooking) {
-      form.reset({
-        firstName: existingBooking.firstName || '',
-        lastName: existingBooking.lastName || '',
-        checkInDate: existingBooking.checkIn ? parseISO(existingBooking.checkIn) : undefined,
-        checkOutDate: existingBooking.checkOut ? parseISO(existingBooking.checkOut) : undefined,
-        verpflegungsart: existingBooking.boardType,
-        price: existingBooking.priceTotal,
-        guestLanguage: existingBooking.guestLanguage || 'de',
-        rooms: existingBooking.rooms.map(r => ({ ...r })),
-        interneBemerkungen: existingBooking.internalNotes || '',
-      });
-    }
-  }, [isEditMode, existingBooking, form]);
-
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -139,11 +132,11 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
           title: isEditMode ? 'Buchung aktualisiert!' : 'Buchung erstellt!',
           description: `Die Buchung für ${formData.firstName} ${formData.lastName} wurde erfolgreich ${isEditMode ? 'aktualisiert' : 'erstellt'}.`,
         });
-        router.push('/dashboard/bookings');
-        router.refresh(); // Force a refresh to show updated data
+        router.push(`/dashboard/bookings?hotelId=${hotelId}`);
+        router.refresh(); 
       } else {
         toast({
-          title: 'Fehler',
+          title: 'Fehler bei der Übermittlung',
           description: result.error || 'Ein unbekannter Fehler ist aufgetreten.',
           variant: 'destructive',
         });
@@ -165,8 +158,8 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <FormField control={form.control} name="firstName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Vorname</FormLabel> <FormControl><Input placeholder="Vorname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="lastName" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Nachname</FormLabel> <FormControl><Input placeholder="Nachname" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-          <FormItem className="space-y-2">
-            <FormLabel className="flex items-center text-muted-foreground"><CalendarIcon className="mr-2 h-4 w-4" />Zeitraum</FormLabel>
+          <FormItem className="flex flex-col">
+            <FormLabel className="flex items-center text-muted-foreground mb-2"><CalendarIcon className="mr-2 h-4 w-4" />Zeitraum</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !checkInDateValue && "text-muted-foreground")}>

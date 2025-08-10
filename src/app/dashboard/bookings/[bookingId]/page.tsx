@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2 } from 'lucide-react';
-import { getBookingsForHotel } from '@/lib/actions/booking.actions';
+import { getBookingById } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { format, parseISO } from 'date-fns';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,31 +33,29 @@ const DetailRow = ({ label, value, isButton = false }: { label: string, value: s
 );
 
 export default function BookingDetailsPage() {
-  const { bookingId } = useParams<{ bookingId: string }>();
-  const hotelId = 'hotelhub-central'; 
+  const params = useParams<{ bookingId: string }>();
+  const searchParams = useSearchParams();
+  const hotelId = searchParams.get('hotelId');
+  const bookingId = params.bookingId;
+
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
     const fetchBooking = async () => {
-        if (!bookingId) return;
+        if (!bookingId || !hotelId) return;
         setIsLoading(true);
-        const result = await getBookingsForHotel(hotelId);
-        if (result.success && result.bookings) {
-            const foundBooking = result.bookings.find(b => b.id === bookingId);
-            if(foundBooking) {
-                setBooking(foundBooking);
-            } else {
-                 toast({ variant: "destructive", title: "Error", description: "Booking not found." });
-            }
+        const result = await getBookingById({ hotelId, bookingId });
+        if (result.success && result.booking) {
+            setBooking(result.booking);
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.error });
+             toast({ variant: "destructive", title: "Error", description: result.error || "Booking not found." });
         }
         setIsLoading(false);
     }
     fetchBooking();
-  }, [bookingId, toast]);
+  }, [bookingId, hotelId, toast]);
 
 
   if (isLoading) {
@@ -81,13 +79,13 @@ export default function BookingDetailsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
-                <Link href="/dashboard/bookings">
+                <Link href={`/dashboard/bookings?hotelId=${hotelId}`}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Booking Overview
                 </Link>
             </Button>
              <Button asChild>
-                <Link href={`/dashboard/bookings/${booking.id}/edit`}>
+                <Link href={`/dashboard/bookings/${booking.id}/edit?hotelId=${hotelId}`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                 </Link>

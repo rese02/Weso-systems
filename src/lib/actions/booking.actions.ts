@@ -4,11 +4,19 @@
 import { db } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { z } from 'zod';
-import type { Booking, BookingLink, BookingPrefill, RoomDetails } from '@/lib/definitions';
+import type { Booking, BookingLink, BookingPrefill, RoomDetails, BookingFormValues } from '@/lib/definitions';
 import { addDays } from 'date-fns';
 
 // Schema for booking creation form - This runs on the server!
-const BookingFormSchema = z.object({
+const roomSchema = z.object({
+  roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
+  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0, "Anzahl Erwachsene darf nicht negativ sein."),
+  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
+  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
+  childrenAges: z.array(z.number()).optional(),
+});
+
+const bookingFormSchema = z.object({
   firstName: z.string().min(1, 'Vorname ist erforderlich'),
   lastName: z.string().min(1, 'Nachname ist erforderlich'),
   checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
@@ -16,11 +24,13 @@ const BookingFormSchema = z.object({
   verpflegungsart: z.string(),
   price: z.coerce.number(),
   guestLanguage: z.string(),
-  rooms: z.array(z.any()), // Keep flexible for now, transform manually
+  rooms: z.array(roomSchema),
   interneBemerkungen: z.string().optional(),
+}).refine(data => data.checkOutDate > data.checkInDate, {
+  message: "Abreisedatum muss nach dem Anreisedatum liegen.",
+  path: ["checkOutDate"],
 });
 
-type BookingFormValues = z.infer<typeof BookingFormSchema>;
 
 /**
  * Creates a new booking and a corresponding booking link.
@@ -33,7 +43,7 @@ export async function createBookingWithLink(
         return { success: false, error: "Hotel ID is required." };
     }
 
-    const validation = BookingFormSchema.safeParse(bookingData);
+    const validation = bookingFormSchema.safeParse(bookingData);
     if (!validation.success) {
         console.error("Zod validation failed:", validation.error.flatten());
         return { success: false, error: `Validation failed: ${validation.error.message}` };
@@ -51,6 +61,7 @@ export async function createBookingWithLink(
             hotelId,
             status: 'Sent', // 'Sent' because we are creating a link right away
             createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
             firstName: validatedData.firstName,
             lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
@@ -59,8 +70,7 @@ export async function createBookingWithLink(
             priceTotal: validatedData.price,
             internalNotes: validatedData.interneBemerkungen,
             guestLanguage: validatedData.guestLanguage,
-            // Securely transform room data here
-            rooms: validatedData.rooms.map((r: any) => ({
+            rooms: validatedData.rooms.map((r) => ({
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
                 children: Number(r.children) || 0,
@@ -119,7 +129,7 @@ export async function updateBooking(
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
     
-    const validation = BookingFormSchema.safeParse(bookingData);
+    const validation = bookingFormSchema.safeParse(bookingData);
     if (!validation.success) {
         return { success: false, error: `Validation failed: ${validation.error.message}` };
     }
@@ -132,20 +142,20 @@ export async function updateBooking(
         const updatedBookingData = {
             firstName: validatedData.firstName,
             lastName: validatedData.lastName,
-            checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
-            checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
+            checkIn: validatedData.checkInDate.toISOString(),
+            checkOut: validatedData.checkOutDate.toISOString(),
             boardType: validatedData.verpflegungsart,
             priceTotal: validatedData.price,
             internalNotes: validatedData.interneBemerkungen,
             guestLanguage: validatedData.guestLanguage,
-            rooms: validatedData.rooms.map((r: any) => ({
+            rooms: validatedData.rooms.map((r) => ({
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
                 children: Number(r.children) || 0,
                 infants: Number(r.infants) || 0,
                 childrenAges: r.childrenAges || [],
             })),
-            updatedAt: Timestamp.now(), // Add an update timestamp
+            updatedAt: Timestamp.now(),
         };
         
         await updateDoc(bookingRef, updatedBookingData);
@@ -171,33 +181,44 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
         
         const bookings = snapshot.docs.map(doc => {
             const data = doc.data();
-            // Ensure createdAt and updatedAt are Timestamps for consistent sorting later
-            const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : new Timestamp(0, 0);
-            const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt : createdAt;
-
-            // Manual data serialization to handle Timestamps
             return { 
                 id: doc.id,
                 ...data,
-                createdAt: createdAt.toDate().toISOString(),
-                updatedAt: updatedAt.toDate().toISOString(),
-             } as unknown as Booking;
+             } as Booking;
         });
         
-        // Deserialize dates for client-side use
-        const clientBookings = bookings.map(b => ({
-            ...b,
-            createdAt: new Timestamp(new Date(b.createdAt as any).getTime() / 1000, 0),
-            updatedAt: b.updatedAt ? new Timestamp(new Date(b.updatedAt as any).getTime() / 1000, 0) : undefined
-        }));
-
-        return { success: true, bookings: clientBookings };
+        return { success: true, bookings: bookings };
 
     } catch (error) {
         console.error("Error fetching bookings:", error);
         return { success: false, error: (error as Error).message };
     }
 }
+
+/**
+ * Fetches a single booking by its ID for a given hotel.
+ */
+export async function getBookingById({ hotelId, bookingId }: { hotelId: string, bookingId: string }): Promise<{ success: boolean; booking?: Booking; error?: string }> {
+    if (!hotelId || !bookingId) return { success: false, error: "Hotel and Booking ID are required." };
+
+    try {
+        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+        const snapshot = await getDoc(bookingRef);
+        
+        if (!snapshot.exists()) {
+            return { success: false, error: "Booking not found." };
+        }
+        
+        const booking = { id: snapshot.id, ...snapshot.data() } as Booking;
+        
+        return { success: true, booking: booking };
+
+    } catch (error) {
+        console.error("Error fetching booking by ID:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
 
 /**
  * Deletes a booking from a hotel's sub-collection.
@@ -207,15 +228,19 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
     try {
+        const batch = writeBatch(db);
         const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
-        await deleteDoc(bookingRef);
+        batch.delete(bookingRef);
         
-        const linkQuery = query(collection(db, `hotels/${hotelId}/bookingLinks`), where("bookingId", "==", bookingId));
+        // Also delete the associated booking link if it exists
+        const linkQuery = query(collection(db, `hotels/${hotelId}/bookingLinks`), where("bookingId", "==", bookingId), limit(1));
         const linkSnapshot = await getDocs(linkQuery);
         if (!linkSnapshot.empty) {
             const linkDocRef = linkSnapshot.docs[0].ref;
-            await deleteDoc(linkDocRef);
+            batch.delete(linkDocRef);
         }
+
+        await batch.commit();
 
         return { success: true };
     } catch (error) {
@@ -233,11 +258,12 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   
   try {
     const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-    const q = query(linksCollectionGroup, where('__name__', '==', `/${linkId}`), limit(1));
+    const q = query(linksCollectionGroup, where(documentId(), '==', linkId), limit(1));
     const querySnapshot = await getDocs(q);
 
     let linkDoc;
     if (querySnapshot.empty) {
+        // Fallback for environments where collection group queries might be slow to index
         const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
         for (const hotelDoc of hotelsSnapshot.docs) {
             const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
@@ -277,9 +303,14 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 
   } catch (error) {
     console.error("Error fetching link details:", error);
-    if (error instanceof Error && error.message.includes("Invalid query")) {
+    const e = error as Error;
+    if (e.message.includes("documentId")) { // A more specific check
         return { success: false, error: "Could not perform lookup for the link. The query is invalid." };
     }
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: e.message };
   }
 }
+// Helper function to get documentId, as it's not directly available in web SDK
+const documentId = () => {
+    return '__name__';
+};

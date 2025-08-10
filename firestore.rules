@@ -2,23 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Allow public access for creating, reading, and managing hotels
-    // In production, you would restrict this to authenticated admins.
-    match /hotels/{hotelId} {
+    // Allow public read access to all documents for development
+    // Allow write access to all documents for development
+    match /{document=**} {
       allow read, write: if true;
-
-      // Allow full access to all subcollections within a hotel,
-      // such as bookings and bookingLinks.
-      match /{subcollection}/{document=**} {
-        allow read, write: if true;
-      }
-    }
-
-    // This is a fallback for the collection group query used to find booking links.
-    // While the rule on the subcollection above should cover it, this makes it explicit.
-    match /{path=**}/bookingLinks/{linkId} {
-      allow read: if true;
     }
   }
 }

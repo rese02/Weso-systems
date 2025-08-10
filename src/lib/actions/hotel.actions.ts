@@ -28,7 +28,6 @@ export async function createHotel(
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
         console.log("Attempting to add document to Firestore..."); 
-        // Corrected: Use validation.data to ensure only validated data is sent to Firestore
         const docRef = await addDoc(hotelsCollectionRef, { ...validation.data, createdAt: Timestamp.now() });
         console.log("Document added with ID:", docRef.id); 
         revalidatePath('/admin');
@@ -43,7 +42,7 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        const q = query(hotelsCollectionRef, orderBy("createdAt", "desc"));
+        const q = query(hotelsCollectionRef);
         const querySnapshot = await getDocs(q);
         const hotels = querySnapshot.docs.map((doc) => ({
             ...doc.data(),
@@ -52,19 +51,7 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
         return { hotels };
     } catch (error) {
         console.error("Error fetching hotels:", error);
-        // Fallback for inconsistent data: fetch without ordering if ordering fails
-        try {
-            const hotelsCollectionRef = collection(db, 'hotels');
-            const querySnapshot = await getDocs(hotelsCollectionRef);
-            const hotels = querySnapshot.docs.map((doc) => ({
-                ...doc.data(),
-                id: doc.id,
-            } as Hotel));
-            return { hotels };
-        } catch (fallbackError) {
-             console.error("Error fetching hotels on fallback:", fallbackError);
-             return { error: (fallbackError as Error).message };
-        }
+        return { error: (error as Error).message };
     }
 }
 

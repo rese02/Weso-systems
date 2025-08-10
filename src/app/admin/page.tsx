@@ -23,14 +23,15 @@ import { format } from 'date-fns';
 export default async function AdminDashboardPage() {
   const { hotels, error } = await getHotels();
 
-  const handleDelete = async (hotelId: string) => {
+  const handleDelete = async (formData: FormData) => {
     "use server";
+    const hotelId = formData.get('hotelId') as string;
+    if (!hotelId) return;
     try {
         await deleteHotel(hotelId);
         revalidatePath('/admin');
     } catch (error) {
         console.error("Failed to delete hotel", error);
-        // Optionally, return an error message to display
     }
   }
 
@@ -125,21 +126,22 @@ export default async function AdminDashboardPage() {
                             <DropdownMenuItem asChild><Link href={`/dashboard/settings?hotelId=${hotel.id}`}>Edit Settings</Link></DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>
+                                    <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the hotel and all associated data.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <form action={async () => { "use server"; await handleDelete(hotel.id); }}>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction type="submit">Delete</AlertDialogAction>
-                                      </form>
-                                    </AlertDialogFooter>
+                                    <form action={handleDelete}>
+                                        <input type="hidden" name="hotelId" value={hotel.id} />
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the hotel and all associated data.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction type="submit">Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </form>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>

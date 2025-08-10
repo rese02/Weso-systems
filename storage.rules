@@ -2,23 +2,9 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // By default, deny all reads and writes
-    // match /{allPaths=**} {
-    //   allow read, write: if false;
-    // }
-
-    // Allow anyone to write to the public folder within a booking's storage path.
-    // This is necessary for guests to upload their documents.
-    // In production, you'd add more specific rules, e.g., checking for a valid booking link token.
-    match /hotels/{hotelId}/bookings/{bookingId}/public/{linkId}/{fileName} {
-      allow write: if true;
-    }
-
-    // Allow anyone to read any file.
-    // In production, you would restrict this to authenticated users
-    // (e.g., the hotelier or the guest who uploaded it).
+    // Allow public read and write access to all files for development
     match /{allPaths=**} {
-        allow read: if true;
+      allow read, write: if true;
     }
   }
 }

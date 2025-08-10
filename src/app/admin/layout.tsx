@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Building2,
@@ -31,7 +32,7 @@ export default function AdminLayout({
           <SidebarHeader>
             <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
               <Building2 className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold font-headline">WESO Booking Systems</span>
+              <span className="text-lg font-bold font-headline">WESO B-system</span>
             </Link>
           </SidebarHeader>
           <SidebarContent>

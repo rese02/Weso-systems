@@ -125,7 +125,7 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
   const onSubmit: SubmitHandler<BookingFormValues> = async (formData) => {
     setIsLoading(true);
     
-    const action = isEditMode
+    const action = isEditMode && existingBooking
         ? updateBooking({ hotelId, bookingId: existingBooking.id, bookingData: formData })
         : createBookingWithLink({ hotelId, bookingData: formData });
 
@@ -136,7 +136,7 @@ export function BookingCreationForm({ existingBooking = null }: BookingCreationF
           title: isEditMode ? 'Buchung aktualisiert!' : 'Buchung erstellt!',
           description: `Die Buchung für ${formData.guestFirstName} ${formData.guestLastName} wurde erfolgreich ${isEditMode ? 'aktualisiert' : 'erstellt'}.`,
         });
-        router.push('/dashboard');
+        router.push('/dashboard/bookings');
         router.refresh(); // Force a refresh to show updated data
       } else {
         toast({

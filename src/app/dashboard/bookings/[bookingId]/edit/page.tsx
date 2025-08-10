@@ -29,11 +29,11 @@ export default function EditBookingPage() {
                     setBooking(foundBooking);
                 } else {
                     toast({ variant: "destructive", title: "Error", description: "Booking not found." });
-                    router.push('/dashboard');
+                    router.push('/dashboard/bookings');
                 }
             } else {
                 toast({ variant: "destructive", title: "Error", description: result.error });
-                router.push('/dashboard');
+                router.push('/dashboard/bookings');
             }
             setIsLoading(false);
         }
@@ -60,7 +60,7 @@ export default function EditBookingPage() {
                      <h1 className="text-3xl font-bold font-headline md:text-4xl">Buchung bearbeiten</h1>
                      <p className="text-muted-foreground">Aktualisieren Sie die Details für die Buchung von {booking.firstName} {booking.lastName}.</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} aria-label="Zurück zum Dashboard">
+                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/bookings')} aria-label="Zurück zum Dashboard">
                     <XIcon className="h-5 w-5" />
                 </Button>
             </div>

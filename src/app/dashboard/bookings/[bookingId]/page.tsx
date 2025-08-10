@@ -81,14 +81,16 @@ export default function BookingDetailsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
-                <Link href="/dashboard">
+                <Link href="/dashboard/bookings">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Booking Overview
                 </Link>
             </Button>
-             <Button>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
+             <Button asChild>
+                <Link href={`/dashboard/bookings/${booking.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                </Link>
             </Button>
           </div>
         </div>

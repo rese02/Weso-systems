@@ -67,7 +67,7 @@ export default function GuestBookingPage() {
       <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4 mb-8 text-center">
             <Building2 className="h-12 w-12 text-destructive" />
-            <h1 className="text-4xl font-bold font-headline">Ungültiger Link</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Ungültiger Link</h1>
             <p className="text-muted-foreground max-w-md">{error}</p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function GuestBookingPage() {
     <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
       <div className="flex flex-col items-center gap-4 mb-8 text-center">
         <Building2 className="h-12 w-12 text-primary" />
-        <h1 className="text-4xl font-bold font-headline">Booking for {linkData?.hotelName}</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Booking for {linkData?.hotelName}</h1>
         <p className="text-muted-foreground max-w-md">
           Complete the steps below to finalize your reservation.
         </p>

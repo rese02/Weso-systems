@@ -15,16 +15,16 @@ import { useToast } from '@/hooks/use-toast';
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending ? (
         <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating...
+          <Loader2 className="animate-spin" />
+          <span>Generating...</span>
         </>
       ) : (
         <>
-          <ShieldCheck className="mr-2 h-4 w-4" />
-          Generate Policy
+          <ShieldCheck />
+          <span>Generate Policy</span>
         </>
       )}
     </Button>
@@ -58,7 +58,7 @@ export default function SecurityAdvisorPage() {
             <h1 className="text-3xl font-bold font-headline md:text-4xl">Security Policy Advisor</h1>
             <p className="text-muted-foreground">Generate a security policy and recommendations using AI.</p>
         </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <form action={dispatch}>
           <Card>
             <CardHeader>
@@ -90,7 +90,7 @@ export default function SecurityAdvisorPage() {
             </CardFooter>
           </Card>
         </form>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Generated Policy</CardTitle>
@@ -102,7 +102,7 @@ export default function SecurityAdvisorPage() {
                 {state.data?.policy ? (
                      <pre className="p-4 bg-secondary rounded-md text-sm whitespace-pre-wrap font-mono">{state.data.policy}</pre>
                 ) : (
-                    <div className="text-sm text-muted-foreground">The generated policy will appear here.</div>
+                    <div className="text-sm text-muted-foreground p-4 text-center">The generated policy will appear here.</div>
                 )}
             </CardContent>
           </Card>
@@ -117,7 +117,7 @@ export default function SecurityAdvisorPage() {
                 {state.data?.recommendations ? (
                      <pre className="p-4 bg-secondary rounded-md text-sm whitespace-pre-wrap font-mono">{state.data.recommendations}</pre>
                 ) : (
-                    <div className="text-sm text-muted-foreground">The generated recommendations will appear here.</div>
+                    <div className="text-sm text-muted-foreground p-4 text-center">The generated recommendations will appear here.</div>
                 )}
             </CardContent>
           </Card>

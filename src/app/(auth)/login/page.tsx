@@ -22,12 +22,12 @@ export default function LoginPage() {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <div className="flex gap-2">
-            <Button className="flex-1" asChild>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+            <Button asChild>
                 <Link href="/admin">Login as Admin</Link>
             </Button>
-            <Button className="flex-1" variant="secondary" asChild>
-                <Link href="/dashboard">Login as Hotelier</Link>
+            <Button variant="secondary" asChild>
+                <Link href="/dashboard/aDg0Yo80GEfuuKFnyGF0">Login as Hotelier</Link>
             </Button>
         </div>
         <p className="text-sm text-center text-muted-foreground">

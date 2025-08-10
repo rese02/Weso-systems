@@ -18,7 +18,7 @@ import { Separator } from '../ui/separator';
 import type { BookingLink } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
-import { storage, db } from '@/lib/firebase.client'; // <--- CORRECTED IMPORT
+import { storage, db } from '@/lib/firebase.client';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Timestamp, doc, updateDoc, writeBatch } from 'firebase/firestore';
 
@@ -46,7 +46,7 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingLink['prefill'] | 
             <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('justify-start text-left font-normal', !checkInDate && 'text-muted-foreground')}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon />
                         {checkInDate ? format(checkInDate, 'PPP') : <span>Pick a date</span>}
                     </Button>
                 </PopoverTrigger>
@@ -60,7 +60,7 @@ const Step1Details = ({ prefillData }: { prefillData?: BookingLink['prefill'] | 
             <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('justify-start text-left font-normal', !checkOutDate && 'text-muted-foreground')}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon />
                          {checkOutDate ? format(checkOutDate, 'PPP') : <span>Pick a date</span>}
                     </Button>
                 </PopoverTrigger>
@@ -165,12 +165,16 @@ const Step4Review = ({ uploads, formData, prefillData }: { uploads: Record<strin
             <Separator/>
              <div><h4 className="font-medium text-sm text-muted-foreground">Uploaded Documents</h4>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-2">
-                    {Object.values(uploads).map((upload) => (
+                    {Object.values(uploads).length > 0 ? (
+                      Object.values(uploads).map((upload) => (
                         <li key={upload.name}>
                             {upload.file.name}
                             {upload.progress < 100 && <Progress value={upload.progress} className="mt-1" />}
                         </li>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">No documents uploaded.</p>
+                    )}
                 </ul>
              </div>
         </div>
@@ -321,7 +325,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
             {currentStep === 3 && 'Review your booking details below.'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="min-h-[250px]">
+      <CardContent className="min-h-[300px]">
         {currentStep === 0 && <Step1Details prefillData={prefillData} />}
         {currentStep === 1 && <Step2GuestInfo onFileUpload={handleFileUpload} />}
         {currentStep === 2 && <Step3Payment onFileUpload={handleFileUpload} />}
@@ -335,7 +339,7 @@ export function BookingForm({ prefillData, linkId, hotelId }: { prefillData?: Bo
           <Button type="submit" disabled={isSubmitting}>Next</Button>
         ) : (
           <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress > 0 && u.progress < 100)}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : 'Submit Booking'}
+            {isSubmitting ? <><Loader2 className="animate-spin" /> <span>Submitting...</span></> : 'Submit Booking'}
           </Button>
         )}
       </CardFooter>

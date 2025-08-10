@@ -28,7 +28,7 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'des
 const DetailRow = ({ label, value, isButton = false }: { label: string, value: string | React.ReactNode, isButton?: boolean }) => (
     <>
         <div className="text-sm text-muted-foreground">{label}</div>
-        {isButton ? value : <div className="text-sm text-right sm:text-left break-all">{value || 'Nicht angegeben'}</div>}
+        {isButton ? value : <div className="text-sm sm:text-right break-words">{value || 'Nicht angegeben'}</div>}
     </>
 );
 
@@ -60,7 +60,20 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
   }
 
   if (!booking) {
-      return <div>Booking not found.</div>
+      return (
+        <Card className="text-center p-8">
+            <CardTitle>Booking Not Found</CardTitle>
+            <CardContent>
+                <p className="mt-2 text-muted-foreground">The requested booking could not be found.</p>
+                <Button asChild className="mt-4">
+                    <Link href={`/dashboard/${hotelId}/bookings`}>
+                        <ArrowLeft />
+                        <span>Back to Bookings</span>
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+    );
   }
 
   const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
@@ -69,29 +82,29 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-1">
-              <h1 className="text-3xl font-bold font-headline md:text-4xl">Booking Details</h1>
-              <p className="text-muted-foreground">Detailed information for Booking ID: {booking.id}</p>
+              <h1 className="text-2xl font-bold font-headline sm:text-3xl">Booking Details</h1>
+              <p className="text-muted-foreground">Detailed information for Booking ID: {booking.id.substring(0, 8)}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
                 <Link href={`/dashboard/${hotelId}/bookings`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Overview
+                    <ArrowLeft />
+                    <span className="hidden sm:inline">Back to Overview</span>
                 </Link>
             </Button>
              <Button asChild>
                 <Link href={`/dashboard/${hotelId}/bookings/${booking.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
+                    <Edit />
+                    <span className="hidden sm:inline">Edit</span>
                 </Link>
             </Button>
           </div>
         </div>
         
-        <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2 grid gap-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 grid gap-6">
                 <Card>
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -105,14 +118,13 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-8">
-                        {/* Main Guest Info */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <User className="h-5 w-5 text-primary" />
                                 <h3 className="font-semibold text-lg">Main Guest Information</h3>
                             </div>
                             <Separator />
-                            <div className="grid grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2">
                                 <DetailRow label="First Name" value={booking.firstName} />
                                 <DetailRow label="Last Name" value={booking.lastName} />
                                 <DetailRow label="Email" value={booking.email} />
@@ -122,7 +134,6 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                             </div>
                         </div>
 
-                        {/* Companions Info - Placeholder for now */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <Users className="h-5 w-5 text-primary" />
@@ -140,19 +151,19 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                             <h3 className="font-semibold text-lg">Administrative Booking Details</h3>
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="divide-y divide-border">
                          {booking.rooms.map((room, index) => (
-                         <div key={index} className="space-y-4 pt-2">
+                         <div key={index} className="py-4 first:pt-0 last:pb-0">
                             <div className="flex items-center justify-between">
                                 <h4 className="font-medium flex items-center gap-2"><Home className="w-4 h-4 text-muted-foreground"/>Room {index + 1}</h4>
                                 <Badge variant="outline">{room.roomType}</Badge>
                             </div>
-                            <div className="grid grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2 mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2 mt-4">
                                 <DetailRow label="Occupancy" value={
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1"><UserCircle className="w-4 h-4"/> {room.adults}</div>
-                                        <div className="flex items-center gap-1"><Users className="w-4 h-4"/> {room.children}</div>
-                                        <div className="flex items-center gap-1"><Baby className="w-4 h-4"/> {room.infants}</div>
+                                        <div className="flex items-center gap-1"><UserCircle/> {room.adults}</div>
+                                        <div className="flex items-center gap-1"><Users/> {room.children}</div>
+                                        <div className="flex items-center gap-1"><Baby/> {room.infants}</div>
                                     </div>
                                 } />
                                 <DetailRow label="Board Type" value={booking.boardType} />
@@ -174,7 +185,7 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                         {booking.documents?.idDoc ? (
                              <Button asChild variant="outline" size="sm" className="w-full justify-start">
                                 <a href={booking.documents.idDoc} target="_blank" rel="noopener noreferrer">
-                                    <FileText className="mr-2 h-4 w-4" />View ID Document
+                                    <FileText /><span>View ID Document</span>
                                 </a>
                             </Button>
                         ) : (
@@ -183,7 +194,7 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                          {booking.documents?.paymentProof ? (
                              <Button asChild variant="outline" size="sm" className="w-full justify-start">
                                 <a href={booking.documents.paymentProof} target="_blank" rel="noopener noreferrer">
-                                    <FileText className="mr-2 h-4 w-4" />View Payment Proof
+                                    <FileText /><span>View Payment Proof</span>
                                 </a>
                             </Button>
                          ) : (

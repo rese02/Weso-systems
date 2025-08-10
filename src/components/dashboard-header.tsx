@@ -18,12 +18,11 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({ children }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <div className="md:hidden">
           {children}
       </div>
       <div className="flex w-full items-center gap-4">
-        {/* Title is removed to be handled by the page content */}
         <div className="flex-1" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -31,7 +30,7 @@ export function DashboardHeader({ children }: DashboardHeaderProps) {
               <Avatar>
                 <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" />
                 <AvatarFallback>
-                  <User className="h-5 w-5" />
+                  <User />
                 </AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>
@@ -44,7 +43,7 @@ export function DashboardHeader({ children }: DashboardHeaderProps) {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/">Logout</Link>
+              <Link href="/login">Logout</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -124,19 +124,19 @@ export default function HotelierDashboardPage({ params: paramsPromise }: { param
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
         <div className="grid gap-1">
-            <h1 className="text-3xl font-bold font-headline md:text-4xl">Dashboard</h1>
+            <h1 className="text-2xl font-bold font-headline sm:text-3xl md:text-4xl">Dashboard</h1>
             <p className="text-muted-foreground">Übersicht Ihrer Buchungsanwendung.</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Gesamtumsatz" value={stats.totalRevenue} valuePrefix="€ " description="Aus bestätigten Buchungen" icon={Euro} isLoading={isLoading} />
             <StatCard title="Gesamtbuchungen" value={String(stats.totalBookings)} description="Alle Zeiten" icon={BookCopy} isLoading={isLoading} />
             <StatCard title="Heutige Anreisen" value={String(stats.arrivalsToday)} description="Bestätigt für heute" icon={CheckCircle2} isLoading={isLoading} />
             <StatCard title="Ausstehende Aktionen" value={String(stats.pendingActions)} description="Warten auf Gastdaten/Bestätigung" icon={Clock} isLoading={isLoading} />
         </div>
         
-        <div className="grid gap-4 md:grid-cols-5">
-            <Card className="md:col-span-3">
+        <div className="grid gap-4 lg:grid-cols-5">
+            <Card className="lg:col-span-3">
                 <CardHeader>
                     <CardTitle>Schnellaktionen</CardTitle>
                     <CardDescription>Führen Sie gängige Aufgaben schnell aus.</CardDescription>
@@ -144,26 +144,26 @@ export default function HotelierDashboardPage({ params: paramsPromise }: { param
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                     <Button size="lg" className="justify-start" asChild>
                          <Link href={`/dashboard/${hotelId}/create-booking`}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Neue Buchung erstellen
+                            <PlusCircle />
+                            <span>Neue Buchung erstellen</span>
                          </Link>
                     </Button>
                      <Button size="lg" variant="outline" className="justify-start" asChild>
                         <Link href={`/dashboard/${hotelId}/bookings`}>
-                            <List className="mr-2 h-4 w-4" />
-                            Alle Buchungen anzeigen
+                            <List />
+                            <span>Alle Buchungen anzeigen</span>
                         </Link>
                      </Button>
                 </CardContent>
             </Card>
 
-            <Card className="md:col-span-2">
+            <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/> Systemstatus</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Systemstatus</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <div className="flex items-center font-medium text-primary">
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 />
                         <span className="ml-2 text-sm">Alle Systeme betriebsbereit</span>
                     </div>
                      <div className="space-y-3 pl-1 border-l-2 ml-2 border-primary/20">
@@ -183,7 +183,7 @@ export default function HotelierDashboardPage({ params: paramsPromise }: { param
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {isLoading ? (
-                        <div className="text-center text-muted-foreground">
+                        <div className="text-center text-muted-foreground p-4">
                             <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                             <p className="mt-2">Lade Aktivitäten...</p>
                         </div>

@@ -28,7 +28,6 @@ export async function createHotel(
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...validation.data, 
             createdAt: Timestamp.now(),
-            // Default settings for a new hotel
             boardTypes: ['Breakfast', 'Half-Board', 'Full-Board'],
             roomCategories: ['Single Room', 'Double Room', 'Suite']
         });
@@ -70,8 +69,6 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         return { success: false, error: 'Hotel ID is required.' };
     }
     try {
-        // In a real app, you should also delete subcollections and related storage files.
-        // This is a simplified deletion for now.
         await deleteDoc(doc(db, 'hotels', hotelId));
         revalidatePath('/admin');
         return { success: true };

@@ -20,6 +20,7 @@ import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 export default async function AdminDashboardPage() {
   const { hotels, error } = await getHotels();
@@ -66,15 +67,15 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-1">
               <h1 className="text-3xl font-bold font-headline md:text-4xl">Hotel Overview</h1>
               <p className="text-muted-foreground">Manage all your client hotels here.</p>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
               <Link href="/admin/create-hotel">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Create New Hotel
+                  <PlusCircle />
+                  <span>Create New Hotel</span>
               </Link>
           </Button>
       </div>
@@ -84,75 +85,77 @@ export default async function AdminDashboardPage() {
           <CardDescription>A list of all hotel booking systems for your agency.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hotel Name</TableHead>
-                <TableHead>Owner Email</TableHead>
-                <TableHead>Domain</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hotels.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                        No hotels created yet. <Link href="/admin/create-hotel" className="font-medium text-primary underline">Create one now</Link>.
-                    </TableCell>
+                  <TableHead>Hotel Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Owner Email</TableHead>
+                  <TableHead className="hidden sm:table-cell">Domain</TableHead>
+                  <TableHead className="hidden md:table-cell">Created At</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
-              ) : (
-                hotels.map((hotel) => (
-                    <TableRow key={hotel.id}>
-                    <TableCell className="font-medium">{hotel.name}</TableCell>
-                    <TableCell>{hotel.ownerEmail}</TableCell>
-                    <TableCell>
-                        <Link href={`http://${hotel.domain}`} className="underline" target="_blank" rel="noopener noreferrer"> 
-                          {hotel.domain}
-                        </Link>
-                    </TableCell>
-                    <TableCell>
-                        {hotel.createdAt ? format(new Date(hotel.createdAt), 'PPP') : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>View Dashboard</Link></DropdownMenuItem>
-                            <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Edit Settings</Link></DropdownMenuItem>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <form action={handleDelete}>
-                                        <input type="hidden" name="hotelId" value={hotel.id} />
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the hotel and all associated data.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction type="submit">Delete</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </form>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                    </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {hotels.length === 0 ? (
+                  <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                          No hotels created yet. <Link href="/admin/create-hotel" className="font-medium text-primary underline">Create one now</Link>.
+                      </TableCell>
+                  </TableRow>
+                ) : (
+                  hotels.map((hotel) => (
+                      <TableRow key={hotel.id}>
+                      <TableCell className="font-medium">{hotel.name}</TableCell>
+                      <TableCell className="hidden md:table-cell">{hotel.ownerEmail}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                          <Link href={`http://${hotel.domain}`} className="underline" target="_blank" rel="noopener noreferrer"> 
+                            {hotel.domain}
+                          </Link>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                          {hotel.createdAt ? format(new Date(hotel.createdAt), 'PPP') : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                          <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal />
+                              <span className="sr-only">Toggle menu</span>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>View Dashboard</Link></DropdownMenuItem>
+                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Edit Settings</Link></DropdownMenuItem>
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                      <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Delete</div>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                      <form action={handleDelete}>
+                                          <input type="hidden" name="hotelId" value={hotel.id} />
+                                          <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                              This action cannot be undone. This will permanently delete the hotel and all associated data.
+                                          </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction type="submit">Delete</AlertDialogAction>
+                                          </AlertDialogFooter>
+                                      </form>
+                                  </AlertDialogContent>
+                              </AlertDialog>
+                          </DropdownMenuContent>
+                          </DropdownMenu>
+                      </TableCell>
+                      </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

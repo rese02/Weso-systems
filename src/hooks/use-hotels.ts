@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -32,7 +33,7 @@ export function useHotels() {
     } finally {
         setIsLoading(false);
     }
-  }, []);
+  }, [hotelsCollectionRef]);
 
   useEffect(() => {
     getHotels();

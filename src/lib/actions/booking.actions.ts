@@ -175,10 +175,24 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
             const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : new Timestamp(0, 0);
             const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt : createdAt;
 
-            return { id: doc.id, ...data, createdAt, updatedAt } as Booking;
+            // Manual data serialization to handle Timestamps
+            return { 
+                id: doc.id,
+                ...data,
+                createdAt: createdAt.toDate().toISOString(),
+                updatedAt: updatedAt.toDate().toISOString(),
+             } as unknown as Booking;
         });
         
-        return { success: true, bookings };
+        // Deserialize dates for client-side use
+        const clientBookings = bookings.map(b => ({
+            ...b,
+            createdAt: new Timestamp(new Date(b.createdAt as any).getTime() / 1000, 0),
+            updatedAt: b.updatedAt ? new Timestamp(new Date(b.updatedAt as any).getTime() / 1000, 0) : undefined
+        }));
+
+        return { success: true, bookings: clientBookings };
+
     } catch (error) {
         console.error("Error fetching bookings:", error);
         return { success: false, error: (error as Error).message };

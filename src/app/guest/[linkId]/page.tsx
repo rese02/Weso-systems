@@ -31,7 +31,7 @@ export default function GuestBookingPage() {
       if (result.success && result.data) {
         if (result.data.status === 'used') {
           setError('Dieser Buchungslink wurde bereits verwendet.');
-        } else if (new Date() > new Date(result.data.expiresAt)) {
+        } else if (new Date() > new Date(result.data.expiresAt as string)) {
           setError('Dieser Buchungslink ist abgelaufen.');
         } else {
           setLinkData(result.data);

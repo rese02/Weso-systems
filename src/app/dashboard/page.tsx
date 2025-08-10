@@ -75,7 +75,7 @@ export default function HotelierDashboardPage() {
     const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
     const pendingActions = allBookings.filter(b => b.status === 'Sent' || b.status === 'Submitted').length;
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.priceTotal, 0);
-    const arrivalsToday = allBookings.filter(b => b.status === 'Confirmed' && isToday(parseISO(b.checkIn))).length;
+    const arrivalsToday = allBookings.filter(b => b.status === 'Confirmed' && b.checkIn && isToday(parseISO(b.checkIn))).length;
 
 
     return { 

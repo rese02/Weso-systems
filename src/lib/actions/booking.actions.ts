@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -264,7 +265,12 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+    // A collection group query requires a composite index, which can be complex to set up.
+    // A more direct approach is to find the document if we can deduce its path.
+    // Since we know the collection is 'bookingLinks', we can first query for the document
+    // across all hotels and then get its parent hotel.
+
+    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', 'like', `%/${linkId}`), limit(1));
     const linkSnapshot = await getDocs(linksQuery);
 
     if (linkSnapshot.empty) {
@@ -273,7 +279,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     
     const linkDoc = linkSnapshot.docs[0];
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
-    
+
     // The hotelId is in the link data, so we can directly fetch the hotel.
     const hotelDocRef = doc(db, 'hotels', linkData.hotelId);
     const hotelSnap = await getDoc(hotelDocRef);

@@ -91,13 +91,12 @@ export interface BookingLinkWithHotel extends BookingLink {
 
 // --- Form Schemas and Options ---
 
-// Schema for the Admin/Hotelier Booking Creation/Edit Form
 export const roomFormSchema = z.object({
   roomType: z.string({ required_error: "Zimmertyp ist erforderlich." }),
-  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0),
-  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0).optional(),
-  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0).optional(),
-  childrenAges: z.array(z.number()).optional(),
+  adults: z.coerce.number({invalid_type_error: "Anzahl Erwachsene muss eine Zahl sein."}).int().min(0, "Mindestens 0 Erwachsene."),
+  children: z.coerce.number({invalid_type_error: "Anzahl Kinder muss eine Zahl sein."}).int().min(0, "Mindestens 0 Kinder."),
+  infants: z.coerce.number({invalid_type_error: "Anzahl Kleinkinder muss eine Zahl sein."}).int().min(0, "Mindestens 0 Kleinkinder."),
+  childrenAges: z.array(z.coerce.number().int().min(3).max(17)).optional(),
 });
 
 export const bookingFormSchema = z.object({
@@ -129,10 +128,10 @@ export const VERPFLEGUNGSART_OPTIONS_FORM: { value: Verpflegungsart; label: stri
   { value: 'Vollpension', label: 'Vollpension' },
 ];
 
-export type ZimmertypForm = 'Standard' | 'Komfort' | 'Suite' | 'Einzelzimmer';
+export type ZimmertypForm = 'Standard Doppelzimmer' | 'Komfort Doppelzimmer' | 'Suite' | 'Einzelzimmer';
 export const ZIMMERTYP_FORM_OPTIONS: { value: ZimmertypForm; label: string }[] = [
-  { value: 'Standard', label: 'Standard Doppelzimmer' },
-  { value: 'Komfort', label: 'Komfort Doppelzimmer' },
+  { value: 'Standard Doppelzimmer', label: 'Standard Doppelzimmer' },
+  { value: 'Komfort Doppelzimmer', label: 'Komfort Doppelzimmer' },
   { value: 'Suite', label: 'Suite' },
   { value: 'Einzelzimmer', label: 'Einzelzimmer' },
 ];

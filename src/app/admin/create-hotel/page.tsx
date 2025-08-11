@@ -18,7 +18,7 @@ export default function CreateHotelPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
-  const [roomCategories, setRoomCategories] = useState(['Single Room', 'Double Room', 'Suite']);
+  const [roomCategories, setRoomCategories] = useState(['Einzelzimmer', 'Doppelzimmer', 'Suite']);
 
   const addRoomCategory = () => {
     setRoomCategories([...roomCategories, '']);
@@ -42,8 +42,8 @@ export default function CreateHotelPage() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedPassword);
     toast({
-        title: "Password Copied",
-        description: "The generated password has been copied to your clipboard.",
+        title: "Passwort kopiert",
+        description: "Das generierte Passwort wurde in die Zwischenablage kopiert.",
     });
   }
 
@@ -61,8 +61,8 @@ export default function CreateHotelPage() {
     if(!hotelData.name || !hotelData.ownerEmail || !hotelData.domain) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Please fill in all fields.",
+            title: "Fehler",
+            description: "Bitte füllen Sie alle Felder aus.",
         });
         setIsLoading(false);
         return;
@@ -75,22 +75,22 @@ export default function CreateHotelPage() {
       const result = await createHotel(hotelData);
       if (result.success) {
         toast({
-            title: "Hotel Created",
-            description: "The new hotel system has been successfully created.",
+            title: "Hotel erstellt",
+            description: "Das neue Hotelsystem wurde erfolgreich erstellt.",
         });
         router.push('/admin');
       } else {
          toast({
             variant: "destructive",
-            title: "Creation Error",
-            description: result.error || "The hotel could not be created. Please try again.",
+            title: "Erstellungsfehler",
+            description: result.error || "Das Hotel konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         });
       }
     } catch (error) {
        toast({
             variant: "destructive",
-            title: "Creation Error",
-            description: (error as Error).message || "An unexpected error occurred.",
+            title: "Erstellungsfehler",
+            description: (error as Error).message || "Ein unerwarteter Fehler ist aufgetreten.",
         });
     } finally {
         setIsLoading(false);
@@ -100,74 +100,74 @@ export default function CreateHotelPage() {
   return (
     <div className="mx-auto grid max-w-4xl gap-4">
         <div className="grid gap-1">
-            <h1 className="text-3xl font-bold font-headline md:text-4xl">Create New Hotel System</h1>
-            <p className="text-muted-foreground">Fill out the form to set up a new booking system for a client.</p>
+            <h1 className="text-3xl font-bold font-headline md:text-4xl">Neues Hotel-System erstellen</h1>
+            <p className="text-muted-foreground">Füllen Sie das Formular aus, um ein neues Buchungssystem für einen Kunden einzurichten.</p>
         </div>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Hotel Details</CardTitle>
-            <CardDescription>Basic information and credentials for the hotel.</CardDescription>
+            <CardTitle>Hotel-Details</CardTitle>
+            <CardDescription>Basisinformationen und Anmeldeinformationen für das Hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="hotel-name">Hotel Name</Label>
-              <Input id="hotel-name" name="name" placeholder="e.g., Hotel Paradise" />
+              <Label htmlFor="hotel-name">Hotelname</Label>
+              <Input id="hotel-name" name="name" placeholder="z.B. Hotel Paradies" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="domain">Domain or Subdomain</Label>
-              <Input id="domain" name="domain" placeholder="e.g., hotel-paradise.com" />
+              <Label htmlFor="domain">Domain oder Subdomain</Label>
+              <Input id="domain" name="domain" placeholder="z.B. hotel-paradies.de" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Hotelier's Email Address</Label>
-              <Input id="email" name="email" type="email" placeholder="contact@hotel.com" />
+              <Label htmlFor="email">E-Mail-Adresse des Hoteliers</Label>
+              <Input id="email" name="email" type="email" placeholder="kontakt@hotel.de" />
             </div>
              <div className="grid gap-2">
-                <Label htmlFor="password">Hotelier's Password</Label>
+                <Label htmlFor="password">Passwort des Hoteliers</Label>
                 <div className="flex items-center gap-2">
-                    <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Click 'Generate' to create a password" />
+                    <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Klicken Sie auf 'Generieren', um ein Passwort zu erstellen" />
                     {generatedPassword && (
                         <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard}>
                             <Copy className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
-                <Button variant="outline" type="button" onClick={generatePassword} className="w-fit">Generate Password</Button>
-                <p className="text-sm text-muted-foreground">A secure password will be generated for the hotelier's first login.</p>
+                <Button variant="outline" type="button" onClick={generatePassword} className="w-fit">Passwort generieren</Button>
+                <p className="text-sm text-muted-foreground">Ein sicheres Passwort wird für die erste Anmeldung des Hoteliers generiert.</p>
              </div>
           </CardContent>
           <Separator />
            <CardHeader>
-            <CardTitle>Booking Configuration</CardTitle>
-            <CardDescription>Define which booking options are available for this hotel.</CardDescription>
+            <CardTitle>Buchungskonfiguration</CardTitle>
+            <CardDescription>Legen Sie fest, welche Buchungsoptionen für dieses Hotel verfügbar sind.</CardDescription>
           </CardHeader>
            <CardContent className="grid gap-6">
             <div className="grid gap-2">
-              <Label>Board Types</Label>
+              <Label>Verpflegungsarten</Label>
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="breakfast" defaultChecked/>
-                  <Label htmlFor="breakfast">Breakfast</Label>
+                  <Label htmlFor="breakfast">Frühstück</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="half-board" defaultChecked/>
-                  <Label htmlFor="half-board">Half Board</Label>
+                  <Label htmlFor="half-board">Halbpension</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="full-board" defaultChecked/>
-                  <Label htmlFor="full-board">Full Board</Label>
+                  <Label htmlFor="full-board">Vollpension</Label>
                 </div>
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Room Categories</Label>
+              <Label>Zimmerkategorien</Label>
               <div className="grid gap-3">
                 {roomCategories.map((category, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Input
                       value={category}
                       onChange={(e) => handleRoomCategoryChange(index, e.target.value)}
-                      placeholder="e.g., Suite"
+                      placeholder="z.B., Suite"
                     />
                     <Button type="button" variant="ghost" size="icon" onClick={() => removeRoomCategory(index)} disabled={roomCategories.length <= 1}>
                       <Trash2 className="h-4 w-4" />
@@ -177,17 +177,17 @@ export default function CreateHotelPage() {
               </div>
               <Button type="button" variant="outline" size="sm" className="mt-2 w-fit" onClick={addRoomCategory}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Room Category
+                Zimmerkategorie hinzufügen
               </Button>
             </div>
           </CardContent>
           <Separator />
           <CardContent className="pt-6">
             <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()} disabled={isLoading}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} disabled={isLoading}>Abbrechen</Button>
                 <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Hotel
+                    Hotel erstellen
                 </Button>
             </div>
           </CardContent>

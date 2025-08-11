@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, type SubmitHandler, useFieldArray } from 'react-hook-form';
+import { useForm, type SubmitHandler, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { createBookingWithLink, updateBooking } from '@/lib/actions/booking.actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, Loader2, User, Bed, Euro, MessageSquare, PlusCircle, XIcon, Save, Home, Trash2, Languages } from 'lucide-react';
+import { CalendarIcon, Loader2, User, Bed, Euro, MessageSquare, PlusCircle, XIcon, Save, Home, Trash2, Languages, MinusCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import type { Booking } from '@/lib/definitions';
 import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues, bookingFormSchema } from '@/lib/definitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +29,7 @@ import { Separator } from '../ui/separator';
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 const defaultRoomValues: RoomDetailsFormValues = {
-  roomType: 'Standard',
+  roomType: 'Standard Doppelzimmer',
   adults: 1,
   children: 0,
   infants: 0,
@@ -57,14 +57,14 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
         boardType: existingBooking.boardType,
         priceTotal: existingBooking.priceTotal,
         guestLanguage: existingBooking.guestLanguage || 'de',
-        rooms: existingBooking.rooms.map(r => ({ ...r, childrenAges: r.childrenAges || [] })), // ensure childrenAges is an array
+        rooms: existingBooking.rooms.map(r => ({ ...r, childrenAges: r.childrenAges || [] })),
         internalNotes: existingBooking.internalNotes || '',
     } : {
       firstName: '',
       lastName: '',
       checkInDate: undefined,
       checkOutDate: undefined,
-      boardType: 'Ohne Verpflegung',
+      boardType: 'Frühstück',
       priceTotal: 0,
       guestLanguage: 'de',
       rooms: [defaultRoomValues],
@@ -72,10 +72,12 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "rooms"
   });
+
+  const watchRooms = form.watch('rooms');
 
   const checkInDateValue = form.watch("checkInDate");
   const checkOutDateValue = form.watch("checkOutDate");
@@ -89,6 +91,16 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
     if (range?.from) form.setValue("checkInDate", range.from, { shouldValidate: true, shouldDirty: true });
     if (range?.to) form.setValue("checkOutDate", range.to, { shouldValidate: true, shouldDirty: true });
   };
+
+  const handleChildrenCountChange = (roomIndex: number, newCount: number) => {
+    const room = form.getValues(`rooms.${roomIndex}`);
+    const currentAges = room.childrenAges || [];
+    const newAges = Array.from({ length: newCount }, (_, i) => currentAges[i] || 0);
+
+    form.setValue(`rooms.${roomIndex}.children`, newCount, { shouldValidate: true });
+    form.setValue(`rooms.${roomIndex}.childrenAges`, newAges, { shouldValidate: true });
+  };
+
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (formData) => {
     setIsLoading(true);
@@ -164,11 +176,36 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
                   {fields.length > 1 && (<Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4" /></Button>)}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
-                  <FormField control={form.control} name={`rooms.${index}.roomType`} render={({ field }) => ( <FormItem> <FormLabel>Zimmertyp</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Standard" /></SelectTrigger></FormControl> <SelectContent>{ZIMMERTYP_FORM_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-                  <FormField control={form.control} name={`rooms.${index}.adults`} render={({ field }) => ( <FormItem> <FormLabel>Erwachsene</FormLabel> <FormControl><Input type="number" placeholder="1" {...field} min="0"/></FormControl> <FormMessage /> </FormItem> )}/>
-                  <FormField control={form.control} name={`rooms.${index}.children`} render={({ field }) => ( <FormItem> <FormLabel>Kinder (3+)</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0"/></FormControl> <FormMessage /> </FormItem> )}/>
-                  <FormField control={form.control} name={`rooms.${index}.infants`} render={({ field }) => ( <FormItem> <FormLabel>Kleinkinder</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0"/></FormControl> <FormDescription className="text-xs">(0-2 J.)</FormDescription><FormMessage /> </FormItem> )}/>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
+                    <FormField control={form.control} name={`rooms.${index}.roomType`} render={({ field }) => ( <FormItem> <FormLabel>Zimmertyp</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Standard" /></SelectTrigger></FormControl> <SelectContent>{ZIMMERTYP_FORM_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name={`rooms.${index}.adults`} render={({ field }) => ( <FormItem> <FormLabel>Erwachsene</FormLabel> <FormControl><Input type="number" placeholder="1" {...field} min="0"/></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name={`rooms.${index}.children`} render={({ field }) => ( <FormItem> <FormLabel>Kinder</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0" onChange={e => handleChildrenCountChange(index, parseInt(e.target.value, 10) || 0)}/></FormControl> <FormDescription className="text-xs">(3-17 J.)</FormDescription> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name={`rooms.${index}.infants`} render={({ field }) => ( <FormItem> <FormLabel>Kleinkinder</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0"/></FormControl> <FormDescription className="text-xs">(0-2 J.)</FormDescription><FormMessage /> </FormItem> )}/>
+                </div>
+                 {watchRooms[index].children > 0 && (
+                  <div className="mt-6">
+                      <Label>Alter der Kinder</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+                          {Array.from({ length: watchRooms[index].children }).map((_, childIndex) => (
+                              <FormField
+                                  key={childIndex}
+                                  control={form.control}
+                                  name={`rooms.${index}.childrenAges.${childIndex}`}
+                                  render={({ field }) => (
+                                      <FormItem>
+                                          <FormLabel className="text-xs text-muted-foreground">Kind {childIndex + 1}</FormLabel>
+                                          <FormControl>
+                                              <Input type="number" placeholder="Alter" {...field} min="3" max="17" />
+                                          </FormControl>
+                                          <FormMessage />
+                                      </FormItem>
+                                  )}
+                              />
+                          ))}
+                      </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -178,7 +215,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
         <FormField control={form.control} name="internalNotes" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><MessageSquare className="mr-2 h-4 w-4" />Interne Bemerkungen (Optional)</FormLabel> <FormControl><Textarea placeholder="Zusätzliche Informationen..." {...field} rows={3} /></FormControl> <FormMessage /> </FormItem> )}/>
         <div className="flex justify-end space-x-3 pt-4 border-t">
           <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isLoading}><XIcon className="mr-2 h-4 w-4" /> Abbrechen</Button>
-          <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isEditMode ? 'Änderungen speichern' : 'Buchung erstellen & Link generieren'}
           </Button>

@@ -45,18 +45,18 @@ export default function AdminLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Create Hotel">
+                <SidebarMenuButton asChild tooltip="Hotel erstellen">
                   <Link href="/admin/create-hotel">
                     <PlusCircle />
-                    <span>Create Hotel</span>
+                    <span>Hotel erstellen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Security Advisor">
+                <SidebarMenuButton asChild tooltip="Sicherheitsberater">
                   <Link href="/admin/security-advisor">
                     <ShieldCheck />
-                    <span>Security Advisor</span>
+                    <span>Sicherheitsberater</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

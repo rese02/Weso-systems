@@ -28,22 +28,22 @@ export function DashboardHeader({ children }: DashboardHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar>
-                <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" />
+                <AvatarImage src="https://placehold.co/100x100.png" alt="Benutzer-Avatar" />
                 <AvatarFallback>
                   <User />
                 </AvatarFallback>
               </Avatar>
-              <span className="sr-only">Toggle user menu</span>
+              <span className="sr-only">Benutzermenü umschalten</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>Mein Konto</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>Profil</DropdownMenuItem>
+            <DropdownMenuItem>Einstellungen</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/login">Logout</Link>
+              <Link href="/login">Abmelden</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -32,14 +31,14 @@ import type { Booking, BookingStatus } from '@/lib/definitions';
 
 
 const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary' | 'destructive' | 'outline', icon: React.ElementType, label: string } } = {
-    'Open': { variant: 'secondary', icon: CircleOff, label: 'Open' },
-    'Sent': { variant: 'outline', icon: Send, label: 'Sent' },
-    'Submitted': { variant: 'outline', icon: Clock, label: 'Submitted' },
-    'Confirmed': { variant: 'default', icon: CheckCircle2, label: 'Confirmed' },
-    'Cancelled': { variant: 'destructive', icon: CircleOff, label: 'Cancelled' },
-    'Checked-in': { variant: 'outline', icon: CheckCircle2, label: 'Checked-in' },
-    'Checked-out': { variant: 'secondary', icon: CheckCircle2, label: 'Checked-out' },
-    'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Partial Payment' },
+    'Open': { variant: 'secondary', icon: CircleOff, label: 'Offen' },
+    'Sent': { variant: 'outline', icon: Send, label: 'Gesendet' },
+    'Submitted': { variant: 'outline', icon: Clock, label: 'Übermittelt' },
+    'Confirmed': { variant: 'default', icon: CheckCircle2, label: 'Bestätigt' },
+    'Cancelled': { variant: 'destructive', icon: CircleOff, label: 'Storniert' },
+    'Checked-in': { variant: 'outline', icon: CheckCircle2, label: 'Check-in' },
+    'Checked-out': { variant: 'secondary', icon: CheckCircle2, label: 'Check-out' },
+    'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Teilzahlung' },
 };
 
 export default function BookingsListPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
@@ -93,7 +92,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
       });
   }, [allBookings, searchTerm, statusFilter]);
   
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean | string) => {
     if (checked) {
       setSelectedBookings(filteredBookings.map(b => b.id));
     } else {
@@ -101,7 +100,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
     }
   };
 
-  const handleSelectSingle = (id: string, checked: boolean) => {
+  const handleSelectSingle = (id: string, checked: boolean | string) => {
     if (checked) {
       setSelectedBookings(prev => [...prev, id]);
     } else {
@@ -149,18 +148,18 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-1">
-              <h1 className="text-3xl font-bold font-headline md:text-4xl">Booking Overview</h1>
-              <p className="text-muted-foreground">Manage all your bookings here.</p>
+              <h1 className="text-3xl font-bold font-headline md:text-4xl">Buchungsübersicht</h1>
+              <p className="text-muted-foreground">Verwalten Sie hier alle Ihre Buchungen.</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <Button variant="outline" onClick={fetchBookings} disabled={isLoading}>
                 <RefreshCw className={`${isLoading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
+                <span className="hidden sm:inline">Aktualisieren</span>
             </Button>
             <Button asChild>
                 <Link href={`/dashboard/${hotelId}/create-booking`}>
                     <PlusCircle />
-                    <span>Create New Booking</span>
+                    <span>Neue Buchung</span>
                 </Link>
             </Button>
           </div>
@@ -170,20 +169,20 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
         <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
-                    <CardTitle>Current Bookings</CardTitle>
-                    <CardDescription>Browse and filter your bookings, or select multiple to delete them.</CardDescription>
+                    <CardTitle>Aktuelle Buchungen</CardTitle>
+                    <CardDescription>Durchsuchen und filtern Sie Ihre Buchungen oder wählen Sie mehrere aus, um sie zu löschen.</CardDescription>
                 </div>
                 <div className="flex flex-col w-full sm:flex-row sm:items-center sm:w-auto gap-2">
                     <div className="relative w-full sm:w-auto">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search by name..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <Input placeholder="Suche nach Name..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filter by status" />
+                            <SelectValue placeholder="Nach Status filtern" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="all">Alle Status</SelectItem>
                             {Object.entries(statusConfig).map(([key, config]) => (
                               <SelectItem key={key} value={key}>{config.label}</SelectItem>
                             ))}
@@ -194,19 +193,19 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="w-full sm:w-auto">
                                     <Trash2 />
-                                    <span>Delete ({selectedBookings.length})</span>
+                                    <span>Löschen ({selectedBookings.length})</span>
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the selected bookings.
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Dadurch werden die ausgewählten Buchungen endgültig gelöscht.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive hover:bg-destructive/90">Löschen</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -223,15 +222,15 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                       <Checkbox 
                           onCheckedChange={handleSelectAll}
                           checked={isAllSelected}
-                          aria-label="Select all"
+                          aria-label="Alle auswählen"
                       />
                   </TableHead>
-                  <TableHead>Guest</TableHead>
+                  <TableHead>Gast</TableHead>
                   <TableHead className="hidden sm:table-cell">Check-in</TableHead>
                   <TableHead className="hidden sm:table-cell">Check-out</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Total Price</TableHead>
-                  <TableHead><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className="hidden md:table-cell">Gesamtpreis</TableHead>
+                  <TableHead><span className="sr-only">Aktionen</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,7 +243,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                 ) : filteredBookings.length === 0 ? (
                   <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center">
-                          {allBookings.length > 0 ? "No bookings match your search." : "No bookings created yet."}
+                          {allBookings.length > 0 ? "Keine Buchungen entsprechen Ihrer Suche." : "Noch keine Buchungen erstellt."}
                       </TableCell>
                   </TableRow>
                 ) : (filteredBookings.map((booking) => {
@@ -257,7 +256,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                               <Checkbox 
                                   onCheckedChange={(checked) => handleSelectSingle(booking.id, !!checked)}
                                   checked={selectedBookings.includes(booking.id)}
-                                  aria-label={`Select booking ${booking.id}`}
+                                  aria-label={`Buchung ${booking.id} auswählen`}
                               />
                           </TableCell>
                           <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
@@ -275,18 +274,18 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                               <DropdownMenuTrigger asChild>
                                   <Button aria-haspopup="true" size="icon" variant="ghost">
                                   <MoreHorizontal />
-                                  <span className="sr-only">Toggle menu</span>
+                                  <span className="sr-only">Menü umschalten</span>
                                   </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}`)}>
-                                    <Eye className="mr-2 h-4 w-4"/>View Details
+                                    <Eye className="mr-2 h-4 w-4"/>Details anzeigen
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}/edit`)}>
-                                    <Edit className="mr-2 h-4 w-4"/>Edit
+                                    <Edit className="mr-2 h-4 w-4"/>Bearbeiten
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}>
-                                    <Copy className="mr-2 h-4 w-4"/>Copy Link
+                                    <Copy className="mr-2 h-4 w-4"/>Link kopieren
                                   </DropdownMenuItem>
                               </DropdownMenuContent>
                               </DropdownMenu>

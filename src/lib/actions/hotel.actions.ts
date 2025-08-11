@@ -9,9 +9,9 @@ import { z } from 'zod';
 
 
 const HotelSchema = z.object({
-  name: z.string().min(1, 'Hotel name is required.'),
-  ownerEmail: z.string().email('Invalid email address.'),
-  domain: z.string().min(1, 'Domain is required.'),
+  name: z.string().min(1, 'Hotelname ist erforderlich.'),
+  ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
+  domain: z.string().min(1, 'Domain ist erforderlich.'),
 });
 
 export async function createHotel(
@@ -20,7 +20,7 @@ export async function createHotel(
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
         const errorMessage = Object.values(validation.error.flatten().fieldErrors).map(e => e.join(', ')).join('; ');
-        return { success: false, error: errorMessage || "Validation failed." };
+        return { success: false, error: errorMessage || "Validierung fehlgeschlagen." };
     }
     
     try {
@@ -28,8 +28,8 @@ export async function createHotel(
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...validation.data, 
             createdAt: Timestamp.now(),
-            boardTypes: ['Breakfast', 'Half-Board', 'Full-Board'],
-            roomCategories: ['Single Room', 'Double Room', 'Suite']
+            boardTypes: ['Frühstück', 'Halbpension', 'Vollpension'],
+            roomCategories: ['Einzelzimmer', 'Doppelzimmer', 'Suite']
         });
         revalidatePath('/admin');
         return { success: true, hotelId: docRef.id };
@@ -58,7 +58,7 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
         
         return { hotels };
     } catch (error) {
-        console.error("Error fetching hotels:", error);
+        console.error("Fehler beim Abrufen der Hotels:", error);
         return { error: (error as Error).message };
     }
 }
@@ -66,7 +66,7 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
 
 export async function deleteHotel(hotelId: string): Promise<{ success: boolean; error?: string }> {
     if (!hotelId) {
-        return { success: false, error: 'Hotel ID is required.' };
+        return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
     try {
         await deleteDoc(doc(db, 'hotels', hotelId));
@@ -79,13 +79,13 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
 
 
 export async function getHotelById(hotelId: string): Promise<{ hotel?: any, error?: string }> {
-    if (!hotelId) return { error: "Hotel ID is required." };
+    if (!hotelId) return { error: "Hotel-ID ist erforderlich." };
     try {
         const hotelRef = doc(db, 'hotels', hotelId);
         const snapshot = await getDoc(hotelRef);
 
         if (!snapshot.exists()) {
-            return { error: "Hotel not found." };
+            return { error: "Hotel nicht gefunden." };
         }
 
         const data = snapshot.data();
@@ -97,23 +97,23 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
 
         return { hotel };
     } catch (error) {
-        console.error("Error fetching hotel by ID:", error);
+        console.error("Fehler beim Abrufen des Hotels nach ID:", error);
         return { error: (error as Error).message };
     }
 }
 
 const SettingsSchema = z.object({
-    name: z.string().min(1, 'Hotel name is required.'),
+    name: z.string().min(1, 'Hotelname ist erforderlich.'),
     boardTypes: z.array(z.string()).optional(),
     roomCategories: z.array(z.string()).optional(),
 });
 
 export async function updateHotelSettings(hotelId: string, settings: any): Promise<{success: boolean, error?: string}> {
-    if(!hotelId) return { success: false, error: 'Hotel ID is required.'};
+    if(!hotelId) return { success: false, error: 'Hotel-ID ist erforderlich.'};
 
     const validation = SettingsSchema.safeParse(settings);
     if (!validation.success) {
-        return { success: false, error: 'Validation failed.' };
+        return { success: false, error: 'Validierung fehlgeschlagen.' };
     }
 
     try {

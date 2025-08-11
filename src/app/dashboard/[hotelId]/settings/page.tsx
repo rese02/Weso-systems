@@ -34,11 +34,11 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
         if (result.hotel) {
             setHotel({
                 ...result.hotel,
-                boardTypes: result.hotel.boardTypes || ['Breakfast', 'Half-Board', 'Full-Board'],
-                roomCategories: result.hotel.roomCategories || ['Single Room', 'Double Room', 'Suite']
+                boardTypes: result.hotel.boardTypes || ['Frühstück', 'Halbpension', 'Vollpension'],
+                roomCategories: result.hotel.roomCategories || ['Einzelzimmer', 'Doppelzimmer', 'Suite']
             });
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load hotel settings.'});
+            toast({ variant: 'destructive', title: 'Fehler', description: 'Hoteleinstellungen konnten nicht geladen werden.'});
         }
         setIsLoading(false);
     })
@@ -47,7 +47,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
 
   const addRoomCategory = () => {
     if (!hotel) return;
-    setHotel({...hotel, roomCategories: [...(hotel.roomCategories || []), 'New Category']});
+    setHotel({...hotel, roomCategories: [...(hotel.roomCategories || []), 'Neue Kategorie']});
   };
 
   const removeRoomCategory = (indexToRemove: number) => {
@@ -62,7 +62,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     setHotel({...hotel, roomCategories: newCategories});
   };
 
-  const handleBoardTypeChange = (type: string, checked: boolean) => {
+  const handleBoardTypeChange = (type: string, checked: boolean | string) => {
       if (!hotel) return;
       let newBoardTypes = [...(hotel.boardTypes || [])];
       if (checked) {
@@ -86,15 +86,15 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
 
         if (result.success) {
             toast({
-                title: "Settings Saved",
-                description: "Your hotel configuration has been updated.",
+                title: "Einstellungen gespeichert",
+                description: "Ihre Hotelkonfiguration wurde aktualisiert.",
             });
             router.refresh();
         } else {
             toast({
                 variant: "destructive",
-                title: "Error",
-                description: result.error || "Could not save settings."
+                title: "Fehler",
+                description: result.error || "Einstellungen konnten nicht gespeichert werden."
             });
         }
     });
@@ -105,59 +105,59 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
   }
 
   if (!hotel) {
-      return <div>Could not load hotel data.</div>
+      return <div>Hoteldaten konnten nicht geladen werden.</div>
   }
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
        <div className="grid gap-1">
-            <h1 className="text-3xl font-bold font-headline md:text-4xl">Hotel Settings</h1>
-            <p className="text-muted-foreground">Manage your hotel's configuration.</p>
+            <h1 className="text-3xl font-bold font-headline md:text-4xl">Hoteleinstellungen</h1>
+            <p className="text-muted-foreground">Verwalten Sie die Konfiguration Ihres Hotels.</p>
         </div>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Hotel Details</CardTitle>
-            <CardDescription>Update basic information about your hotel.</CardDescription>
+            <CardTitle>Hotel-Details</CardTitle>
+            <CardDescription>Aktualisieren Sie grundlegende Informationen über Ihr Hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="hotel-name">Hotel Name</Label>
+              <Label htmlFor="hotel-name">Hotelname</Label>
               <Input id="hotel-name" value={hotel.name} onChange={(e) => setHotel({...hotel, name: e.target.value})} />
             </div>
           </CardContent>
           <Separator />
            <CardHeader>
-            <CardTitle>Booking Configuration</CardTitle>
-            <CardDescription>Define which booking options are available for this hotel.</CardDescription>
+            <CardTitle>Buchungskonfiguration</CardTitle>
+            <CardDescription>Legen Sie fest, welche Buchungsoptionen für dieses Hotel verfügbar sind.</CardDescription>
           </CardHeader>
            <CardContent className="grid gap-6">
             <div className="grid gap-2">
-              <Label>Board Types</Label>
+              <Label>Verpflegungsarten</Label>
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="breakfast" checked={hotel.boardTypes?.includes('Breakfast')} onCheckedChange={(c) => handleBoardTypeChange('Breakfast', !!c)} />
-                  <Label htmlFor="breakfast">Breakfast</Label>
+                  <Checkbox id="breakfast" checked={hotel.boardTypes?.includes('Frühstück')} onCheckedChange={(c) => handleBoardTypeChange('Frühstück', !!c)} />
+                  <Label htmlFor="breakfast">Frühstück</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="half-board" checked={hotel.boardTypes?.includes('Half-Board')} onCheckedChange={(c) => handleBoardTypeChange('Half-Board', !!c)} />
-                  <Label htmlFor="half-board">Half Board</Label>
+                  <Checkbox id="half-board" checked={hotel.boardTypes?.includes('Halbpension')} onCheckedChange={(c) => handleBoardTypeChange('Halbpension', !!c)} />
+                  <Label htmlFor="half-board">Halbpension</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="full-board" checked={hotel.boardTypes?.includes('Full-Board')} onCheckedChange={(c) => handleBoardTypeChange('Full-Board', !!c)} />
-                  <Label htmlFor="full-board">Full Board</Label>
+                  <Checkbox id="full-board" checked={hotel.boardTypes?.includes('Vollpension')} onCheckedChange={(c) => handleBoardTypeChange('Vollpension', !!c)} />
+                  <Label htmlFor="full-board">Vollpension</Label>
                 </div>
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Room Categories</Label>
+              <Label>Zimmerkategorien</Label>
               <div className="grid gap-3">
                 {hotel.roomCategories?.map((category, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Input
                       value={category}
                       onChange={(e) => handleRoomCategoryChange(index, e.target.value)}
-                      placeholder="e.g., Suite"
+                      placeholder="z.B., Suite"
                     />
                     <Button type="button" variant="ghost" size="icon" onClick={() => removeRoomCategory(index)} disabled={(hotel.roomCategories?.length || 0) <= 1}>
                       <Trash2 className="h-4 w-4" />
@@ -167,7 +167,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
               </div>
               <Button type="button" variant="outline" size="sm" className="mt-2 w-fit" onClick={addRoomCategory}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Room Category
+                Zimmerkategorie hinzufügen
               </Button>
             </div>
           </CardContent>
@@ -176,7 +176,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
             <div className="flex justify-end gap-2">
                 <Button type="submit" disabled={isPending}>
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Changes
+                    Änderungen speichern
                 </Button>
             </div>
           </CardContent>

@@ -22,6 +22,12 @@ export interface RoomDetails {
   childrenAges?: number[];
 }
 
+export interface Companion {
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string; // ISO String
+}
+
 export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';
 
 export interface Booking {
@@ -52,6 +58,7 @@ export interface Booking {
     paymentProof?: string;
     submissionMethod?: 'upload' | 'on-site';
   };
+  companions?: Companion[];
 }
 
 export interface BookingPrefill {

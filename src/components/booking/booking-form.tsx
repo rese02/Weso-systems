@@ -1,17 +1,18 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2 } from 'lucide-react';
+import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { format, parseISO } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import type { BookingLink } from '@/lib/definitions';
@@ -21,8 +22,16 @@ import { storage } from '@/lib/firebase.client';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Timestamp, doc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase.client';
+import { Calendar } from '../ui/calendar';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const steps = ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'];
+
+type Companion = {
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: Date;
+}
 
 type FileUpload = {
     file: File;
@@ -31,17 +40,6 @@ type FileUpload = {
     name: string; // e.g. 'idFront', 'idBack'
     error?: string;
 }
-
-type Step1GuestInfoProps = {
-    formData: any;
-    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    prefillData?: BookingLink['prefill'] | null;
-    uploads: Record<string, FileUpload>;
-    handleFileUpload: (name: string, file: File) => void;
-    removeUpload: (name: string) => void;
-    documentOption: 'upload' | 'on-site';
-    setDocumentOption: (option: 'upload' | 'on-site') => void;
-};
 
 const BookingOverview = ({ prefillData }: { prefillData?: BookingLink['prefill'] | null }) => {
     const roomOccupancy = prefillData?.rooms?.[0] ? `${prefillData.rooms[0].adults} Erw.` : '';
@@ -96,13 +94,21 @@ const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required }
                 </label>
             </div>
             {upload?.error && <p className="text-destructive text-xs mt-1">{upload.error}</p>}
-             <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF (max 5MB). Bilder werden komprimiert.</p>
+             <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF (max 5MB).</p>
         </div>
     );
 };
 
-
-const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption }: Step1GuestInfoProps) => (
+const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption }: {
+    formData: any;
+    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    prefillData?: BookingLink['prefill'] | null;
+    uploads: Record<string, FileUpload>;
+    handleFileUpload: (name: string, file: File) => void;
+    removeUpload: (name: string) => void;
+    documentOption: 'upload' | 'on-site';
+    setDocumentOption: (option: 'upload' | 'on-site') => void;
+}) => (
     <div className="space-y-6">
         <BookingOverview prefillData={prefillData} />
 
@@ -141,7 +147,95 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
 );
 
 
-const Step5Review = ({ uploads, formData, prefillData }: { uploads: Record<string, FileUpload>, formData: any, prefillData?: BookingLink['prefill'] | null }) => (
+const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions }: {
+    companions: Companion[];
+    setCompanions: React.Dispatch<React.SetStateAction<Companion[]>>;
+    documentOption: 'upload' | 'on-site';
+    maxCompanions: number;
+}) => {
+    
+    const addCompanion = () => {
+        if (companions.length >= maxCompanions) return;
+        setCompanions([...companions, { firstName: '', lastName: '' }]);
+    };
+
+    const removeCompanion = (index: number) => {
+        setCompanions(companions.filter((_, i) => i !== index));
+    };
+
+    const handleCompanionChange = (index: number, field: keyof Companion, value: string | Date) => {
+        const newCompanions = [...companions];
+        (newCompanions[index] as any)[field] = value;
+        setCompanions(newCompanions);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="font-semibold">Begleitpersonen</h3>
+                <p className="text-sm text-muted-foreground">Fügen Sie hier die Daten Ihrer Mitreisenden hinzu.</p>
+            </div>
+
+            {companions.map((companion, index) => (
+                <Card key={index} className="relative bg-muted/30">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4">
+                         <h4 className="font-medium flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Mitreisender {index + 1}</h4>
+                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCompanion(index)}><Trash2 className="h-4 w-4" /></Button>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor={`c-firstName-${index}`}>Vorname *</Label>
+                            <Input id={`c-firstName-${index}`} placeholder="Erika" value={companion.firstName} onChange={(e) => handleCompanionChange(index, 'firstName', e.target.value)} required />
+                        </div>
+                         <div className="grid gap-1.5">
+                            <Label htmlFor={`c-lastName-${index}`}>Nachname *</Label>
+                            <Input id={`c-lastName-${index}`} placeholder="Mustermann" value={companion.lastName} onChange={(e) => handleCompanionChange(index, 'lastName', e.target.value)} required />
+                        </div>
+                        <div className="grid gap-1.5 sm:col-span-2">
+                             <Label htmlFor={`c-dob-${index}`}>Geburtsdatum *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !companion.dateOfBirth && "text-muted-foreground")}>
+                                        <CalendarLucideIcon className="mr-2 h-4 w-4" />
+                                        {companion.dateOfBirth ? format(companion.dateOfBirth, "dd.MM.yyyy") : <span>Geburtsdatum auswählen</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={companion.dateOfBirth} onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)} initialFocus captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+
+            {companions.length < maxCompanions && (
+                <Button type="button" variant="outline" className="w-full" onClick={addCompanion}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Weiteren Mitreisenden hinzufügen
+                </Button>
+            )}
+
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Hinweis zu Dokumenten</AlertTitle>
+                <AlertDescription>
+                    {documentOption === 'upload' 
+                        ? "Für Mitreisende sind keine Ausweis-Uploads erforderlich. Der Ausweis des Hauptbuchers ist ausreichend."
+                        : "Bitte bringen Sie für alle Mitreisenden gültige Ausweisdokumente für den Check-in vor Ort mit."
+                    }
+                </AlertDescription>
+            </Alert>
+        </div>
+    );
+};
+
+
+const Step5Review = ({ uploads, formData, prefillData, companions }: { 
+    uploads: Record<string, FileUpload>, 
+    formData: any, 
+    prefillData?: BookingLink['prefill'] | null,
+    companions: Companion[] 
+}) => (
      <div className="space-y-6">
         <div>
             <h3 className="text-lg font-bold font-headline">Buchung überprüfen</h3>
@@ -150,11 +244,20 @@ const Step5Review = ({ uploads, formData, prefillData }: { uploads: Record<strin
         <Separator/>
         <div className="grid gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-in</h4><p>{prefillData?.checkIn ? format(parseISO(prefillData.checkIn), 'PPP') : 'N/A'}</p></div>
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-out</h4><p>{prefillData?.checkOut ? format(parseISO(prefillData.checkOut), 'PPP') : 'N/A'}</p></div>
+                <div><h4 className="font-medium text-sm text-muted-foreground">Check-in</h4><p>{prefillData?.checkIn ? format(parseISO(prefillData.checkIn), 'PPP', { locale: de }) : 'N/A'}</p></div>
+                <div><h4 className="font-medium text-sm text-muted-foreground">Check-out</h4><p>{prefillData?.checkOut ? format(parseISO(prefillData.checkOut), 'PPP', { locale: de }) : 'N/A'}</p></div>
             </div>
             <Separator/>
              <div><h4 className="font-medium text-sm text-muted-foreground">Gast</h4><p>{formData.firstName} {formData.lastName} ({formData.email})</p></div>
+            <Separator/>
+             {companions.length > 0 && (
+                <div>
+                    <h4 className="font-medium text-sm text-muted-foreground">Begleitpersonen</h4>
+                    <ul className="list-disc list-inside text-sm mt-2 space-y-1">
+                        {companions.map((c, i) => <li key={i}>{c.firstName} {c.lastName}</li>)}
+                    </ul>
+                </div>
+             )}
             <Separator/>
              <div><h4 className="font-medium text-sm text-muted-foreground">Hochgeladene Dokumente</h4>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-2">
@@ -166,7 +269,7 @@ const Step5Review = ({ uploads, formData, prefillData }: { uploads: Record<strin
                         </li>
                       ))
                     ) : (
-                      <p className="text-muted-foreground">Keine Dokumente hochgeladen.</p>
+                      <p className="text-muted-foreground">Keine Dokumente hochgeladen (vor Ort Option gewählt).</p>
                     )}
                 </ul>
              </div>
@@ -182,12 +285,21 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       lastName: initialGuestData.lastName || '',
       email: initialGuestData.email || '',
   });
+  const [companions, setCompanions] = useState<Companion[]>([]);
   const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [documentOption, setDocumentOption] = useState<'upload' | 'on-site'>('upload');
 
   const router = useRouter();
   const { toast } = useToast();
+  
+  const maxCompanions = useMemo(() => {
+    if (!prefillData?.rooms) return 0;
+    // Sum of all adults and children, minus 1 (the main guest)
+    const totalPeople = prefillData.rooms.reduce((sum, room) => sum + room.adults + room.children, 0);
+    return Math.max(0, totalPeople - 1);
+  }, [prefillData]);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
@@ -225,27 +337,35 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     });
   };
 
-  const validateStep1 = () => {
-      const { firstName, lastName, email, phone } = formData;
-      if (!firstName || !lastName || !email || !phone) {
-          toast({variant: 'destructive', title: 'Fehlende Angaben', description: 'Bitte füllen Sie alle Pflichtfelder (*) aus.'});
-          return false;
+  const validateStep = (step: number) => {
+      if (step === 0) { // Step 1: Guest
+        const { firstName, lastName, email, phone } = formData;
+        if (!firstName || !lastName || !email || !phone) {
+            toast({variant: 'destructive', title: 'Fehlende Angaben', description: 'Bitte füllen Sie alle Pflichtfelder (*) aus.'});
+            return false;
+        }
+        if (documentOption === 'upload' && (!uploads.idFront || !uploads.idBack)) {
+            toast({variant: 'destructive', title: 'Fehlende Dokumente', description: 'Bitte laden Sie Vorder- und Rückseite Ihres Ausweises hoch.'});
+            return false;
+        }
+        if (uploads.idFront?.error || uploads.idBack?.error) {
+             toast({variant: 'destructive', title: 'Fehlerhafte Dateien', description: 'Bitte korrigieren Sie die Fehler bei den hochgeladenen Dateien.'});
+             return false;
+        }
       }
-      if (documentOption === 'upload' && (!uploads.idFront || !uploads.idBack)) {
-           toast({variant: 'destructive', title: 'Fehlende Dokumente', description: 'Bitte laden Sie Vorder- und Rückseite Ihres Ausweises hoch.'});
-          return false;
+      if (step === 1) { // Step 2: Companions
+          for(const c of companions) {
+              if(!c.firstName || !c.lastName || !c.dateOfBirth) {
+                  toast({variant: 'destructive', title: 'Fehlende Angaben', description: 'Bitte füllen Sie alle Felder für jeden Mitreisenden aus.'});
+                  return false;
+              }
+          }
       }
-      // Clear errors on valid files
-      if (uploads.idFront?.error) removeUpload('idFront');
-      if (uploads.idBack?.error) removeUpload('idBack');
-
       return true;
   }
 
   const nextStep = () => {
-    if (currentStep === 0) { // Step 1: Guest
-        if (!validateStep1()) return;
-    }
+    if (!validateStep(currentStep)) return;
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 
@@ -317,9 +437,11 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             status: 'Submitted',
             submittedAt: Timestamp.now(),
             documents: {
-                ...uploadedFileMap,
+                idFront: uploadedFileMap.idFront,
+                idBack: uploadedFileMap.idBack,
                 submissionMethod: documentOption
             },
+            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth?.toISOString()}))
         };
         batch.update(bookingDocRef, updateData);
 
@@ -353,13 +475,19 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         documentOption={documentOption}
                         setDocumentOption={setDocumentOption}
                     />;
-        // Placeholder for future steps
         case 1:
+            return <Step2Companions
+                        companions={companions}
+                        setCompanions={setCompanions}
+                        documentOption={documentOption}
+                        maxCompanions={maxCompanions}
+                    />;
+        // Placeholder for future steps
         case 2:
         case 3:
             return <div className="text-center p-8 text-muted-foreground">Dieser Schritt ist in Kürze verfügbar.</div>;
         case 4:
-            return <Step5Review uploads={uploads} formData={formData} prefillData={prefillData} />;
+            return <Step5Review uploads={uploads} formData={formData} prefillData={prefillData} companions={companions} />;
         default:
             return null;
     }

@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit, documentId } from 'firebase/firestore';
 import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -270,9 +270,24 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     // Since we know the collection is 'bookingLinks', we can first query for the document
     // across all hotels and then get its parent hotel.
 
-    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', 'like', `%/${linkId}`), limit(1));
+    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where(documentId(), '==', linkId), limit(1));
     const linkSnapshot = await getDocs(linksQuery);
 
+    if (linkSnapshot.empty) {
+        // Fallback for when collectionGroup query might be slow to index.
+        // This is a less efficient workaround but can help in dev environments.
+        console.warn("Collection group query failed, trying manual scan. This is inefficient and requires indexes in production.");
+        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+        for (const hotelDoc of hotelsSnapshot.docs) {
+            const linkDocRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
+            const linkDocSnap = await getDoc(linkDocRef);
+            if (linkDocSnap.exists()) {
+                linkSnapshot.docs.push(linkDocSnap);
+                break;
+            }
+        }
+    }
+    
     if (linkSnapshot.empty) {
         return { success: false, error: "Link not found." };
     }
@@ -304,7 +319,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     console.error("Error fetching link details:", error);
     const e = error as Error;
     // Provide a more generic error in production
-    if (e.message.includes("indexes?create_composite")) {
+    if (e.message.includes("indexes?create_composite") || e.message.includes("requires an index")) {
         return { success: false, error: "The database is being set up. Please try again in a few minutes." };
     }
     return { success: false, error: e.message };

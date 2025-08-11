@@ -265,37 +265,38 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // A collection group query requires a composite index, which can be complex to set up.
-    // A more direct approach is to find the document if we can deduce its path.
-    // Since we know the collection is 'bookingLinks', we can first query for the document
-    // across all hotels and then get its parent hotel.
+    const q = query(
+      collectionGroup(db, 'bookingLinks'),
+      where('__name__', '==', `hotels/${linkId}`)
+    );
+    const querySnapshot = await getDocs(q);
 
-    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where(documentId(), '==', linkId), limit(1));
-    const linkSnapshot = await getDocs(linksQuery);
-
-    if (linkSnapshot.empty) {
-        // Fallback for when collectionGroup query might be slow to index.
-        // This is a less efficient workaround but can help in dev environments.
-        console.warn("Collection group query failed, trying manual scan. This is inefficient and requires indexes in production.");
+    let linkDoc: any;
+    
+    // This is a workaround for development environments where indexing might be slow.
+    // It is not recommended for production.
+    if(querySnapshot.empty) {
+        console.warn('Collection group query returned no results. This may be due to Firestore indexing latency. Falling back to a scan.');
         const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
         for (const hotelDoc of hotelsSnapshot.docs) {
-            const linkDocRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
-            const linkDocSnap = await getDoc(linkDocRef);
-            if (linkDocSnap.exists()) {
-                linkSnapshot.docs.push(linkDocSnap);
+            const hotelId = hotelDoc.id;
+            const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
+            const docSnap = await getDoc(linkDocRef);
+            if (docSnap.exists()) {
+                linkDoc = docSnap;
                 break;
             }
         }
+    } else {
+        linkDoc = querySnapshot.docs[0];
     }
     
-    if (linkSnapshot.empty) {
-        return { success: false, error: "Link not found." };
+    if (!linkDoc) {
+      return { success: false, error: "Link not found." };
     }
-    
-    const linkDoc = linkSnapshot.docs[0];
+
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
 
-    // The hotelId is in the link data, so we can directly fetch the hotel.
     const hotelDocRef = doc(db, 'hotels', linkData.hotelId);
     const hotelSnap = await getDoc(hotelDocRef);
 

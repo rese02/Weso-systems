@@ -9,7 +9,7 @@ import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle } from 'lucide-react';
+import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle, ListChecks } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -229,6 +229,61 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
     );
 };
 
+const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption }: {
+    prefillData: BookingLink['prefill'] | null;
+    paymentOption: 'deposit' | 'full';
+    setPaymentOption: (option: 'deposit' | 'full') => void;
+}) => {
+    const totalPrice = prefillData?.priceTotal || 0;
+    const depositPrice = totalPrice * 0.3;
+    const selectedAmount = paymentOption === 'deposit' ? depositPrice : totalPrice;
+
+    return (
+        <div className="space-y-6">
+             <div className="flex items-center gap-2">
+                <ListChecks className="w-6 h-6 text-primary" />
+                <h3 className="font-semibold text-lg">Zahl-Option</h3>
+            </div>
+            <div>
+                <h4 className="font-semibold">Wählen Sie Ihre Zahlungsoption *</h4>
+                <p className="text-sm text-muted-foreground">Der Gesamtpreis dieser Buchung beträgt: {totalPrice.toFixed(2)} €.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <button
+                    type="button"
+                    className={cn(
+                        "p-6 text-center border rounded-lg transition-all",
+                        paymentOption === 'deposit' ? 'border-primary ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'
+                    )}
+                    onClick={() => setPaymentOption('deposit')}
+                >
+                    <ListChecks className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="font-medium">Anzahlung (30%)</p>
+                    <p className="text-xl font-bold text-primary">{depositPrice.toFixed(2)} €</p>
+                </button>
+                 <button
+                    type="button"
+                    className={cn(
+                        "p-6 text-center border rounded-lg transition-all",
+                        paymentOption === 'full' ? 'border-primary ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'
+                    )}
+                    onClick={() => setPaymentOption('full')}
+                >
+                    <ListChecks className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="font-medium">Gesamtbetrag (100%)</p>
+                    <p className="text-xl font-bold text-primary">{totalPrice.toFixed(2)} €</p>
+                </button>
+            </div>
+            <div>
+                <Label>Gewählter Betrag zur Überweisung:</Label>
+                <div className="mt-2 p-3 bg-muted rounded-md font-semibold text-lg">
+                    {selectedAmount.toFixed(2)} €
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const Step5Review = ({ uploads, formData, prefillData, companions }: { 
     uploads: Record<string, FileUpload>, 
@@ -289,6 +344,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   const [uploads, setUploads] = useState<Record<string, FileUpload>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [documentOption, setDocumentOption] = useState<'upload' | 'on-site'>('upload');
+  const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>('deposit');
 
   const router = useRouter();
   const { toast } = useToast();
@@ -482,8 +538,12 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         documentOption={documentOption}
                         maxCompanions={maxCompanions}
                     />;
-        // Placeholder for future steps
         case 2:
+            return <Step3PaymentOption
+                        prefillData={prefillData}
+                        paymentOption={paymentOption}
+                        setPaymentOption={setPaymentOption}
+                    />;
         case 3:
             return <div className="text-center p-8 text-muted-foreground">Dieser Schritt ist in Kürze verfügbar.</div>;
         case 4:
@@ -519,3 +579,5 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
+
+    

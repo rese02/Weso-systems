@@ -9,7 +9,7 @@ import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle, ListChecks } from 'lucide-react';
+import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle, ListChecks, Banknote, Copy, CreditCard } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -284,6 +284,89 @@ const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption }: {
     );
 };
 
+const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload }: {
+    prefillData: BookingLink['prefill'] | null;
+    paymentOption: 'deposit' | 'full';
+    uploads: Record<string, FileUpload>;
+    handleFileUpload: (name: string, file: File) => void;
+    removeUpload: (name: string) => void;
+}) => {
+    const { toast } = useToast();
+    const totalPrice = prefillData?.priceTotal || 0;
+    const depositPrice = totalPrice * 0.3;
+    const toPay = paymentOption === 'deposit' ? depositPrice : totalPrice;
+    const restAmount = paymentOption === 'deposit' ? totalPrice - depositPrice : 0;
+    const bookingIdShort = prefillData?.bookingId.substring(0, 8).toUpperCase();
+    const paymentPurpose = `Buchung ${bookingIdShort} - ${paymentOption === 'deposit' ? 'Anzahlung' : 'Gesamtbetrag'}`;
+
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: "Kopiert!", description: `${label} wurde in die Zwischenablage kopiert.` });
+    };
+
+    const bankDetails = {
+        'Kontoinhaber': 'Pradell GMBH',
+        'IBAN': 'IT51X0805623120000302071631',
+        'BIC/SWIFT': 'RZSBIT21211',
+        'Bank': 'Raiffeisenkasse Kastelruth - St. Ulrich'
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                <Banknote className="w-6 h-6 text-primary" />
+                <h3 className="font-semibold text-lg">Zahl-Details</h3>
+            </div>
+            <div>
+                <h4 className="font-semibold">Zahlungsinformationen & Nachweis *</h4>
+                <p className="text-sm text-muted-foreground">Bitte überweisen Sie den gewählten Betrag und laden Sie anschließend einen Nachweis hoch.</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
+                <div className="flex justify-between"><span className="text-muted-foreground">Gesamtpreis:</span><span className="font-medium">{totalPrice.toFixed(2)} €</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Ihre Auswahl:</span><span className="font-medium">{paymentOption === 'deposit' ? 'Anzahlung (30%)' : 'Gesamtbetrag (100%)'}</span></div>
+                <Separator/>
+                <div className="flex justify-between items-center text-base"><span className="text-muted-foreground">Jetzt zu überweisen:</span><span className="font-bold text-primary text-lg">{toPay.toFixed(2)} €</span></div>
+                {paymentOption === 'deposit' && <div className="flex justify-between text-xs pt-1"><span className="text-muted-foreground">Restbetrag bei Anreise im Hotel:</span><span className="font-medium">{restAmount.toFixed(2)} €</span></div>}
+            </div>
+
+            <div>
+                <h4 className="font-semibold text-sm mb-2">Banküberweisung an:</h4>
+                <div className="rounded-md border divide-y">
+                    {Object.entries(bankDetails).map(([label, value]) => (
+                         <div key={label} className="p-3 flex justify-between items-center text-sm">
+                            <div>
+                                <p className="text-xs text-muted-foreground">{label}</p>
+                                <p className="font-medium">{value}</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(value, label)}><Copy className="w-4 h-4"/></Button>
+                         </div>
+                    ))}
+                    <div className="p-3 flex justify-between items-center text-sm bg-muted/30">
+                        <div>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3"/>Verwendungszweck</p>
+                            <p className="font-medium">{paymentPurpose}</p>
+                            <p className="text-xs text-muted-foreground">Bitte geben Sie dies bei Ihrer Überweisung an.</p>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(paymentPurpose, 'Verwendungszweck')}><Copy className="w-4 h-4"/></Button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                 <FileUploadInput id="paymentProof" label="Zahlungsnachweis hochladen *" onFileSelect={(file) => handleFileUpload('paymentProof', file)} upload={uploads.paymentProof} onRemove={() => removeUpload('paymentProof')} required/>
+            </div>
+            
+            <div className="p-4 rounded-md border border-dashed flex items-start gap-4">
+                <CreditCard className="w-8 h-8 text-muted-foreground mt-1"/>
+                <div>
+                     <h4 className="font-semibold">Kreditkarte</h4>
+                     <p className="text-sm text-muted-foreground">Zahlung per Kreditkarte ist derzeit nicht verfügbar.</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const Step5Review = ({ uploads, formData, prefillData, companions }: { 
     uploads: Record<string, FileUpload>, 
@@ -417,6 +500,16 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
               }
           }
       }
+      if (step === 3) { // Step 4: Payment Details
+        if (!uploads.paymentProof) {
+            toast({variant: 'destructive', title: 'Fehlender Nachweis', description: 'Bitte laden Sie einen Zahlungsnachweis hoch.'});
+            return false;
+        }
+         if (uploads.paymentProof?.error) {
+             toast({variant: 'destructive', title: 'Fehlerhafter Nachweis', description: 'Bitte korrigieren Sie den Fehler bei der hochgeladenen Datei.'});
+             return false;
+        }
+      }
       return true;
   }
 
@@ -495,6 +588,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             documents: {
                 idFront: uploadedFileMap.idFront,
                 idBack: uploadedFileMap.idBack,
+                paymentProof: uploadedFileMap.paymentProof,
                 submissionMethod: documentOption
             },
             companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth?.toISOString()}))
@@ -545,7 +639,13 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         setPaymentOption={setPaymentOption}
                     />;
         case 3:
-            return <div className="text-center p-8 text-muted-foreground">Dieser Schritt ist in Kürze verfügbar.</div>;
+            return <Step4PaymentDetails
+                        prefillData={prefillData}
+                        paymentOption={paymentOption}
+                        uploads={uploads}
+                        handleFileUpload={handleFileUpload}
+                        removeUpload={removeUpload}
+                    />;
         case 4:
             return <Step5Review uploads={uploads} formData={formData} prefillData={prefillData} companions={companions} />;
         default:

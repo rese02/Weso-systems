@@ -39,12 +39,18 @@ export interface Booking {
   priceTotal: number;
   rooms: RoomDetails[];
   internalNotes?: string;
+  // Guest submitted data
   firstName?: string;
   lastName?: string;
   email?: string;
+  phone?: string;
+  age?: number;
+  guestNotes?: string;
   documents?: {
-    idDoc?: string;
+    idFront?: string;
+    idBack?: string;
     paymentProof?: string;
+    submissionMethod?: 'upload' | 'on-site';
   };
 }
 
@@ -55,6 +61,9 @@ export interface BookingPrefill {
     priceTotal: number;
     bookingId: string;
     rooms: RoomDetails[];
+    // Prefill from creation form
+    firstName?: string;
+    lastName?: string;
 }
 
 export interface BookingLink {

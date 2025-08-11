@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
 import type { BookingLinkWithHotel } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
   const { linkId } = use(paramsPromise);
@@ -53,8 +54,8 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
                 <Skeleton className="h-10 w-64" />
                 <Skeleton className="h-4 w-80" />
             </div>
-            <div className="w-full max-w-3xl space-y-4">
-                <Skeleton className="h-48 w-full" />
+            <div className="w-full max-w-4xl space-y-4">
+                <Skeleton className="h-96 w-full" />
                 <Skeleton className="h-12 w-full" />
             </div>
         </div>
@@ -78,15 +79,21 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
   }
 
   return (
-    <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
-      <div className="flex flex-col items-center gap-4 mb-8 text-center">
-        <Building2 className="h-12 w-12 text-primary" />
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Buchung für {linkData?.hotelName}</h1>
-        <p className="text-muted-foreground max-w-md">
-          Vervollständigen Sie die folgenden Schritte, um Ihre Reservierung abzuschließen.
-        </p>
-      </div>
-      {linkData && <BookingForm prefillData={linkData.prefill} linkId={linkData.id} hotelId={linkData.hotelId} />}
+     <div className="min-h-screen bg-secondary flex flex-col items-center p-4 sm:p-6 md:p-8">
+      <header className="py-8">
+        <Link href="/">
+           <Building2 className="h-12 w-12 text-primary" />
+        </Link>
+      </header>
+      <main className="w-full flex-grow flex flex-col items-center">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Buchung vervollständigen</h1>
+          {linkData && <BookingForm prefillData={linkData.prefill} linkId={linkData.id} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
+        </div>
+      </main>
+      <footer className="py-4 text-center text-xs text-muted-foreground">
+        <p>© {new Date().getFullYear()} WESO B-system. Sichere Datenübermittlung.</p>
+      </footer>
     </div>
   );
 }

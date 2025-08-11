@@ -39,8 +39,8 @@ export async function createBookingWithLink(
         const newBooking: Omit<Booking, 'id'> = {
             hotelId,
             status: 'Sent', // 'Sent' because we are creating a link right away
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
+            createdAt: Timestamp.now().toDate().toISOString(),
+            updatedAt: Timestamp.now().toDate().toISOString(),
             firstName: validatedData.firstName,
             lastName: validatedData.lastName,
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
@@ -58,13 +58,21 @@ export async function createBookingWithLink(
             })),
             // bookingLinkId will be set later
         };
-        batch.set(newBookingRef, newBooking);
+        // Use an object that matches the structure for a write operation, not the final Booking type
+        const firestoreBookingData = {
+            ...newBooking,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+        };
+        batch.set(newBookingRef, firestoreBookingData);
 
         // 2. Create the booking link (token) document
         const newLinkRef = doc(collection(db, `hotels/${hotelId}/bookingLinks`));
         const now = new Date();
         
         const prefill: BookingPrefill = {
+            firstName: newBooking.firstName,
+            lastName: newBooking.lastName,
             checkIn: newBooking.checkIn,
             checkOut: newBooking.checkOut,
             boardType: newBooking.boardType,
@@ -253,39 +261,28 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
  * Fetches the details for a given booking link ID, including hotel name.
  * This function uses a collection group query to find the link across all hotels.
  */
-export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: (BookingLink & { hotelName: string }), error?: string }> {
+export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
     let linkDoc;
+    let foundHotelId;
+
     // This is a workaround for development environments where collection group queries
-    // can be slow to index. In production, the first branch should almost always work.
-    try {
-        const linksCollectionGroup = collectionGroup(db, 'bookingLinks');
-        const q = query(linksCollectionGroup, where('__name__', '==', linkId), limit(1));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            linkDoc = querySnapshot.docs[0];
-        }
-    } catch (e) {
-        // Fallback for environments where collectionGroup queries might fail or be slow
-        console.warn("Collection group query failed, using fallback. This may be slow.", e);
-    }
-    
-    if (!linkDoc) {
-        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-        for (const hotelDoc of hotelsSnapshot.docs) {
-            const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
-            const potentialLinkSnap = await getDoc(potentialLinkRef);
-            if (potentialLinkSnap.exists()) {
-                linkDoc = potentialLinkSnap;
-                break;
-            }
+    // can be slow to index. In production, a more direct query would be better.
+    // Since we don't know the hotelId from the linkId alone, we have to search.
+    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+    for (const hotelDoc of hotelsSnapshot.docs) {
+        const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
+        const potentialLinkSnap = await getDoc(potentialLinkRef);
+        if (potentialLinkSnap.exists()) {
+            linkDoc = potentialLinkSnap;
+            foundHotelId = hotelDoc.id;
+            break;
         }
     }
 
-
-    if (!linkDoc || !linkDoc.exists()) {
+    if (!linkDoc || !linkDoc.exists() || !foundHotelId) {
       return { success: false, error: "Link not found." };
     }
     
@@ -309,7 +306,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
         hotelName,
     };
     
-    return { success: true, data: serializableLinkData as any };
+    return { success: true, data: serializableLinkData as BookingLinkWithHotel };
 
   } catch (error) {
     console.error("Error fetching link details:", error);

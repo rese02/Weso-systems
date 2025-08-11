@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 import * as z from 'zod';
 
@@ -84,7 +83,11 @@ export interface BookingLink {
   prefill: BookingPrefill;
 }
 
-export type BookingLinkWithHotel = BookingLink & { hotelName: string };
+export interface BookingLinkWithHotel extends BookingLink { 
+    hotelName: string; 
+    // This allows prefill data to be accessed on the combined type
+    prefill: BookingLink['prefill'];
+};
 
 // --- Form Schemas and Options ---
 

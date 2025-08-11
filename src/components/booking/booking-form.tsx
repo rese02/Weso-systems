@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -24,6 +23,8 @@ import { Timestamp, doc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase.client';
 import { Calendar } from '../ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
+
 
 const steps = ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'];
 
@@ -42,8 +43,8 @@ type FileUpload = {
 }
 
 const BookingOverview = ({ prefillData }: { prefillData?: BookingLink['prefill'] | null }) => {
-    const roomOccupancy = prefillData?.rooms?.[0] ? `${prefillData.rooms[0].adults} Erw.` : '';
-    
+    if (!prefillData) return null;
+
     return (
         <div className="bg-muted/50 rounded-lg p-4 space-y-3 mb-6">
             <h3 className="font-semibold flex items-center gap-2"><Info className="h-4 w-4 text-primary" />Ihre Buchungsübersicht</h3>
@@ -52,17 +53,20 @@ const BookingOverview = ({ prefillData }: { prefillData?: BookingLink['prefill']
                     <span className="text-muted-foreground">Zeitraum:</span>
                     <span className="font-medium">{prefillData?.checkIn && prefillData?.checkOut ? `${format(parseISO(prefillData.checkIn), 'dd.MM.yyyy')} - ${format(parseISO(prefillData.checkOut), 'dd.MM.yyyy')}` : 'N/A'}</span>
                 </div>
-                <div className="flex justify-between">
-                    <span className="text-muted-foreground">Gesamtpreis:</span>
-                    <span className="font-medium">{prefillData?.priceTotal?.toFixed(2)} €</span>
-                </div>
-                <div className="flex justify-between">
-                    <span className="text-muted-foreground">Zimmer 1:</span>
-                    <span className="font-medium">{prefillData?.rooms?.[0]?.roomType} ({roomOccupancy})</span>
-                </div>
+                 {prefillData.rooms.map((room, index) => (
+                    <div className="flex justify-between" key={index}>
+                         <span className="text-muted-foreground">Zimmer {index + 1}:</span>
+                         <span className="font-medium">{room.roomType} ({room.adults} Erw., {room.children} Ki.)</span>
+                    </div>
+                ))}
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Verpflegung:</span>
                     <span className="font-medium">{prefillData?.boardType}</span>
+                </div>
+                <Separator/>
+                <div className="flex justify-between font-bold">
+                    <span className="text-muted-foreground">Gesamtpreis:</span>
+                    <span>{prefillData?.priceTotal?.toFixed(2)} €</span>
                 </div>
             </div>
         </div>
@@ -128,8 +132,8 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
              <h3 className="font-semibold">Ausweisdokumente *</h3>
              <p className="text-sm text-muted-foreground">Bitte wählen Sie, wie Sie die Ausweisdokumente bereitstellen möchten.</p>
              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'upload' && 'opacity-0')}/>Jetzt hochladen</Button>
-                <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'on-site' && 'opacity-0')}/>Vor Ort vorzeigen</Button>
+                <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'upload' && 'opacity-0')}/></Button>
+                <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'on-site' && 'opacity-0')}/></Button>
              </div>
              {documentOption === 'upload' && (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
@@ -173,7 +177,7 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
         <div className="space-y-6">
             <div>
                 <h3 className="font-semibold">Begleitpersonen</h3>
-                <p className="text-sm text-muted-foreground">Fügen Sie hier die Daten Ihrer Mitreisenden hinzu.</p>
+                <p className="text-sm text-muted-foreground">Fügen Sie hier die Daten Ihrer Mitreisenden hinzu. Es sind {maxCompanions} Begleitperson(en) vorgesehen.</p>
             </div>
 
             {companions.map((companion, index) => (
@@ -318,7 +322,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
                 <h3 className="font-semibold text-lg">Zahl-Details</h3>
             </div>
             <div>
-                <h4 className="font-semibold">Zahlungsinformationen & Nachweis *</h4>
+                <h4 className="font-semibold">Zahlungsinformationen &amp; Nachweis *</h4>
                 <p className="text-sm text-muted-foreground">Bitte überweisen Sie den gewählten Betrag und laden Sie anschließend einen Nachweis hoch.</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
@@ -367,53 +371,73 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     );
 };
 
+const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined }) => (
+    <div className="flex justify-between py-2 border-b border-dashed">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium">{value || 'N/A'}</p>
+    </div>
+);
 
-const Step5Review = ({ uploads, formData, prefillData, companions }: { 
-    uploads: Record<string, FileUpload>, 
-    formData: any, 
-    prefillData?: BookingLink['prefill'] | null,
-    companions: Companion[] 
-}) => (
-     <div className="space-y-6">
-        <div>
-            <h3 className="text-lg font-bold font-headline">Buchung überprüfen</h3>
-            <p className="text-sm text-muted-foreground">Bitte überprüfen Sie alle Angaben, bevor Sie die Buchung bestätigen.</p>
-        </div>
-        <Separator/>
-        <div className="grid gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-in</h4><p>{prefillData?.checkIn ? format(parseISO(prefillData.checkIn), 'PPP', { locale: de }) : 'N/A'}</p></div>
-                <div><h4 className="font-medium text-sm text-muted-foreground">Check-out</h4><p>{prefillData?.checkOut ? format(parseISO(prefillData.checkOut), 'PPP', { locale: de }) : 'N/A'}</p></div>
+const Step5Review = ({ formData, companions, documentOption, paymentOption, prefillData }: {
+    formData: any;
+    companions: Companion[];
+    documentOption: string;
+    paymentOption: string;
+    prefillData: BookingLink['prefill'] | null;
+}) => {
+    const totalPrice = prefillData?.priceTotal || 0;
+    const depositPrice = totalPrice * 0.3;
+    const toPay = paymentOption === 'deposit' ? depositPrice : totalPrice;
+    const restAmount = paymentOption === 'deposit' ? totalPrice - depositPrice : 0;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                <Check className="w-6 h-6 text-primary" />
+                <h3 className="font-semibold text-lg">Prüfung</h3>
             </div>
-            <Separator/>
-             <div><h4 className="font-medium text-sm text-muted-foreground">Gast</h4><p>{formData.firstName} {formData.lastName} ({formData.email})</p></div>
-            <Separator/>
-             {companions.length > 0 && (
-                <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Begleitpersonen</h4>
-                    <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-                        {companions.map((c, i) => <li key={i}>{c.firstName} {c.lastName}</li>)}
-                    </ul>
+            <p className="text-sm text-muted-foreground">Bitte überprüfen Sie alle eingegebenen Informationen sorgfältig, bevor Sie die Daten endgültig absenden.</p>
+            
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-sm flex items-center gap-2"><User className="w-4 h-4 text-primary"/>Ihre Daten (Hauptgast)</h4>
+                <Separator/>
+                <ReviewItem label="Vorname" value={formData.firstName} />
+                <ReviewItem label="Nachname" value={formData.lastName} />
+                <ReviewItem label="E-Mail" value={formData.email} />
+                <ReviewItem label="Telefon" value={formData.phone} />
+                <ReviewItem label="Ausweisdokumente" value={documentOption === 'upload' ? 'Hochgeladen' : 'Vor Ort vorzeigen'} />
+            </div>
+
+            {companions.length > 0 && (
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-primary"/>Begleitpersonen</h4>
+                     <Separator/>
+                    {companions.map((c, i) => (
+                        <ReviewItem key={i} label={`Person ${i+2}`} value={`${c.firstName} ${c.lastName}`} />
+                    ))}
                 </div>
-             )}
-            <Separator/>
-             <div><h4 className="font-medium text-sm text-muted-foreground">Hochgeladene Dokumente</h4>
-                <ul className="list-disc list-inside text-sm mt-2 space-y-2">
-                    {Object.values(uploads).length > 0 ? (
-                      Object.values(uploads).map((upload) => (
-                        <li key={upload.name}>
-                            {upload.file.name}
-                            {upload.progress < 100 && <Progress value={upload.progress} className="mt-1" />}
-                        </li>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground">Keine Dokumente hochgeladen (vor Ort Option gewählt).</p>
-                    )}
-                </ul>
+            )}
+
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-sm flex items-center gap-2"><Banknote className="w-4 h-4 text-primary"/>Zahlungsinformationen</h4>
+                <Separator/>
+                <ReviewItem label="Gesamtpreis" value={`${totalPrice.toFixed(2)} €`} />
+                <ReviewItem label="Gewählte Option" value={paymentOption === 'deposit' ? 'Anzahlung (30%)' : 'Gesamtbetrag (100%)'} />
+                <ReviewItem label="Überwiesener Betrag" value={`${toPay.toFixed(2)} €`} />
+                {paymentOption === 'deposit' && <ReviewItem label="Restbetrag bei Anreise" value={`${restAmount.toFixed(2)} €`} />}
+                <ReviewItem label="Zahlungsart" value="Banküberweisung" />
+                <ReviewItem label="Zahlungsbeleg" value="Hochgeladen" />
+            </div>
+
+             <div className="bg-muted/30 rounded-lg p-4 flex items-start gap-3">
+                <Check className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                    Indem Sie auf 'Daten absenden' klicken, bestätigen Sie, dass Sie die <a href="#" className="underline">Datenschutzbestimmungen</a> und die <a href="#" className="underline">AGB</a> gelesen haben und diesen zustimmen.
+                </p>
              </div>
         </div>
-     </div>
-);
+    );
+};
 
 
 export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: { prefillData?: BookingLink['prefill'] | null, linkId?: string, hotelId?: string, initialGuestData: {firstName?: string; lastName?: string, email?: string} }) {
@@ -493,6 +517,10 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         }
       }
       if (step === 1) { // Step 2: Companions
+          if(companions.length !== maxCompanions){
+              toast({variant: 'destructive', title: 'Anzahl Begleitpersonen', description: `Bitte fügen Sie die Daten für alle ${maxCompanions} Begleitpersonen hinzu.`});
+              return false;
+          }
           for(const c of companions) {
               if(!c.firstName || !c.lastName || !c.dateOfBirth) {
                   toast({variant: 'destructive', title: 'Fehlende Angaben', description: 'Bitte füllen Sie alle Felder für jeden Mitreisenden aus.'});
@@ -557,20 +585,21 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     try {
         let uploadedFileMap: Record<string, string> = {};
 
-        if (documentOption === 'upload') {
-            const filesToUpload = Object.values(uploads).filter(u => !u.url); // Only upload new files
+        // Only upload files if the user chose that option
+        const filesToUpload = Object.values(uploads).filter(u => !u.url); // Only upload new files
+        if (filesToUpload.length > 0) {
             const uploadPromises = filesToUpload.map(upload => uploadFile(upload));
             const uploadedFiles = await Promise.all(uploadPromises);
             
-            uploadedFileMap = uploadedFiles.reduce((acc, file) => {
+            const newFileMap = uploadedFiles.reduce((acc, file) => {
                 acc[file.name] = file.url;
                 return acc;
             }, {} as Record<string, string>);
-
-            // also include already uploaded files
+             // also include already uploaded files
             Object.values(uploads).forEach(u => {
-                if(u.url) uploadedFileMap[u.name] = u.url;
+                if(u.url) newFileMap[u.name] = u.url;
             })
+            uploadedFileMap = newFileMap;
         }
 
         const batch = writeBatch(db);
@@ -583,7 +612,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             phone: formData.phone,
             age: formData.age || null,
             guestNotes: formData.notes || '',
-            status: 'Submitted',
+            status: paymentOption === 'deposit' ? 'Partial Payment' : 'Confirmed',
             submittedAt: Timestamp.now(),
             documents: {
                 idFront: uploadedFileMap.idFront,
@@ -599,6 +628,19 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         batch.update(linkDocRef, { status: 'used' });
         
         await batch.commit();
+        
+        // Generate and log the confirmation email, but don't send it.
+        try {
+            console.log("Generating confirmation email...");
+            const emailResult = await generateConfirmationEmail({ hotelId, bookingId: prefillData.bookingId });
+            console.log("--- GENERATED EMAIL (for logging) ---");
+            console.log("Subject:", emailResult.subject);
+            console.log("Body:\n", emailResult.body);
+            console.log("-------------------------------------");
+        } catch (emailError) {
+             console.error("Could not generate confirmation email:", emailError);
+             // Don't block the user flow for this, just log it.
+        }
 
         toast({ title: "Buchung übermittelt!", description: "Ihre Buchungsdetails wurden an das Hotel gesendet."});
         router.push(`/guest/${linkId}/thank-you`);
@@ -647,7 +689,13 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         removeUpload={removeUpload}
                     />;
         case 4:
-            return <Step5Review uploads={uploads} formData={formData} prefillData={prefillData} companions={companions} />;
+            return <Step5Review 
+                        formData={formData}
+                        companions={companions}
+                        documentOption={documentOption}
+                        paymentOption={paymentOption}
+                        prefillData={prefillData}
+                   />;
         default:
             return null;
     }
@@ -669,15 +717,13 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
           Zurück
         </Button>
         {currentStep < steps.length - 1 ? (
-          <Button type="button" onClick={nextStep} disabled={isSubmitting}>Speichern & Weiter</Button>
+          <Button type="button" onClick={nextStep} disabled={isSubmitting}>Speichern &amp; Weiter</Button>
         ) : (
-          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress > 0 && u.progress < 100)}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> <span>Wird übermittelt...</span></> : 'Buchung abschicken'}
+          <Button type="button" onClick={handleConfirmBooking} disabled={isSubmitting || Object.values(uploads).some(u => u.progress > 0 && u.progress < 100)} className="bg-primary hover:bg-primary/90">
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> <span>Wird übermittelt...</span></> : 'Daten absenden'}
           </Button>
         )}
       </CardFooter>
     </Card>
   );
 }
-
-    

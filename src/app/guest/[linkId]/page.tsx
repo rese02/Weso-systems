@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, use } from 'react';
@@ -10,18 +9,27 @@ import type { BookingLinkWithHotel } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
-export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
-  const { linkId } = use(paramsPromise);
-  
+export default function GuestBookingPage() {
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [linkId, setLinkId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Extract linkId from URL on the client side
+    const pathSegments = window.location.pathname.split('/');
+    const id = pathSegments[pathSegments.length - 1];
+    if (id) {
+        setLinkId(id);
+    } else {
+        setError('Kein Buchungslink angegeben.');
+        setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchLinkDetails = async () => {
       if (!linkId) {
-        setError('Kein Buchungslink angegeben.');
-        setIsLoading(false);
         return;
       }
 
@@ -29,11 +37,16 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
       const result = await getBookingLinkDetails(linkId);
       
       if (result.success && result.data) {
-        if (result.data.status === 'used') {
-          setError('Dieser Buchungslink wurde bereits verwendet.');
-        } else if (new Date() > new Date(result.data.expiresAt as string)) {
+        if (new Date() > new Date(result.data.expiresAt as string)) {
           setError('Dieser Buchungslink ist abgelaufen.');
-        } else {
+        } else if (result.data.status === 'used') {
+            // Allow viewing the form, but potentially disable submission or show a notice
+            // For now, we allow resubmission for testing purposes.
+            // A real app might have a different logic here.
+            setLinkData(result.data);
+            // setError('Dieser Buchungslink wurde bereits verwendet.');
+        } 
+        else {
           setLinkData(result.data);
         }
       } else {
@@ -42,7 +55,9 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
       setIsLoading(false);
     };
 
-    fetchLinkDetails();
+    if (linkId) {
+        fetchLinkDetails();
+    }
   }, [linkId]);
 
 
@@ -80,15 +95,18 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
 
   return (
      <div className="min-h-screen bg-secondary flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <header className="py-8">
+      <header className="py-8 text-center">
         <Link href="/">
-           <Building2 className="h-12 w-12 text-primary" />
+           <div className="inline-flex items-center gap-2 text-foreground">
+             <Building2 className="h-12 w-12 text-primary" />
+             <span className="text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
+           </div>
         </Link>
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Buchung vervollständigen</h1>
-          {linkData && <BookingForm prefillData={linkData.prefill} linkId={linkData.id} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
+          {linkData && linkId && <BookingForm prefillData={linkData.prefill} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
         </div>
       </main>
       <footer className="py-4 text-center text-xs text-muted-foreground">

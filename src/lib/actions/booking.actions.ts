@@ -1,10 +1,9 @@
-
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { z } from 'zod';
-import type { Booking, BookingLink, BookingPrefill, BookingFormValues } from '@/lib/definitions';
+import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';
 
@@ -265,27 +264,14 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    let linkDoc;
-    let foundHotelId;
+    const linksQuery = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+    const linkSnapshot = await getDocs(linksQuery);
 
-    // This is a workaround for development environments where collection group queries
-    // can be slow to index. In production, a more direct query would be better.
-    // Since we don't know the hotelId from the linkId alone, we have to search.
-    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-    for (const hotelDoc of hotelsSnapshot.docs) {
-        const potentialLinkRef = doc(db, `hotels/${hotelDoc.id}/bookingLinks`, linkId);
-        const potentialLinkSnap = await getDoc(potentialLinkRef);
-        if (potentialLinkSnap.exists()) {
-            linkDoc = potentialLinkSnap;
-            foundHotelId = hotelDoc.id;
-            break;
-        }
-    }
-
-    if (!linkDoc || !linkDoc.exists() || !foundHotelId) {
-      return { success: false, error: "Link not found." };
+    if (linkSnapshot.empty) {
+        return { success: false, error: "Link not found." };
     }
     
+    const linkDoc = linkSnapshot.docs[0];
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
     
     // The hotelId is in the link data, so we can directly fetch the hotel.
@@ -311,6 +297,10 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
+    // Provide a more generic error in production
+    if (e.message.includes("indexes?create_composite")) {
+        return { success: false, error: "The database is being set up. Please try again in a few minutes." };
+    }
     return { success: false, error: e.message };
   }
 }

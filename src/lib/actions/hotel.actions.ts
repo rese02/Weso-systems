@@ -12,6 +12,17 @@ const HotelSchema = z.object({
   name: z.string().min(1, 'Hotelname ist erforderlich.'),
   ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
   domain: z.string().min(1, 'Domain ist erforderlich.'),
+  // Bank details are optional
+  bankAccountHolder: z.string().optional(),
+  bankIBAN: z.string().optional(),
+  bankBIC: z.string().optional(),
+  bankName: z.string().optional(),
+  // SMTP details are optional
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  // Booking configs
+  boardTypes: z.array(z.string()).optional(),
+  roomCategories: z.array(z.string()).optional(),
 });
 
 export async function createHotel(
@@ -28,8 +39,6 @@ export async function createHotel(
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...validation.data, 
             createdAt: Timestamp.now(),
-            boardTypes: ['Frühstück', 'Halbpension', 'Vollpension'],
-            roomCategories: ['Einzelzimmer', 'Doppelzimmer', 'Suite']
         });
         revalidatePath('/admin');
         return { success: true, hotelId: docRef.id };
@@ -104,20 +113,30 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
 
 const SettingsSchema = z.object({
     name: z.string().min(1, 'Hotelname ist erforderlich.'),
+    domain: z.string().min(1, 'Domain ist erforderlich.'),
+    ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
     boardTypes: z.array(z.string()).optional(),
     roomCategories: z.array(z.string()).optional(),
-});
+    bankAccountHolder: z.string().optional().nullable(),
+    bankIBAN: z.string().optional().nullable(),
+    bankBIC: z.string().optional().nullable(),
+    bankName: z.string().optional().nullable(),
+    smtpUser: z.string().optional().nullable(),
+    smtpPass: z.string().optional().nullable(),
+}).partial();
 
-export async function updateHotelSettings(hotelId: string, settings: any): Promise<{success: boolean, error?: string}> {
+export async function updateHotelSettings(hotelId: string, settings: Partial<Hotel>): Promise<{success: boolean, error?: string}> {
     if(!hotelId) return { success: false, error: 'Hotel-ID ist erforderlich.'};
 
     const validation = SettingsSchema.safeParse(settings);
     if (!validation.success) {
+        console.error("Validation failed", validation.error.flatten());
         return { success: false, error: 'Validierung fehlgeschlagen.' };
     }
 
     try {
         const hotelRef = doc(db, 'hotels', hotelId);
+        // We only pass validated data to updateDoc
         await updateDoc(hotelRef, validation.data);
         revalidatePath(`/dashboard/${hotelId}/settings`);
         revalidatePath(`/dashboard/${hotelId}`);
@@ -128,3 +147,5 @@ export async function updateHotelSettings(hotelId: string, settings: any): Promi
     }
 
 }
+
+    

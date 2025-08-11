@@ -18,18 +18,19 @@ import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { useState, useMemo } from 'react';
-import type { Booking } from '@/lib/definitions';
-import { VERPFLEGUNGSART_OPTIONS_FORM, ZIMMERTYP_FORM_OPTIONS, GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues, bookingFormSchema } from '@/lib/definitions';
+import { useState, useMemo, useEffect } from 'react';
+import type { Booking, Hotel } from '@/lib/definitions';
+import { GUEST_LANGUAGE_OPTIONS, RoomDetailsFormValues, bookingFormSchema } from '@/lib/definitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
+import { getHotelById } from '@/lib/actions/hotel.actions';
 
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 const defaultRoomValues: RoomDetailsFormValues = {
-  roomType: 'Standard Doppelzimmer',
+  roomType: '',
   adults: 1,
   children: 0,
   infants: 0,
@@ -45,7 +46,28 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [hotelConfig, setHotelConfig] = useState<{ boardTypes: string[], roomCategories: string[] } | null>(null);
   const isEditMode = !!existingBooking;
+
+  useEffect(() => {
+      const fetchHotelConfig = async () => {
+          const { hotel } = await getHotelById(hotelId);
+          if (hotel) {
+              setHotelConfig({
+                  boardTypes: hotel.boardTypes || [],
+                  roomCategories: hotel.roomCategories || [],
+              });
+              // Set default values once config is loaded
+              const initialRoomType = hotel.roomCategories?.[0] || 'Standard Doppelzimmer';
+               if (!isEditMode) {
+                   form.setValue('rooms.0.roomType', initialRoomType);
+                   form.setValue('boardType', hotel.boardTypes?.[0] || 'Frühstück');
+               }
+          }
+      };
+      fetchHotelConfig();
+  }, [hotelId]);
+
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -64,10 +86,16 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
       lastName: '',
       checkInDate: undefined,
       checkOutDate: undefined,
-      boardType: 'Frühstück',
+      boardType: '', // Set from config
       priceTotal: 0,
       guestLanguage: 'de',
-      rooms: [defaultRoomValues],
+      rooms: [{
+        roomType: '', // Set from config
+        adults: 1,
+        children: 0,
+        infants: 0,
+        childrenAges: [],
+      }],
       internalNotes: '',
     },
   });
@@ -142,6 +170,19 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
     }
   };
 
+  if (!hotelConfig) {
+      return <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /> <span className="ml-2">Lade Hotel-Konfiguration...</span></div>
+  }
+
+  const defaultRoomValuesWithConfig: RoomDetailsFormValues = {
+    roomType: hotelConfig.roomCategories[0] || '',
+    adults: 1,
+    children: 0,
+    infants: 0,
+    childrenAges: [],
+  };
+
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -162,7 +203,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
           </FormItem>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          <FormField control={form.control} name="boardType" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Bed className="mr-2 h-4 w-4" />Verpflegung</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Keine" /></SelectTrigger></FormControl> <SelectContent>{VERPFLEGUNGSART_OPTIONS_FORM.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="boardType" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Bed className="mr-2 h-4 w-4" />Verpflegung</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Verpflegung auswählen" /></SelectTrigger></FormControl> <SelectContent>{hotelConfig.boardTypes.map(option => (<SelectItem key={option} value={option}>{option}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="priceTotal" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Euro className="mr-2 h-4 w-4" />Gesamtpreis (€)</FormLabel> <FormControl><Input type="number" placeholder="0.00" {...field} step="0.01" /></FormControl> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="guestLanguage" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Languages className="mr-2 h-4 w-4" />Sprache für Gast</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Sprache" /></SelectTrigger></FormControl> <SelectContent>{GUEST_LANGUAGE_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         </div>
@@ -178,7 +219,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
-                    <FormField control={form.control} name={`rooms.${index}.roomType`} render={({ field }) => ( <FormItem> <FormLabel>Zimmertyp</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Standard" /></SelectTrigger></FormControl> <SelectContent>{ZIMMERTYP_FORM_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name={`rooms.${index}.roomType`} render={({ field }) => ( <FormItem> <FormLabel>Zimmertyp</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Typ auswählen" /></SelectTrigger></FormControl> <SelectContent>{hotelConfig.roomCategories.map(option => (<SelectItem key={option} value={option}>{option}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name={`rooms.${index}.adults`} render={({ field }) => ( <FormItem> <FormLabel>Erwachsene</FormLabel> <FormControl><Input type="number" placeholder="1" {...field} min="0"/></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name={`rooms.${index}.children`} render={({ field }) => ( <FormItem> <FormLabel>Kinder</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0" onChange={e => handleChildrenCountChange(index, parseInt(e.target.value, 10) || 0)}/></FormControl> <FormDescription className="text-xs">(3-17 J.)</FormDescription> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name={`rooms.${index}.infants`} render={({ field }) => ( <FormItem> <FormLabel>Kleinkinder</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} min="0"/></FormControl> <FormDescription className="text-xs">(0-2 J.)</FormDescription><FormMessage /> </FormItem> )}/>
@@ -209,7 +250,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
               </CardContent>
             </Card>
           ))}
-          <Button type="button" variant="outline" onClick={() => append(defaultRoomValues)} className="w-full md:w-auto"><PlusCircle className="mr-2 h-4 w-4" /> Zimmer hinzufügen</Button>
+          <Button type="button" variant="outline" onClick={() => append(defaultRoomValuesWithConfig)} className="w-full md:w-auto"><PlusCircle className="mr-2 h-4 w-4" /> Zimmer hinzufügen</Button>
         </div>
         <Separator />
         <FormField control={form.control} name="internalNotes" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><MessageSquare className="mr-2 h-4 w-4" />Interne Bemerkungen (Optional)</FormLabel> <FormControl><Textarea placeholder="Zusätzliche Informationen..." {...field} rows={3} /></FormControl> <FormMessage /> </FormItem> )}/>
@@ -224,3 +265,5 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
     </Form>
   );
 }
+
+    

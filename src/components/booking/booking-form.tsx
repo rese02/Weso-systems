@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
-import type { BookingLink } from '@/lib/definitions';
+import type { BookingLink, Hotel } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '../ui/progress';
 import { storage } from '@/lib/firebase.client';
@@ -24,6 +25,7 @@ import { db } from '@/lib/firebase.client';
 import { Calendar } from '../ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
+import { getHotelById } from '@/lib/actions/hotel.actions';
 
 
 const steps = ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'];
@@ -132,8 +134,8 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
              <h3 className="font-semibold">Ausweisdokumente *</h3>
              <p className="text-sm text-muted-foreground">Bitte wählen Sie, wie Sie die Ausweisdokumente bereitstellen möchten.</p>
              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'upload' && 'opacity-0')}/></Button>
-                <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'on-site' && 'opacity-0')}/></Button>
+                <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'upload' && 'opacity-0')}/>Jetzt hochladen</Button>
+                <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'on-site' && 'opacity-0')}/>Vor Ort vorzeigen</Button>
              </div>
              {documentOption === 'upload' && (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
@@ -288,12 +290,13 @@ const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption }: {
     );
 };
 
-const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload }: {
+const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload, hotelDetails }: {
     prefillData: BookingLink['prefill'] | null;
     paymentOption: 'deposit' | 'full';
     uploads: Record<string, FileUpload>;
     handleFileUpload: (name: string, file: File) => void;
     removeUpload: (name: string) => void;
+    hotelDetails: Hotel | null;
 }) => {
     const { toast } = useToast();
     const totalPrice = prefillData?.priceTotal || 0;
@@ -309,11 +312,15 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     };
 
     const bankDetails = {
-        'Kontoinhaber': 'Pradell GMBH',
-        'IBAN': 'IT51X0805623120000302071631',
-        'BIC/SWIFT': 'RZSBIT21211',
-        'Bank': 'Raiffeisenkasse Kastelruth - St. Ulrich'
+        'Kontoinhaber': hotelDetails?.bankAccountHolder,
+        'IBAN': hotelDetails?.bankIBAN,
+        'BIC/SWIFT': hotelDetails?.bankBIC,
+        'Bank': hotelDetails?.bankName
     };
+
+    if (!hotelDetails) {
+        return <div className='text-center'><Loader2 className='w-6 h-6 animate-spin mx-auto' /><p className='mt-2'>Lade Bankdaten...</p></div>
+    }
 
     return (
         <div className="space-y-6">
@@ -337,7 +344,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
                 <h4 className="font-semibold text-sm mb-2">Banküberweisung an:</h4>
                 <div className="rounded-md border divide-y">
                     {Object.entries(bankDetails).map(([label, value]) => (
-                         <div key={label} className="p-3 flex justify-between items-center text-sm">
+                         value && <div key={label} className="p-3 flex justify-between items-center text-sm">
                             <div>
                                 <p className="text-xs text-muted-foreground">{label}</p>
                                 <p className="font-medium">{value}</p>
@@ -452,9 +459,20 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [documentOption, setDocumentOption] = useState<'upload' | 'on-site'>('upload');
   const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>('deposit');
+  const [hotelDetails, setHotelDetails] = useState<Hotel | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+      if (hotelId) {
+          getHotelById(hotelId).then(result => {
+              if (result.hotel) {
+                  setHotelDetails(result.hotel);
+              }
+          })
+      }
+  }, [hotelId]);
   
   const maxCompanions = useMemo(() => {
     if (!prefillData?.rooms) return 0;
@@ -687,6 +705,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         uploads={uploads}
                         handleFileUpload={handleFileUpload}
                         removeUpload={removeUpload}
+                        hotelDetails={hotelDetails}
                     />;
         case 4:
             return <Step5Review 
@@ -727,3 +746,5 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
+
+    

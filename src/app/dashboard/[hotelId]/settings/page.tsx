@@ -9,22 +9,18 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Trash2, Loader2, Save } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Save, Banknote, Mail, KeyRound } from 'lucide-react';
 import { getHotelById, updateHotelSettings } from '@/lib/actions/hotel.actions';
 import { useRouter } from 'next/navigation';
 import type { Hotel } from '@/lib/definitions';
 
-interface HotelSettings extends Hotel {
-    boardTypes?: string[];
-    roomCategories?: string[];
-}
 
 export default function SettingsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
   const { toast } = useToast();
   const router = useRouter();
   const { hotelId } = use(paramsPromise);
   
-  const [hotel, setHotel] = useState<HotelSettings | null>(null);
+  const [hotel, setHotel] = useState<Hotel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
@@ -34,7 +30,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
         if (result.hotel) {
             setHotel({
                 ...result.hotel,
-                boardTypes: result.hotel.boardTypes || ['Frühstück', 'Halbpension', 'Vollpension'],
+                boardTypes: result.hotel.boardTypes || ['Frühstück', 'Halbpension', 'Vollpension', 'Ohne Verpflegung'],
                 roomCategories: result.hotel.roomCategories || ['Einzelzimmer', 'Doppelzimmer', 'Suite']
             });
         } else {
@@ -66,11 +62,17 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
       if (!hotel) return;
       let newBoardTypes = [...(hotel.boardTypes || [])];
       if (checked) {
-          newBoardTypes.push(type);
+          if (!newBoardTypes.includes(type)) newBoardTypes.push(type);
       } else {
           newBoardTypes = newBoardTypes.filter(t => t !== type);
       }
       setHotel({...hotel, boardTypes: newBoardTypes });
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!hotel) return;
+      const { name, value } = e.target;
+      setHotel({ ...hotel, [name]: value });
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -78,11 +80,7 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     if (!hotel) return;
     
     startTransition(async () => {
-        const result = await updateHotelSettings(hotelId, {
-            name: hotel.name,
-            boardTypes: hotel.boardTypes,
-            roomCategories: hotel.roomCategories,
-        });
+        const result = await updateHotelSettings(hotelId, hotel);
 
         if (result.success) {
             toast({
@@ -123,9 +121,37 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
               <Label htmlFor="hotel-name">Hotelname</Label>
-              <Input id="hotel-name" value={hotel.name} onChange={(e) => setHotel({...hotel, name: e.target.value})} />
+              <Input id="hotel-name" name="name" value={hotel.name} onChange={handleInputChange} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="domain">Domain</Label>
+              <Input id="domain" name="domain" value={hotel.domain} onChange={handleInputChange} />
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="ownerEmail">E-Mail des Hoteliers</Label>
+              <Input id="ownerEmail" name="ownerEmail" type="email" value={hotel.ownerEmail} onChange={handleInputChange} />
             </div>
           </CardContent>
+           <Separator />
+           <CardHeader>
+            <CardTitle>Bankverbindung</CardTitle>
+            <CardDescription>Diese Daten werden dem Gast für die Überweisung angezeigt.</CardDescription>
+          </CardHeader>
+           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid gap-2"><Label htmlFor="bankAccountHolder" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Kontoinhaber</Label><Input name="bankAccountHolder" id="bankAccountHolder" value={hotel.bankAccountHolder || ''} onChange={handleInputChange}/></div>
+              <div className="grid gap-2"><Label htmlFor="bankIBAN" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>IBAN</Label><Input name="bankIBAN" id="bankIBAN" value={hotel.bankIBAN || ''} onChange={handleInputChange}/></div>
+              <div className="grid gap-2"><Label htmlFor="bankBIC" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>BIC/SWIFT</Label><Input name="bankBIC" id="bankBIC" value={hotel.bankBIC || ''} onChange={handleInputChange}/></div>
+              <div className="grid gap-2"><Label htmlFor="bankName" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Bank</Label><Input name="bankName" id="bankName" value={hotel.bankName || ''} onChange={handleInputChange}/></div>
+           </CardContent>
+            <Separator />
+            <CardHeader>
+                <CardTitle>E-Mail-Versand (SMTP)</CardTitle>
+                <CardDescription>Konfiguration für den automatischen E-Mail-Versand (z.B. Gmail). Diese Daten werden sicher gespeichert.</CardDescription>
+            </CardHeader>
+             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2"><Label htmlFor="smtpUser" className='flex items-center'><Mail className='w-4 h-4 mr-2'/>SMTP-Benutzer (E-Mail)</Label><Input name="smtpUser" id="smtpUser" value={hotel.smtpUser || ''} onChange={handleInputChange}/></div>
+                <div className="grid gap-2"><Label htmlFor="smtpPass" className='flex items-center'><KeyRound className='w-4 h-4 mr-2'/>SMTP-Passwort (App-Passwort)</Label><Input name="smtpPass" id="smtpPass" type="password" value={hotel.smtpPass || ''} onChange={handleInputChange}/></div>
+             </CardContent>
           <Separator />
            <CardHeader>
             <CardTitle>Buchungskonfiguration</CardTitle>
@@ -146,6 +172,10 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
                 <div className="flex items-center space-x-2">
                   <Checkbox id="full-board" checked={hotel.boardTypes?.includes('Vollpension')} onCheckedChange={(c) => handleBoardTypeChange('Vollpension', !!c)} />
                   <Label htmlFor="full-board">Vollpension</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <Checkbox id="no-board" checked={hotel.boardTypes?.includes('Ohne Verpflegung')} onCheckedChange={(c) => handleBoardTypeChange('Ohne Verpflegung', !!c)} />
+                  <Label htmlFor="no-board">Ohne Verpflegung</Label>
                 </div>
               </div>
             </div>
@@ -185,3 +215,5 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     </div>
   );
 }
+
+    

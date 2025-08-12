@@ -47,9 +47,9 @@ export async function createBookingWithLink(
             checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
             checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
             boardType: validatedData.boardType,
-            priceTotal: validatedData.priceTotal,
+            priceTotal: validatedData.priceTotal ?? 0,
             internalNotes: validatedData.internalNotes,
-            guestLanguage: validatedData.guestLanguage,
+            guestLanguage: validatedData.guestLanguage as any,
             rooms: validatedData.rooms.map((r: any) => ({ 
                 roomType: r.roomType || 'Standard',
                 adults: Number(r.adults) || 0,
@@ -80,6 +80,7 @@ export async function createBookingWithLink(
             priceTotal: newBooking.priceTotal,
             bookingId: newBookingRef.id,
             rooms: newBooking.rooms,
+            guestLanguage: newBooking.guestLanguage,
         };
 
         const newLink: Omit<BookingLink, 'id'> = {
@@ -134,7 +135,7 @@ export async function updateBooking(
             checkIn: validatedData.checkInDate.toISOString(),
             checkOut: validatedData.checkOutDate.toISOString(),
             boardType: validatedData.boardType,
-            priceTotal: validatedData.priceTotal,
+            priceTotal: validatedData.priceTotal ?? 0,
             internalNotes: validatedData.internalNotes,
             guestLanguage: validatedData.guestLanguage,
             rooms: validatedData.rooms.map((r: any) => ({
@@ -307,29 +308,30 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    let linkDoc: any = null;
-    let foundHotelId: string | null = null;
-    
-    // Fallback Scan: Iterate through hotels to find the link.
-    // This is inefficient but avoids the need for a composite index during development.
-    // For production, a composite index on the collection group `bookingLinks` is highly recommended.
-    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-    for (const hotelDoc of hotelsSnapshot.docs) {
-        const hotelId = hotelDoc.id;
-        const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
-        const docSnap = await getDoc(linkDocRef);
-        if (docSnap.exists()) {
-            linkDoc = docSnap;
-            foundHotelId = hotelId;
-            break; // Stop searching once the link is found
+    const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        // Fallback Scan: If composite index is not ready, this might be needed.
+        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+        for (const hotelDoc of hotelsSnapshot.docs) {
+            const hotelId = hotelDoc.id;
+            const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
+            const docSnap = await getDoc(linkDocRef);
+            if (docSnap.exists()) {
+                querySnapshot.docs.push(docSnap);
+                break;
+            }
         }
     }
-    
-    if (!linkDoc || !foundHotelId) {
-      return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
-    }
 
+    if (querySnapshot.empty) {
+        return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
+    }
+    
+    const linkDoc = querySnapshot.docs[0];
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
+    const foundHotelId = linkData.hotelId;
 
     const hotelDocRef = doc(db, 'hotels', foundHotelId);
     const hotelSnap = await getDoc(hotelDocRef);
@@ -353,10 +355,11 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    // Provide a more generic error in production
-    if (e.message.includes("indexes?create_composite") || e.message.includes("requires an index")) {
-        return { success: false, error: "Die Datenbank wird eingerichtet. Bitte versuchen Sie es in ein paar Minuten erneut." };
+    if (e.message.includes("requires an index")) {
+        return { success: false, error: "Die Datenbankabfrage erfordert einen Index. Bitte erstellen Sie den Index in der Firebase Console und versuchen Sie es erneut." };
     }
     return { success: false, error: e.message };
   }
 }
+
+    

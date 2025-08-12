@@ -1,19 +1,51 @@
+
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
-import type { BookingLinkWithHotel } from '@/lib/definitions';
+import type { BookingLinkWithHotel, GuestLanguage } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+
+const translations = {
+    de: {
+        loading: "Lade Buchungsdetails...",
+        invalidLink: "Ungültiger Link",
+        expiredLink: "Dieser Buchungslink ist abgelaufen.",
+        invalidOrNotFound: "Ungültiger oder nicht gefundener Buchungslink.",
+        completeBooking: "Buchung vervollständigen",
+        secureTransfer: "Sichere Datenübermittlung.",
+        rightsReserved: "Alle Rechte vorbehalten."
+    },
+    en: {
+        loading: "Loading booking details...",
+        invalidLink: "Invalid Link",
+        expiredLink: "This booking link has expired.",
+        invalidOrNotFound: "Invalid or not found booking link.",
+        completeBooking: "Complete Booking",
+        secureTransfer: "Secure data transmission.",
+        rightsReserved: "All rights reserved."
+    },
+    it: {
+        loading: "Caricamento dei dettagli della prenotazione...",
+        invalidLink: "Link non valido",
+        expiredLink: "Questo link di prenotazione è scaduto.",
+        invalidOrNotFound: "Link di prenotazione non valido o non trovato.",
+        completeBooking: "Completa Prenotazione",
+        secureTransfer: "Trasmissione sicura dei dati.",
+        rightsReserved: "Tutti i diritti riservati."
+    }
+};
 
 export default function GuestBookingPage() {
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [linkId, setLinkId] = useState<string | null>(null);
+  const [lang, setLang] = useState<GuestLanguage>('de');
 
   useEffect(() => {
     // Extract linkId from URL on the client side
@@ -22,10 +54,10 @@ export default function GuestBookingPage() {
     if (id) {
         setLinkId(id);
     } else {
-        setError('Kein Buchungslink angegeben.');
+        setError(translations[lang].invalidOrNotFound);
         setIsLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     const fetchLinkDetails = async () => {
@@ -37,20 +69,16 @@ export default function GuestBookingPage() {
       const result = await getBookingLinkDetails(linkId);
       
       if (result.success && result.data) {
+        const guestLang = result.data.prefill.guestLanguage as GuestLanguage || 'de';
+        setLang(guestLang);
+
         if (new Date() > new Date(result.data.expiresAt as string)) {
-          setError('Dieser Buchungslink ist abgelaufen.');
-        } else if (result.data.status === 'used') {
-            // Allow viewing the form, but potentially disable submission or show a notice
-            // For now, we allow resubmission for testing purposes.
-            // A real app might have a different logic here.
-            setLinkData(result.data);
-            // setError('Dieser Buchungslink wurde bereits verwendet.');
-        } 
-        else {
+          setError(translations[guestLang].expiredLink);
+        } else {
           setLinkData(result.data);
         }
       } else {
-        setError(result.error || 'Ungültiger oder nicht gefundener Buchungslink.');
+        setError(result.error || translations[lang].invalidOrNotFound);
       }
       setIsLoading(false);
     };
@@ -58,7 +86,7 @@ export default function GuestBookingPage() {
     if (linkId) {
         fetchLinkDetails();
     }
-  }, [linkId]);
+  }, [linkId, lang]);
 
 
   if (isLoading) {
@@ -76,6 +104,8 @@ export default function GuestBookingPage() {
         </div>
     )
   }
+  
+  const t = translations[lang] || translations.de;
 
   if (error) {
     return (
@@ -83,7 +113,7 @@ export default function GuestBookingPage() {
         <Card className="w-full max-w-md text-center">
             <CardHeader>
                 <Building2 className="h-12 w-12 text-destructive mx-auto" />
-                <CardTitle className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Ungültiger Link</CardTitle>
+                <CardTitle className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.invalidLink}</CardTitle>
             </CardHeader>
             <CardContent>
                 <p className="text-muted-foreground max-w-md">{error}</p>
@@ -105,13 +135,15 @@ export default function GuestBookingPage() {
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
         <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">Buchung vervollständigen</h1>
-          {linkData && linkId && <BookingForm prefillData={linkData.prefill} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.completeBooking}</h1>
+          {linkData && linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
         </div>
       </main>
       <footer className="py-4 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} WESO B-system. Sichere Datenübermittlung.</p>
+        <p>© {new Date().getFullYear()} WESO B-system. {t.secureTransfer}</p>
       </footer>
     </div>
   );
 }
+
+    

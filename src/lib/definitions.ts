@@ -4,6 +4,8 @@ import * as z from 'zod';
 
 // --- Base Data Models (as in Firestore) ---
 
+export type GuestLanguage = 'de' | 'en' | 'it';
+
 export interface Hotel {
   id: string;
   name: string;
@@ -47,7 +49,7 @@ export interface Booking {
   updatedAt?: string; // Changed to string for serialization
   submittedAt?: string; // Changed to string for serialization
   bookingLinkId?: string;
-  guestLanguage?: string;
+  guestLanguage?: GuestLanguage;
   checkIn: string; // ISO String
   checkOut: string; // ISO string
   boardType: string;
@@ -77,6 +79,7 @@ export interface BookingPrefill {
     priceTotal: number;
     bookingId: string;
     rooms: RoomDetails[];
+    guestLanguage?: GuestLanguage;
     // Prefill from creation form
     firstName?: string;
     lastName?: string;
@@ -130,10 +133,10 @@ export type RoomDetailsFormValues = z.infer<typeof roomFormSchema>;
 
 // --- Select Options for Forms ---
 
-export type GuestLanguage = 'de' | 'en' | 'it';
 export const GUEST_LANGUAGE_OPTIONS: { value: GuestLanguage; label: string }[] = [
     { value: 'de', label: 'Deutsch' },
     { value: 'en', label: 'Englisch' },
     { value: 'it', label: 'Italienisch' },
 ];
 
+    

@@ -87,7 +87,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
       checkInDate: undefined,
       checkOutDate: undefined,
       boardType: '', // Set from config
-      priceTotal: 0,
+      priceTotal: null,
       guestLanguage: 'de',
       rooms: [{
         roomType: '', // Set from config
@@ -204,7 +204,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <FormField control={form.control} name="boardType" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Bed className="mr-2 h-4 w-4" />Verpflegung</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Verpflegung auswählen" /></SelectTrigger></FormControl> <SelectContent>{hotelConfig.boardTypes.map(option => (<SelectItem key={option} value={option}>{option}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-          <FormField control={form.control} name="priceTotal" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Euro className="mr-2 h-4 w-4" />Gesamtpreis (€)</FormLabel> <FormControl><Input type="number" placeholder="0.00" {...field} step="0.01" /></FormControl> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="priceTotal" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Euro className="mr-2 h-4 w-4" />Gesamtpreis (€)</FormLabel> <FormControl><Input type="number" placeholder="0.00" {...field} value={field.value ?? ""} step="0.01" /></FormControl> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="guestLanguage" render={({ field }) => ( <FormItem> <FormLabel className="flex items-center text-muted-foreground"><Languages className="mr-2 h-4 w-4" />Sprache für Gast</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Sprache" /></SelectTrigger></FormControl> <SelectContent>{GUEST_LANGUAGE_OPTIONS.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         </div>
         <Separator />

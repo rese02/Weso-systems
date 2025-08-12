@@ -62,9 +62,9 @@ export interface Booking {
   age?: number;
   guestNotes?: string;
   documents?: {
-    idFront?: string;
-    idBack?: string;
-    paymentProof?: string;
+    idFront?: string | null;
+    idBack?: string | null;
+    paymentProof?: string | null;
     submissionMethod?: 'upload' | 'on-site';
   };
   companions?: Companion[];
@@ -115,7 +115,7 @@ export const bookingFormSchema = z.object({
   checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
   checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
   boardType: z.string().min(1, 'Verpflegungsart ist erforderlich.'),
-  priceTotal: z.coerce.number(),
+  priceTotal: z.coerce.number().nullable(),
   guestLanguage: z.string(),
   rooms: z.array(roomFormSchema).min(1, "Mindestens ein Zimmer muss hinzugefügt werden."),
   internalNotes: z.string().max(500, "Bemerkungen dürfen max. 500 Zeichen lang sein.").optional(),
@@ -136,3 +136,4 @@ export const GUEST_LANGUAGE_OPTIONS: { value: GuestLanguage; label: string }[] =
     { value: 'en', label: 'Englisch' },
     { value: 'it', label: 'Italienisch' },
 ];
+

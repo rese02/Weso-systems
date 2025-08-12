@@ -1,5 +1,6 @@
 
 
+
 import Link from 'next/link';
 import {
   BookCopy,
@@ -95,7 +96,7 @@ export default async function DashboardLayout({
           </SidebarContent>
         </Sidebar>
         <SidebarInset>
-            <DashboardHeader>
+            <DashboardHeader logoUrl={hotel.logoUrl}>
                 <SidebarTrigger />
             </DashboardHeader>
             <main className="flex-1 p-4 md:p-6">{children}</main>

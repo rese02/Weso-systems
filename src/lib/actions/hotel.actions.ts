@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db, storage } from '@/lib/firebase';
@@ -13,6 +14,7 @@ const HotelSchema = z.object({
   name: z.string().min(1, 'Hotelname ist erforderlich.'),
   ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
   domain: z.string().min(1, 'Domain ist erforderlich.'),
+  logoUrl: z.string().url('Ungültige Logo-URL.').optional().or(z.literal('')),
   // Public Contact Details
   contactEmail: z.string().email('Ungültige Kontakt E-Mail-Adresse.').optional().or(z.literal('')),
   contactPhone: z.string().optional(),
@@ -147,6 +149,7 @@ const SettingsSchema = z.object({
     name: z.string().min(1, 'Hotelname ist erforderlich.'),
     domain: z.string().min(1, 'Domain ist erforderlich.'),
     ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
+    logoUrl: z.string().url('Ungültige Logo-URL.').optional().or(z.literal('')),
     // Public Contact Details
     contactEmail: z.string().email('Ungültige Kontakt E-Mail-Adresse.').optional().or(z.literal('')),
     contactPhone: z.string().optional().nullable(),

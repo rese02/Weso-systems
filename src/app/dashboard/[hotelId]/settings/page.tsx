@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useTransition, use } from 'react';
@@ -9,11 +10,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Trash2, Loader2, Save, Banknote, Mail, KeyRound, Phone, MapPin, Building } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Save, Banknote, Mail, KeyRound, Phone, MapPin, Building, Image as ImageIcon } from 'lucide-react';
 import { getHotelById, updateHotelSettings } from '@/lib/actions/hotel.actions';
 import { useRouter } from 'next/navigation';
 import type { Hotel } from '@/lib/definitions';
-
+import Image from 'next/image';
+import { storage } from '@/lib/firebase.client';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function SettingsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
   const { toast } = useToast();
@@ -23,6 +26,9 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!hotelId) return;
@@ -33,6 +39,9 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
                 boardTypes: result.hotel.boardTypes || ['Frühstück', 'Halbpension', 'Vollpension', 'Ohne Verpflegung'],
                 roomCategories: result.hotel.roomCategories || ['Einzelzimmer', 'Doppelzimmer', 'Suite']
             });
+            if(result.hotel.logoUrl) {
+                setLogoPreview(result.hotel.logoUrl);
+            }
         } else {
             toast({ variant: 'destructive', title: 'Fehler', description: 'Hoteleinstellungen konnten nicht geladen werden.'});
         }
@@ -40,6 +49,17 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     })
   }, [hotelId, toast]);
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ variant: 'destructive', title: 'Datei zu groß', description: 'Das Logo darf maximal 2MB groß sein.' });
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const addRoomCategory = () => {
     if (!hotel) return;
@@ -80,14 +100,27 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     if (!hotel) return;
     
     startTransition(async () => {
-        const result = await updateHotelSettings(hotelId, hotel);
+        let updatedSettings = { ...hotel };
+
+        if (logoFile) {
+            try {
+                const logoRef = ref(storage, `hotels/logos/${hotelId}_${logoFile.name}`);
+                const snapshot = await uploadBytes(logoRef, logoFile);
+                updatedSettings.logoUrl = await getDownloadURL(snapshot.ref);
+            } catch (error) {
+                toast({ variant: "destructive", title: "Logo-Upload fehlgeschlagen", description: (error as Error).message });
+                return;
+            }
+        }
+        
+        const result = await updateHotelSettings(hotelId, updatedSettings);
 
         if (result.success) {
             toast({
                 title: "Einstellungen gespeichert",
                 description: "Ihre Hotelkonfiguration wurde aktualisiert.",
             });
-            router.refresh();
+            router.refresh(); // Refresh to show new logo in layout
         } else {
             toast({
                 variant: "destructive",
@@ -129,6 +162,19 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
                   <Input id="domain" name="domain" value={hotel.domain || ''} onChange={handleInputChange}/>
                 </div>
              </div>
+             <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="logo" className="flex items-center"><ImageIcon className="w-4 h-4 mr-2" />Hotel-Logo (PNG)</Label>
+                    <div className="flex items-center gap-4">
+                        <Input id="logo" type="file" onChange={handleLogoChange} accept="image/png" className="w-full" />
+                        {logoPreview && (
+                            <div className="relative h-16 w-16 rounded-full overflow-hidden border">
+                                <Image src={logoPreview} alt="Logo Vorschau" layout="fill" objectFit="cover" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
              <div className="grid gap-2">
                 <Label htmlFor="ownerEmail">E-Mail-Adresse des Hoteliers (für Login)</Label>
                 <Input id="ownerEmail" name="ownerEmail" type="email" value={hotel.ownerEmail || ''} onChange={handleInputChange}/>

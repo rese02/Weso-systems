@@ -12,6 +12,7 @@ export interface Hotel {
   ownerEmail: string; // Internal/Login email
   domain: string;
   createdAt?: string; // Changed to string for serialization
+  logoUrl?: string; // URL for the hotel logo
   
   // Public Contact Details
   contactPhone?: string;

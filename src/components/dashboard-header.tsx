@@ -14,9 +14,10 @@ import Link from 'next/link';
 
 type DashboardHeaderProps = {
   children?: React.ReactNode;
+  logoUrl?: string;
 };
 
-export function DashboardHeader({ children }: DashboardHeaderProps) {
+export function DashboardHeader({ children, logoUrl }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <div className="md:hidden">
@@ -28,7 +29,11 @@ export function DashboardHeader({ children }: DashboardHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar>
-                <AvatarImage src="https://placehold.co/100x100.png" alt="Benutzer-Avatar" />
+                {logoUrl ? (
+                  <AvatarImage src={logoUrl} alt="Hotel Logo" />
+                ) : (
+                  <AvatarImage src="https://placehold.co/100x100.png" alt="Benutzer-Avatar" />
+                )}
                 <AvatarFallback>
                   <User />
                 </AvatarFallback>

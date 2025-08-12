@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -9,9 +10,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createHotel } from '@/lib/actions/hotel.actions';
-import { Copy, PlusCircle, Trash2, Loader2, Banknote, Mail, KeyRound, Phone, MapPin, Building } from 'lucide-react';
+import { Copy, PlusCircle, Trash2, Loader2, Banknote, Mail, KeyRound, Phone, MapPin, Building, Image as ImageIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
+import { storage } from '@/lib/firebase.client';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function CreateHotelPage() {
   const { toast } = useToast();
@@ -20,6 +24,8 @@ export default function CreateHotelPage() {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [roomCategories, setRoomCategories] = useState(['Einzelzimmer', 'Doppelzimmer', 'Suite']);
   const [boardTypes, setBoardTypes] = useState(['Frühstück', 'Halbpension', 'Vollpension']);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const addRoomCategory = () => {
     setRoomCategories([...roomCategories, '']);
@@ -45,6 +51,18 @@ export default function CreateHotelPage() {
       setBoardTypes(newBoardTypes);
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ variant: 'destructive', title: 'Datei zu groß', description: 'Das Logo darf maximal 2MB groß sein.' });
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
 
   const generatePassword = () => {
     const password = Math.random().toString(36).slice(-8);
@@ -63,10 +81,25 @@ export default function CreateHotelPage() {
     e.preventDefault();
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
+    
+    let logoUrl = '';
+    if (logoFile) {
+        try {
+            const logoRef = ref(storage, `hotels/logos/${Date.now()}_${logoFile.name}`);
+            const snapshot = await uploadBytes(logoRef, logoFile);
+            logoUrl = await getDownloadURL(snapshot.ref);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Logo-Upload fehlgeschlagen", description: (error as Error).message });
+            setIsLoading(false);
+            return;
+        }
+    }
+
     const hotelData = {
       name: formData.get('name') as string,
       ownerEmail: formData.get('ownerEmail') as string,
       domain: formData.get('domain') as string,
+      logoUrl: logoUrl,
       // Public Contact Details
       contactEmail: formData.get('contactEmail') as string,
       contactPhone: formData.get('contactPhone') as string,
@@ -144,6 +177,19 @@ export default function CreateHotelPage() {
                   <Input id="domain" name="domain" placeholder="z.B. hotel-paradies.de" required/>
                 </div>
              </div>
+             <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="logo" className="flex items-center"><ImageIcon className="w-4 h-4 mr-2" />Hotel-Logo (PNG)</Label>
+                    <div className="flex items-center gap-4">
+                        <Input id="logo" type="file" onChange={handleLogoChange} accept="image/png" className="w-full" />
+                        {logoPreview && (
+                            <div className="relative h-16 w-16 rounded-full overflow-hidden border">
+                                <Image src={logoPreview} alt="Logo Vorschau" layout="fill" objectFit="cover" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="grid gap-2">
                   <Label htmlFor="ownerEmail">E-Mail-Adresse des Hoteliers (für Login)</Label>

@@ -19,7 +19,6 @@ const translations = {
         completeBooking: "Buchung vervollständigen",
         secureTransfer: "Sichere Datenübermittlung.",
         rightsReserved: "Alle Rechte vorbehalten.",
-        steps: ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'],
     },
     en: {
         loading: "Loading booking details...",
@@ -29,7 +28,6 @@ const translations = {
         completeBooking: "Complete Booking",
         secureTransfer: "Secure data transmission.",
         rightsReserved: "All rights reserved.",
-        steps: ['Guest', 'Companions', 'Payment Option', 'Payment Details', 'Review'],
 
     },
     it: {
@@ -40,7 +38,6 @@ const translations = {
         completeBooking: "Completa Prenotazione",
         secureTransfer: "Trasmissione sicura dei dati.",
         rightsReserved: "Tutti i diritti riservati.",
-        steps: ['Ospite', 'Accompagnatori', 'Opzione Pagamento', 'Dettagli Pagamento', 'Riepilogo'],
     }
 };
 
@@ -129,20 +126,19 @@ export default function GuestBookingPage() {
 
   return (
      <div className="min-h-screen bg-secondary flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <header className="py-8 text-center">
+      <header className="py-4 md:py-6 text-center">
         <Link href="/">
            <div className="inline-flex items-center gap-2 text-foreground">
-             <Shield className="h-12 w-12 text-primary" />
-             <span className="text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
+             <Shield className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+             <span className="text-lg md:text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
            </div>
         </Link>
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
-        <div className="text-center mb-8">
-            {linkData && t.steps && (
+        <div className="text-center mb-6">
+            {linkData && (
                 <>
-                    <h1 className="text-xs text-muted-foreground">{t.steps[0]}</h1>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.completeBooking}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">{t.completeBooking}</h1>
                     {linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
                 </>
             )}

@@ -1045,7 +1045,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     }
   }
 
-  const CurrentStepComponent = () => {
+  const CurrentStepComponent = useCallback(() => {
     switch(currentStep) {
         case 0:
             return <Step1GuestInfo 
@@ -1096,7 +1096,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         default:
             return null;
     }
-  }
+  }, [currentStep, formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, companions, maxCompanions, paymentOption, hotelDetails, lang]);
 
   return (
     <Card className="w-full max-w-3xl shadow-lg">

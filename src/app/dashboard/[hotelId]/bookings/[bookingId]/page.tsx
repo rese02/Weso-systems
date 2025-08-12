@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2, Home, Baby, UserCircle, Calendar, Utensils, Euro, FileArchive } from 'lucide-react';
+import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2, Home, Baby, UserCircle, Calendar, Utensils, Euro, FileArchive, Mail, Phone } from 'lucide-react';
 import { getBookingById } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { format, parseISO } from 'date-fns';
@@ -32,21 +32,19 @@ const DetailRow = ({ label, value, icon: Icon }: { label: string, value: string 
             <Icon className="h-4 w-4 mr-3" />
             <span>{label}</span>
         </div>
-        <div className="text-sm font-medium text-right break-all">{value || 'Nicht angegeben'}</div>
+        <div className="text-sm font-medium text-right break-words">{value || 'Nicht angegeben'}</div>
     </div>
 );
 
-const GuestItem = ({ name, role, icon: Icon }: { name: string, role: string, icon: React.ElementType }) => (
-    <div className="flex items-center gap-4 py-2">
-        <div className="bg-muted p-2 rounded-full">
-            <Icon className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-            <p className="font-medium">{name}</p>
-            <p className="text-xs text-muted-foreground">{role}</p>
-        </div>
-    </div>
+const DocumentButton = ({ href, children }: { href: string | null | undefined, children: React.ReactNode }) => (
+    <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2" disabled={!href}>
+        <a href={href || '#'} target="_blank" rel="noopener noreferrer">
+            <FileText className="h-4 w-4" />
+            <span>{children}</span>
+        </a>
+    </Button>
 );
+
 
 export default function BookingDetailsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string, bookingId: string }>}) {
   const { hotelId, bookingId } = use(paramsPromise);
@@ -128,7 +126,7 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                      <CardHeader>
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div>
-                                <h2 className="text-2xl font-bold font-headline">{guestName || 'Gastdaten ausstehend'}</h2>
+                                <h2 className="text-2xl font-bold font-headline">Buchungsübersicht</h2>
                                 <p className="text-sm text-muted-foreground">
                                     {checkInDate} - {checkOutDate}
                                 </p>
@@ -137,43 +135,8 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        
-                        <div>
-                             <h3 className="text-base font-semibold flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Gästeübersicht</h3>
-                             <Separator className="my-2" />
-                             <div className="divide-y">
-                                <GuestItem name={guestName} role="Hauptbucher" icon={UserCircle} />
-                                {booking.companions?.map((c, i) => (
-                                    <GuestItem key={i} name={`${c.firstName} ${c.lastName}`} role="Mitreisender" icon={Users} />
-                                ))}
-                             </div>
-                        </div>
-
-                        <div>
-                             <h3 className="text-base font-semibold flex items-center gap-2"><FileArchive className="h-4 w-4 text-primary" />Dokumente</h3>
-                             <p className="text-xs text-muted-foreground mb-2">Bereitgestellt via Methode: "{booking.documents?.submissionMethod || 'unbekannt'}"</p>
-                             <Separator className="my-2" />
-                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                <Button asChild variant="outline" size="sm" className="w-full justify-start" disabled={!booking.documents?.idFront}>
-                                    <a href={booking.documents?.idFront || '#'} target="_blank" rel="noopener noreferrer">
-                                        <FileText /><span>Ausweis (Vorderseite)</span>
-                                    </a>
-                                </Button>
-                                <Button asChild variant="outline" size="sm" className="w-full justify-start" disabled={!booking.documents?.idBack}>
-                                    <a href={booking.documents?.idBack || '#'} target="_blank" rel="noopener noreferrer">
-                                        <FileText /><span>Ausweis (Rückseite)</span>
-                                    </a>
-                                </Button>
-                                <Button asChild variant="outline" size="sm" className="w-full justify-start" disabled={!booking.documents?.paymentProof}>
-                                    <a href={booking.documents?.paymentProof || '#'} target="_blank" rel="noopener noreferrer">
-                                        <FileText /><span>Zahlungsnachweis</span>
-                                    </a>
-                                </Button>
-                             </div>
-                        </div>
-
                          <div>
-                             <h3 className="text-base font-semibold flex items-center gap-2"><BedDouble className="h-4 w-4 text-primary" />Buchungsdetails</h3>
+                             <h3 className="text-base font-semibold flex items-center gap-2"><BedDouble className="h-4 w-4 text-primary" />Allgemeine Buchungsdetails</h3>
                              <Separator className="my-2" />
                              <div className="divide-y">
                                 {booking.rooms.map((room, index) => (
@@ -184,19 +147,69 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                                 <DetailRow icon={Users} label="Personen" value={`${totalPersons}`} />
                              </div>
                         </div>
+                    </CardContent>
+                </Card>
 
+                <Card>
+                    <CardHeader>
+                         <h3 className="text-lg font-semibold flex items-center gap-2"><Euro className="h-5 w-5 text-primary"/>Zahlung & Finanzen</h3>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className='divide-y'>
+                            <DetailRow icon={Euro} label="Gesamtpreis" value={<span className="font-bold">{booking.priceTotal.toFixed(2)} €</span>} />
+                            <DetailRow icon={Euro} label="Bezahlt" value={`${paidAmount.toFixed(2)} €`} />
+                            <DetailRow icon={Euro} label="Offen bei Anreise" value={<span className="font-semibold text-primary">{openAmount.toFixed(2)} €</span>} />
+                        </div>
+                        <div>
+                            <h4 className="font-medium text-sm mb-2">Zahlungsnachweis</h4>
+                            <DocumentButton href={booking.documents?.paymentProof}>Zahlungsbeleg anzeigen</DocumentButton>
+                             {!booking.documents?.paymentProof && <p className="text-xs text-muted-foreground mt-1">Kein Zahlungsnachweis hochgeladen.</p>}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base font-semibold flex items-center gap-2"><Euro className="h-4 w-4 text-primary"/>Finanzen</CardTitle>
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>Gäste & Dokumente</CardTitle>
                     </CardHeader>
-                    <CardContent className="divide-y">
-                       <DetailRow icon={Euro} label="Gesamtpreis" value={<span className="font-bold">{booking.priceTotal.toFixed(2)} €</span>} />
-                       <DetailRow icon={Euro} label="Bezahlt" value={`${paidAmount.toFixed(2)} €`} />
-                       <DetailRow icon={Euro} label="Offen bei Anreise" value={<span className="font-semibold text-primary">{openAmount.toFixed(2)} €</span>} />
+                    <CardContent className="space-y-6">
+                       {/* Main Guest */}
+                       <div>
+                           <h4 className="font-medium flex items-center gap-2"><UserCircle className="h-4 w-4"/>Hauptgast</h4>
+                           <Separator className="my-2" />
+                           <p className="font-semibold">{guestName}</p>
+                           <div className="text-sm text-muted-foreground space-y-1 mt-2">
+                               <p className="flex items-center gap-2"><Mail className="h-4 w-4"/>{booking.email || 'N/A'}</p>
+                               <p className="flex items-center gap-2"><Phone className="h-4 w-4"/>{booking.phone || 'N/A'}</p>
+                           </div>
+                           <div className="mt-4">
+                                <h5 className="font-medium text-xs text-muted-foreground mb-2">Dokumente des Hauptgastes</h5>
+                                {booking.documents?.submissionMethod === 'upload' ? (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <DocumentButton href={booking.documents?.idFront}>Ausweis (Vorderseite)</DocumentButton>
+                                        <DocumentButton href={booking.documents?.idBack}>Ausweis (Rückseite)</DocumentButton>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground p-2 bg-muted rounded-md">Dokumente werden vom Gast vor Ort vorgelegt.</p>
+                                )}
+                           </div>
+                       </div>
+                       {/* Companions */}
+                       {booking.companions && booking.companions.length > 0 && (
+                           <div>
+                               <h4 className="font-medium flex items-center gap-2"><Users className="h-4 w-4"/>Mitreisende</h4>
+                               <Separator className="my-2"/>
+                               <div className="space-y-4">
+                                   {booking.companions.map((c, i) => (
+                                       <div key={i}>
+                                            <p className="font-semibold">{c.firstName} {c.lastName}</p>
+                                            <p className="text-xs text-muted-foreground">Dokumente werden vor Ort vorgelegt.</p>
+                                       </div>
+                                   ))}
+                               </div>
+                           </div>
+                       )}
                     </CardContent>
                 </Card>
 
@@ -221,4 +234,3 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
     </div>
   );
 }
-

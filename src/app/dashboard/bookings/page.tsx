@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,9 +40,9 @@ const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary'
     'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Partial Payment' },
 };
 
-export default function BookingsListPage({ params }: { params: { hotelId: string }}) {
+export default function BookingsListPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
   const router = useRouter();
-  const hotelId = params.hotelId;
+  const { hotelId } = use(paramsPromise);
   
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,7 +91,7 @@ export default function BookingsListPage({ params }: { params: { hotelId: string
       });
   }, [allBookings, searchTerm, statusFilter]);
   
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean | string) => {
     if (checked) {
       setSelectedBookings(filteredBookings.map(b => b.id));
     } else {
@@ -99,7 +99,7 @@ export default function BookingsListPage({ params }: { params: { hotelId: string
     }
   };
 
-  const handleSelectSingle = (id: string, checked: boolean) => {
+  const handleSelectSingle = (id: string, checked: boolean | string) => {
     if (checked) {
       setSelectedBookings(prev => [...prev, id]);
     } else {

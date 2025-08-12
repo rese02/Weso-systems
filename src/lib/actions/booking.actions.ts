@@ -3,7 +3,7 @@
 
 import { db, storage } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { ref, deleteObject, listAll } from 'firebase/storage';
 import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -218,7 +218,7 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
                 // Specifically handle companions array with Timestamps
                 if (key === 'companions') {
                     serializableData[key] = value.map(item => {
-                        if (item.dateOfBirth instanceof Timestamp) {
+                        if (item && item.dateOfBirth instanceof Timestamp) {
                             return { ...item, dateOfBirth: item.dateOfBirth.toDate().toISOString() };
                         }
                         return item;
@@ -302,37 +302,34 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID, including hotel name.
- * This function uses a collection group query to find the link across all hotels.
+ * This function uses a fallback scan method to find the link across all hotels,
+ * which is more reliable than a collection group query without a pre-configured index.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
-    const querySnapshot = await getDocs(q);
+    let foundLink: BookingLink | null = null;
+    let foundHotelId: string | null = null;
 
-    if (querySnapshot.empty) {
-        // Fallback Scan: If composite index is not ready, this might be needed.
-        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-        for (const hotelDoc of hotelsSnapshot.docs) {
-            const hotelId = hotelDoc.id;
-            const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
-            const docSnap = await getDoc(linkDocRef);
-            if (docSnap.exists()) {
-                querySnapshot.docs.push(docSnap);
-                break;
-            }
+    // Scan through all hotels to find the booking link.
+    // This is less efficient but more reliable without a specific index.
+    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+    for (const hotelDoc of hotelsSnapshot.docs) {
+        const hotelId = hotelDoc.id;
+        const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
+        const docSnap = await getDoc(linkDocRef);
+        if (docSnap.exists()) {
+            foundLink = { id: docSnap.id, ...docSnap.data() } as BookingLink;
+            foundHotelId = hotelId;
+            break; // Exit the loop once the link is found
         }
     }
 
-    if (querySnapshot.empty) {
+    if (!foundLink || !foundHotelId) {
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
     
-    const linkDoc = querySnapshot.docs[0];
-    const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
-    const foundHotelId = linkData.hotelId;
-
     const hotelDocRef = doc(db, 'hotels', foundHotelId);
     const hotelSnap = await getDoc(hotelDocRef);
 
@@ -344,9 +341,9 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     
     // Convert Timestamps to ISO strings for client-side serialization
     const serializableLinkData = {
-        ...linkData,
-        createdAt: (linkData.createdAt as Timestamp).toDate().toISOString(),
-        expiresAt: (linkData.expiresAt as Timestamp).toDate().toISOString(),
+        ...foundLink,
+        createdAt: (foundLink.createdAt as Timestamp).toDate().toISOString(),
+        expiresAt: (foundLink.expiresAt as Timestamp).toDate().toISOString(),
         hotelName,
     };
     
@@ -355,11 +352,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    if (e.message.includes("requires an index")) {
-        return { success: false, error: "Die Datenbankabfrage erfordert einen Index. Bitte erstellen Sie den Index in der Firebase Console und versuchen Sie es erneut." };
-    }
     return { success: false, error: e.message };
   }
 }
-
-    

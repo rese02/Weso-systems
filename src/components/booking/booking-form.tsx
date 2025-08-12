@@ -26,6 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import { sendEmail } from '@/lib/actions/email.actions';
+import Link from 'next/link';
 
 
 const translations = {
@@ -127,7 +128,7 @@ const translations = {
             paymentMethod: "Zahlungsart",
             bankTransfer: "Banküberweisung",
             paymentProof: "Zahlungsbeleg",
-            terms: `Indem Sie auf 'Daten absenden' klicken, bestätigen Sie, dass Sie die <a href="#" class="underline">Datenschutzbestimmungen</a> und die <a href="#" class="underline">AGB</a> gelesen haben und diesen zustimmen.`
+            terms: `Indem Sie auf 'Daten absenden' klicken, bestätigen Sie, dass Sie die <a href="/guest/privacy" target="_blank" rel="noopener noreferrer" class="underline">Datenschutzbestimmungen</a> und die <a href="/guest/terms" target="_blank" rel="noopener noreferrer" class="underline">AGB</a> gelesen haben und diesen zustimmen.`
         },
         buttons: {
             back: "Zurück",
@@ -251,7 +252,7 @@ const translations = {
             paymentMethod: "Payment Method",
             bankTransfer: "Bank Transfer",
             paymentProof: "Proof of Payment",
-            terms: `By clicking 'Submit Data', you confirm that you have read and agree to the <a href="#" class="underline">Privacy Policy</a> and the <a href="#" class="underline">Terms & Conditions</a>.`
+            terms: `By clicking 'Submit Data', you confirm that you have read and agree to the <a href="/guest/privacy" target="_blank" rel="noopener noreferrer" class="underline">Privacy Policy</a> and the <a href="/guest/terms" target="_blank" rel="noopener noreferrer" class="underline">Terms & Conditions</a>.`
         },
         buttons: {
             back: "Back",
@@ -375,7 +376,7 @@ const translations = {
             paymentMethod: "Metodo di Pagamento",
             bankTransfer: "Bonifico Bancario",
             paymentProof: "Prova di Pagamento",
-            terms: `Cliccando su 'Invia Dati', confermi di aver letto e di accettare l'<a href="#" class="underline">Informativa sulla Privacy</a> e i <a href="#" class="underline">Termini e Condizioni</a>.`
+            terms: `Cliccando su 'Invia Dati', confermi di aver letto e di accettare l'<a href="/guest/privacy" target="_blank" rel="noopener noreferrer" class="underline">Informativa sulla Privacy</a> e i <a href="/guest/terms" target="_blank" rel="noopener noreferrer" class="underline">Termini e Condizioni</a>.`
         },
         buttons: {
             back: "Indietro",

@@ -9,15 +9,14 @@ import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, UploadCloud, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle, ListChecks, Banknote, Copy, CreditCard } from 'lucide-react';
+import { CalendarIcon, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, PlusCircle, ListChecks, Banknote, Copy, CreditCard } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
-import type { BookingLink, Hotel } from '@/lib/definitions';
+import type { BookingLink, Hotel, Companion } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { Progress } from '../ui/progress';
 import { storage } from '@/lib/firebase.client';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Timestamp, doc, writeBatch } from 'firebase/firestore';
@@ -29,12 +28,6 @@ import { getHotelById } from '@/lib/actions/hotel.actions';
 
 
 const steps = ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'];
-
-type Companion = {
-    firstName: string;
-    lastName: string;
-    dateOfBirth?: Date;
-}
 
 type FileUpload = {
     file: File;
@@ -378,10 +371,10 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     );
 };
 
-const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined }) => (
+const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{value || 'N/A'}</p>
+        <p className="text-sm font-medium text-right">{value || 'N/A'}</p>
     </div>
 );
 
@@ -632,13 +625,14 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             guestNotes: formData.notes || '',
             status: paymentOption === 'deposit' ? 'Partial Payment' : 'Confirmed',
             submittedAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
             documents: {
                 idFront: uploadedFileMap.idFront,
                 idBack: uploadedFileMap.idBack,
                 paymentProof: uploadedFileMap.paymentProof,
                 submissionMethod: documentOption
             },
-            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth?.toISOString()}))
+            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth ? Timestamp.fromDate(c.dateOfBirth) : null}))
         };
         batch.update(bookingDocRef, updateData);
 
@@ -746,5 +740,3 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
-
-    

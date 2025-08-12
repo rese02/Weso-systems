@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit, documentId } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -209,10 +209,23 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
         const data = snapshot.data();
         const serializableData: { [key: string]: any } = {};
         for (const key in data) {
-            if (data[key] instanceof Timestamp) {
-                serializableData[key] = data[key].toDate().toISOString();
+            const value = data[key];
+            if (value instanceof Timestamp) {
+                serializableData[key] = value.toDate().toISOString();
+            } else if (Array.isArray(value)) {
+                // Specifically handle companions array with Timestamps
+                if (key === 'companions') {
+                    serializableData[key] = value.map(item => {
+                        if (item.dateOfBirth instanceof Timestamp) {
+                            return { ...item, dateOfBirth: item.dateOfBirth.toDate().toISOString() };
+                        }
+                        return item;
+                    });
+                } else {
+                    serializableData[key] = value;
+                }
             } else {
-                serializableData[key] = data[key];
+                serializableData[key] = value;
             }
         }
         
@@ -265,43 +278,35 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const q = query(
-      collectionGroup(db, 'bookingLinks'),
-      where('__name__', '==', `hotels/${linkId}`)
-    );
-    const querySnapshot = await getDocs(q);
-
-    let linkDoc: any;
+    let linkDoc: any = null;
+    let foundHotelId: string | null = null;
     
-    // This is a workaround for development environments where indexing might be slow.
-    // It is not recommended for production.
-    if(querySnapshot.empty) {
-        console.warn('Collection group query returned no results. This may be due to Firestore indexing latency. Falling back to a scan.');
-        const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
-        for (const hotelDoc of hotelsSnapshot.docs) {
-            const hotelId = hotelDoc.id;
-            const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
-            const docSnap = await getDoc(linkDocRef);
-            if (docSnap.exists()) {
-                linkDoc = docSnap;
-                break;
-            }
+    // Fallback Scan: Iterate through hotels to find the link.
+    // This is inefficient but avoids the need for a composite index during development.
+    // For production, a composite index on the collection group `bookingLinks` is highly recommended.
+    const hotelsSnapshot = await getDocs(collection(db, 'hotels'));
+    for (const hotelDoc of hotelsSnapshot.docs) {
+        const hotelId = hotelDoc.id;
+        const linkDocRef = doc(db, 'hotels', hotelId, 'bookingLinks', linkId);
+        const docSnap = await getDoc(linkDocRef);
+        if (docSnap.exists()) {
+            linkDoc = docSnap;
+            foundHotelId = hotelId;
+            break; // Stop searching once the link is found
         }
-    } else {
-        linkDoc = querySnapshot.docs[0];
     }
     
-    if (!linkDoc) {
-      return { success: false, error: "Link not found." };
+    if (!linkDoc || !foundHotelId) {
+      return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
 
-    const hotelDocRef = doc(db, 'hotels', linkData.hotelId);
+    const hotelDocRef = doc(db, 'hotels', foundHotelId);
     const hotelSnap = await getDoc(hotelDocRef);
 
     if (!hotelSnap.exists()) {
-        return { success: false, error: "Associated hotel not found." };
+        return { success: false, error: "Zugehöriges Hotel nicht gefunden." };
     }
 
     const hotelName = hotelSnap.data().name || 'Hotel';
@@ -321,7 +326,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     const e = error as Error;
     // Provide a more generic error in production
     if (e.message.includes("indexes?create_composite") || e.message.includes("requires an index")) {
-        return { success: false, error: "The database is being set up. Please try again in a few minutes." };
+        return { success: false, error: "Die Datenbank wird eingerichtet. Bitte versuchen Sie es in ein paar Minuten erneut." };
     }
     return { success: false, error: e.message };
   }

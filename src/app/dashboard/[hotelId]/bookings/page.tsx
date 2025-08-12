@@ -85,7 +85,8 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
     return allBookings
       .filter(booking => {
         const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim().toLowerCase();
-        return guestName.includes(searchTerm.toLowerCase());
+        const bookingIdShort = booking.id.substring(0,8).toLowerCase();
+        return guestName.includes(searchTerm.toLowerCase()) || bookingIdShort.includes(searchTerm.toLowerCase());
       })
       .filter(booking => {
         return statusFilter === 'all' || booking.status === statusFilter;
@@ -157,7 +158,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                 <span className="hidden sm:inline">Aktualisieren</span>
             </Button>
             <Button asChild>
-                <Link href={`/dashboard/${hotelId}/create-booking`}>
+                <Link href={`/dashboard/${hotelId}/bookings/create-booking`}>
                     <PlusCircle />
                     <span>Neue Buchung</span>
                 </Link>
@@ -175,7 +176,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                 <div className="flex flex-col w-full sm:flex-row sm:items-center sm:w-auto gap-2">
                     <div className="relative w-full sm:w-auto">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Suche nach Name..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <Input placeholder="Suche nach Name/ID..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
@@ -226,10 +227,10 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                       />
                   </TableHead>
                   <TableHead>Gast</TableHead>
-                  <TableHead className="hidden sm:table-cell">Check-in</TableHead>
-                  <TableHead className="hidden sm:table-cell">Check-out</TableHead>
+                  <TableHead className="hidden md:table-cell">Check-in</TableHead>
+                  <TableHead className="hidden md:table-cell">Check-out</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Gesamtpreis</TableHead>
+                  <TableHead className="hidden sm:table-cell">Gesamtpreis</TableHead>
                   <TableHead><span className="sr-only">Aktionen</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -259,16 +260,21 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                                   aria-label={`Buchung ${booking.id} auswählen`}
                               />
                           </TableCell>
-                          <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{booking.checkIn ? format(parseISO(booking.checkIn), 'dd.MM.yy') : 'N/A'}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{booking.checkOut ? format(parseISO(booking.checkOut), 'dd.MM.yy') : 'N/A'}</TableCell>
+                          <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                  <span>{guestName || "N/A"}</span>
+                                  <span className="text-xs text-muted-foreground">{booking.id.substring(0,8).toUpperCase()}</span>
+                              </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{booking.checkIn ? format(parseISO(booking.checkIn), 'dd.MM.yy') : 'N/A'}</TableCell>
+                          <TableCell className="hidden md:table-cell">{booking.checkOut ? format(parseISO(booking.checkOut), 'dd.MM.yy') : 'N/A'}</TableCell>
                           <TableCell>
                             <Badge variant={currentStatus.variant} className="text-xs">
                                 <currentStatus.icon className="mr-1 h-3 w-3" />
                                 <span className="hidden md:inline">{currentStatus.label}</span>
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">{booking.priceTotal.toFixed(2)} €</TableCell>
+                          <TableCell className="hidden sm:table-cell">{booking.priceTotal.toFixed(2)} €</TableCell>
                           <TableCell>
                               <DropdownMenu>
                               <DropdownMenuTrigger asChild>

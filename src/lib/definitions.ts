@@ -136,5 +136,3 @@ export const GUEST_LANGUAGE_OPTIONS: { value: GuestLanguage; label: string }[] =
     { value: 'en', label: 'Englisch' },
     { value: 'it', label: 'Italienisch' },
 ];
-
-    

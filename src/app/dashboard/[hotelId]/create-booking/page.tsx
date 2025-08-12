@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { BookingCreationForm } from '@/components/booking/booking-creation-form';
@@ -32,3 +31,4 @@ export default function CreateBookingPage({ params: paramsPromise }: { params: P
         </div>
     );
 }
+

@@ -266,4 +266,3 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
     </Form>
   );
 }
-

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,28 +41,21 @@ const translations = {
     }
 };
 
-export default function GuestBookingPage() {
+export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
+  const { linkId } = use(paramsPromise);
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [linkId, setLinkId] = useState<string | null>(null);
-  const [lang, setLang] = useState<GuestLanguage>('de');
-
-  useEffect(() => {
-    // Extract linkId from URL on the client side
-    const pathSegments = window.location.pathname.split('/');
-    const id = pathSegments[pathSegments.length - 1];
-    if (id) {
-        setLinkId(id);
-    } else {
-        setError(translations[lang].invalidOrNotFound);
-        setIsLoading(false);
-    }
-  }, [lang]);
+  
+  // Determine language from linkData once fetched, default to 'de'
+  const lang = linkData?.prefill.guestLanguage || 'de';
+  const t = translations[lang];
 
   useEffect(() => {
     const fetchLinkDetails = async () => {
       if (!linkId) {
+        setError(translations.de.invalidOrNotFound); // Default to German if no ID
+        setIsLoading(false);
         return;
       }
 
@@ -70,24 +63,21 @@ export default function GuestBookingPage() {
       const result = await getBookingLinkDetails(linkId);
       
       if (result.success && result.data) {
-        const guestLang = result.data.prefill.guestLanguage as GuestLanguage || 'de';
-        setLang(guestLang);
-
+        const currentLang = result.data.prefill.guestLanguage || 'de';
         if (new Date() > new Date(result.data.expiresAt as string)) {
-          setError(translations[guestLang].expiredLink);
+          setError(translations[currentLang].expiredLink);
         } else {
           setLinkData(result.data);
         }
       } else {
-        setError(result.error || translations[lang].invalidOrNotFound);
+        // Use German as a fallback if the link doesn't even exist to determine language
+        setError(result.error || translations.de.invalidOrNotFound);
       }
       setIsLoading(false);
     };
 
-    if (linkId) {
-        fetchLinkDetails();
-    }
-  }, [linkId, lang]);
+    fetchLinkDetails();
+  }, [linkId]);
 
 
   if (isLoading) {
@@ -106,8 +96,6 @@ export default function GuestBookingPage() {
     )
   }
   
-  const t = translations[lang] || translations.de;
-
   if (error) {
     return (
       <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">

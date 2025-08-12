@@ -150,7 +150,8 @@ const translations = {
             emailSuccess: "Bestätigungs-E-Mail gesendet!",
             emailSuccessDesc: "Eine Kopie der Bestätigung wurde an Ihre E-Mail gesendet.",
             emailError: "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Ihre Buchung ist aber eingegangen."
-        }
+        },
+        stepOf: "von"
     },
     en: {
         steps: ['Guest', 'Companions', 'Payment Option', 'Payment Details', 'Review'],
@@ -273,7 +274,8 @@ const translations = {
             emailSuccess: "Confirmation email sent!",
             emailSuccessDesc: "A copy of the confirmation has been sent to your email.",
             emailError: "The confirmation email could not be sent. However, your booking has been received."
-        }
+        },
+        stepOf: "of"
     },
     it: {
         steps: ['Ospite', 'Accompagnatori', 'Opzione Pagamento', 'Dettagli Pagamento', 'Riepilogo'],
@@ -396,7 +398,8 @@ const translations = {
             emailSuccess: "E-mail di conferma inviata!",
             emailSuccessDesc: "Una copia della conferma è stata inviata alla sua e-mail.",
             emailError: "Non è stato possibile inviare l'e-mail di conferma. Tuttavia, la sua prenotazione è stata ricevuta."
-        }
+        },
+        stepOf: "di"
     }
 };
 
@@ -1095,7 +1098,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   return (
     <Card className="w-full max-w-3xl shadow-lg">
       <CardHeader>
-        <p className="text-sm text-muted-foreground text-center font-medium">{translations[lang].steps[currentStep] ? `${translations[lang].steps[0]} ${currentStep + 1} ${'von'} ${translations[lang].steps.length}: ${translations[lang].steps[currentStep]}` : ''}</p>
+        <p className="text-sm text-muted-foreground text-center font-medium">{`Schritt ${currentStep + 1} ${t.stepOf} ${t.steps.length}: ${t.steps[currentStep]}`}</p>
         <div className="pt-4">
           <StepIndicator steps={t.steps} currentStep={currentStep} />
         </div>
@@ -1118,5 +1121,3 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
-
-    

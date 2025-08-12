@@ -50,13 +50,24 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
                 </div>
               </>
             )}
-             <p className="absolute -bottom-6 w-max -translate-x-1/2 left-1/2 text-xs text-center text-muted-foreground sm:hidden">{step}</p>
           </li>
         ))}
       </ol>
-      <div className="mt-4 hidden sm:flex justify-between text-sm font-medium text-muted-foreground">
+      <div className="mt-4 hidden sm:flex text-sm font-medium text-muted-foreground">
         {steps.map((step, stepIdx) => (
-            <div key={step} className={cn("text-center w-8", {"font-bold text-primary": stepIdx <= currentStep})}>{step}</div>
+            <div key={step} className={cn(
+                "w-full text-center", 
+                stepIdx <= currentStep ? "font-bold text-primary" : "",
+                stepIdx === 0 ? "text-left" : "",
+                stepIdx === steps.length - 1 ? "text-right" : ""
+            )}>
+                {step}
+            </div>
+        ))}
+      </div>
+       <div className="mt-4 sm:hidden flex justify-between text-xs font-medium text-muted-foreground">
+        {steps.map((step, stepIdx) => (
+            <div key={step} className={cn("w-1/5 text-center px-1", {"font-bold text-primary": stepIdx <= currentStep})}>{step}</div>
         ))}
       </div>
     </nav>

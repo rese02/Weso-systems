@@ -641,9 +641,9 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             submittedAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
             documents: {
-                idFront: uploadedFileMap.idFront,
-                idBack: uploadedFileMap.idBack,
-                paymentProof: uploadedFileMap.paymentProof,
+                idFront: uploadedFileMap.idFront || null,
+                idBack: uploadedFileMap.idBack || null,
+                paymentProof: uploadedFileMap.paymentProof || null,
                 submissionMethod: documentOption
             },
             companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth ? Timestamp.fromDate(new Date(c.dateOfBirth)) : null}))

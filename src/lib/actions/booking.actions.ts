@@ -175,10 +175,18 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
             // Convert Timestamp fields to ISO strings for serialization
             const serializableData: { [key: string]: any } = {};
             for (const key in data) {
-                if (data[key] instanceof Timestamp) {
-                    serializableData[key] = data[key].toDate().toISOString();
+                 const value = data[key];
+                if (value instanceof Timestamp) {
+                    serializableData[key] = value.toDate().toISOString();
+                } else if (key === 'companions' && Array.isArray(value)) {
+                     serializableData[key] = value.map(item => {
+                        if (item && item.dateOfBirth instanceof Timestamp) {
+                            return { ...item, dateOfBirth: item.dateOfBirth.toDate().toISOString() };
+                        }
+                        return item;
+                    });
                 } else {
-                    serializableData[key] = data[key];
+                    serializableData[key] = value;
                 }
             }
             return { 
@@ -356,3 +364,4 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     return { success: false, error: e.message };
   }
 }
+

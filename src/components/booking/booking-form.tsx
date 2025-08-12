@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -413,7 +413,7 @@ type FileUpload = {
     error?: string;
 }
 
-const BookingOverview = ({ prefillData, lang }: { prefillData?: BookingLink['prefill'] | null, lang: GuestLanguage }) => {
+const BookingOverview = memo(function BookingOverview({ prefillData, lang }: { prefillData?: BookingLink['prefill'] | null, lang: GuestLanguage }) {
     if (!prefillData) return null;
     const t = translations[lang].overviewTitle;
     const t_period = translations[lang].period;
@@ -449,9 +449,9 @@ const BookingOverview = ({ prefillData, lang }: { prefillData?: BookingLink['pre
             </div>
         </div>
     )
-}
+});
 
-const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, required?: boolean, lang: GuestLanguage }) => {
+const FileUploadInput = memo(function FileUploadInput({ id, label, onFileSelect, upload, onRemove, required, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, required?: boolean, lang: GuestLanguage }) {
     const t = translations[lang].step1;
     if (upload && !upload.error) {
         return (
@@ -479,9 +479,9 @@ const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required, 
              <p className="text-xs text-muted-foreground mt-1">{t.fileHint}</p>
         </div>
     );
-};
+});
 
-const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption, lang }: {
+const Step1GuestInfo = memo(function Step1GuestInfo({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption, lang }: {
     formData: any;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     prefillData?: BookingLink['prefill'] | null;
@@ -491,7 +491,7 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
     documentOption: 'upload' | 'on-site';
     setDocumentOption: (option: 'upload' | 'on-site') => void;
     lang: GuestLanguage;
-}) => {
+}) {
     const t = translations[lang].step1;
     return (
         <div className="space-y-6">
@@ -530,23 +530,25 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
             </div>
         </div>
     );
-}
+});
 
-const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions, lang }: {
+const Step2Companions = memo(function Step2Companions({ companions, setCompanions, documentOption, maxCompanions, lang }: {
     companions: Companion[];
     setCompanions: React.Dispatch<React.SetStateAction<Companion[]>>;
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
-}) => {
+}) {
     const t = translations[lang].step2;
     const locale = lang === 'en' ? enUS : lang === 'it' ? it : de;
 
-    const handleCompanionChange = (index: number, field: keyof Companion, value: string | Date) => {
-        const newCompanions = [...companions];
-        (newCompanions[index] as any)[field] = value;
-        setCompanions(newCompanions);
-    };
+    const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string | Date) => {
+        setCompanions(prev => {
+            const newCompanions = [...prev];
+            (newCompanions[index] as any)[field] = value;
+            return newCompanions;
+        });
+    }, [setCompanions]);
 
     return (
         <div className="space-y-6">
@@ -598,14 +600,14 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
             </Alert>
         </div>
     );
-};
+});
 
-const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption, lang }: {
+const Step3PaymentOption = memo(function Step3PaymentOption({ prefillData, paymentOption, setPaymentOption, lang }: {
     prefillData: BookingLink['prefill'] | null;
     paymentOption: 'deposit' | 'full';
     setPaymentOption: (option: 'deposit' | 'full') => void;
     lang: GuestLanguage;
-}) => {
+}) {
     const t = translations[lang].step3;
     const totalPrice = prefillData?.priceTotal || 0;
     const depositPrice = totalPrice * 0.3;
@@ -653,9 +655,9 @@ const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption, lang
             </div>
         </div>
     );
-};
+});
 
-const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload, hotelDetails, lang }: {
+const Step4PaymentDetails = memo(function Step4PaymentDetails({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload, hotelDetails, lang }: {
     prefillData: BookingLink['prefill'] | null;
     paymentOption: 'deposit' | 'full';
     uploads: Record<string, FileUpload>;
@@ -663,7 +665,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     removeUpload: (name: string) => void;
     hotelDetails: Hotel | null;
     lang: GuestLanguage;
-}) => {
+}) {
     const { toast } = useToast();
     const t = translations[lang].step4;
     const totalPrice = prefillData?.priceTotal || 0;
@@ -673,10 +675,10 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     const bookingIdShort = prefillData?.bookingId.substring(0, 8).toUpperCase();
     const paymentPurpose = `${t.paymentPurpose} ${bookingIdShort} - ${paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull}`;
 
-    const copyToClipboard = (text: string, label: string) => {
+    const copyToClipboard = useCallback((text: string, label: string) => {
         navigator.clipboard.writeText(text);
         toast({ title: translations[lang].toasts.submitSuccessTitle, description: t.copySuccess(label) });
-    };
+    }, [toast, lang, t]);
 
     if (!hotelDetails) {
         return <div className='text-center'><Loader2 className='w-6 h-6 animate-spin mx-auto' /><p className='mt-2'>{t.loadingBankDetails}</p></div>
@@ -743,7 +745,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
             </div>
         </div>
     );
-};
+});
 
 const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
@@ -752,14 +754,14 @@ const ReviewItem = ({ label, value }: { label: string, value: string | number | 
     </div>
 );
 
-const Step5Review = ({ formData, companions, documentOption, paymentOption, prefillData, lang }: {
+const Step5Review = memo(function Step5Review({ formData, companions, documentOption, paymentOption, prefillData, lang }: {
     formData: any;
     companions: Companion[];
     documentOption: string;
     paymentOption: string;
     prefillData: BookingLink['prefill'] | null;
     lang: GuestLanguage;
-}) => {
+}) {
     const t = translations[lang].step5;
     const totalPrice = prefillData?.priceTotal || 0;
     const depositPrice = totalPrice * 0.3;
@@ -811,7 +813,7 @@ const Step5Review = ({ formData, companions, documentOption, paymentOption, pref
              </div>
         </div>
     );
-};
+});
 
 
 export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: { prefillData?: BookingLink['prefill'] & {guestLanguage?: GuestLanguage} | null, linkId?: string, hotelId?: string, initialGuestData: {firstName?: string; lastName?: string, email?: string} }) {
@@ -860,12 +862,12 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       }
   }, [prefillData, maxCompanions, companions.length]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
       setFormData((prev: any) => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleFileUpload = (name: string, file: File) => {
+  const handleFileUpload = useCallback((name: string, file: File) => {
     const t_file = translations[lang].step1;
     if (file.size > 5 * 1024 * 1024) { 
       setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, error: t_file.fileTooLarge } }));
@@ -876,9 +878,9 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       return;
     }
     setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name } }));
-  };
+  }, [lang]);
 
-  const removeUpload = (name: string) => {
+  const removeUpload = useCallback((name: string) => {
     const upload = uploads[name];
     if (upload && upload.url) {
        const fileRef = ref(storage, upload.url);
@@ -891,7 +893,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         delete newUploads[name];
         return newUploads;
     });
-  };
+  }, [uploads]);
 
   const validateStep = (step: number) => {
       const t_toast = translations[lang].toasts;

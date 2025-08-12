@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
-import { Building2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
 import type { BookingLinkWithHotel, GuestLanguage } from '@/lib/definitions';
@@ -93,7 +93,7 @@ export default function GuestBookingPage() {
     return (
         <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
              <div className="flex flex-col items-center gap-4 mb-8 text-center">
-                <Building2 className="h-12 w-12 text-primary animate-pulse" />
+                <Shield className="h-12 w-12 text-primary animate-pulse" />
                 <Skeleton className="h-10 w-64" />
                 <Skeleton className="h-4 w-80" />
             </div>
@@ -112,7 +112,7 @@ export default function GuestBookingPage() {
       <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
             <CardHeader>
-                <Building2 className="h-12 w-12 text-destructive mx-auto" />
+                <Shield className="h-12 w-12 text-destructive mx-auto" />
                 <CardTitle className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.invalidLink}</CardTitle>
             </CardHeader>
             <CardContent>
@@ -128,13 +128,14 @@ export default function GuestBookingPage() {
       <header className="py-8 text-center">
         <Link href="/">
            <div className="inline-flex items-center gap-2 text-foreground">
-             <Building2 className="h-12 w-12 text-primary" />
+             <Shield className="h-12 w-12 text-primary" />
              <span className="text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
            </div>
         </Link>
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
         <div className="text-center mb-8">
+          <h1 className="text-xs text-muted-foreground">{t.steps[0]}</h1>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.completeBooking}</h1>
           {linkData && linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
         </div>

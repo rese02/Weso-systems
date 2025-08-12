@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, Building2, Calendar, Bed, Utensils, Users, Euro } from 'lucide-react';
+import { CheckCircle, Shield, Calendar, Bed, Utensils, Users, Euro } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -192,7 +192,7 @@ export default function ThankYouPage() {
        <header className="py-8 text-center">
         <Link href="/">
            <div className="inline-flex items-center gap-2 text-foreground">
-             <Building2 className="h-12 w-12 text-primary" />
+             <Shield className="h-12 w-12 text-primary" />
              <span className="text-xl font-bold font-headline">{hotel.name}</span>
            </div>
         </Link>

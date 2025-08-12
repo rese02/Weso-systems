@@ -1,5 +1,5 @@
 
-import { Building2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
        <div className="w-full max-w-md">
         <div className="mb-6 flex justify-center">
             <Link href="/" className="flex items-center gap-2 text-foreground">
-                <Building2 className="h-8 w-8 text-primary" />
+                <Shield className="h-8 w-8 text-primary" />
                 <span className="text-2xl font-bold font-headline">HotelHub Central</span>
             </Link>
         </div>

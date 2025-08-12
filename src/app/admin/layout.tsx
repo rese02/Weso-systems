@@ -1,9 +1,9 @@
 
 import Link from 'next/link';
 import {
-  Building2,
   LayoutDashboard,
   PlusCircle,
+  Shield,
   ShieldCheck,
 } from 'lucide-react';
 import {
@@ -30,7 +30,7 @@ export default function AdminLayout({
         <Sidebar>
           <SidebarHeader>
             <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
-              <Building2 className="h-6 w-6" />
+              <Shield className="h-6 w-6" />
               <span className="text-lg font-bold font-headline">HotelHub Central</span>
             </Link>
           </SidebarHeader>

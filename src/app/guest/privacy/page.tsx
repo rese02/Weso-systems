@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Building2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
       <header className="py-8 text-center">
         <Link href="/">
            <div className="inline-flex items-center gap-2 text-foreground">
-             <Building2 className="h-12 w-12 text-primary" />
+             <Shield className="h-12 w-12 text-primary" />
              <span className="text-xl font-bold font-headline">{agencyName}</span>
            </div>
         </Link>

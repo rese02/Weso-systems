@@ -152,14 +152,13 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
 }) => {
-    
-    const addCompanion = () => {
-        if (companions.length >= maxCompanions) return;
-        setCompanions([...companions, { firstName: '', lastName: '' }]);
-    };
 
     const removeCompanion = (index: number) => {
-        setCompanions(companions.filter((_, i) => i !== index));
+        // This function is kept in case a user needs to clear a pre-filled form,
+        // but adding companions is now automatic.
+        const newCompanions = [...companions];
+        newCompanions[index] = { firstName: '', lastName: '' };
+        setCompanions(newCompanions);
     };
 
     const handleCompanionChange = (index: number, field: keyof Companion, value: string | Date) => {
@@ -172,14 +171,26 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
         <div className="space-y-6">
             <div>
                 <h3 className="font-semibold">Begleitpersonen</h3>
-                <p className="text-sm text-muted-foreground">Fügen Sie hier die Daten Ihrer Mitreisenden hinzu. Es sind {maxCompanions} Begleitperson(en) vorgesehen.</p>
+                <p className="text-sm text-muted-foreground">
+                    {maxCompanions > 0 
+                        ? `Bitte füllen Sie die Daten für Ihre ${maxCompanions} Begleitperson(en) aus.`
+                        : 'Sie haben keine Begleitpersonen für diese Buchung angegeben.'
+                    }
+                </p>
             </div>
 
+            {companions.length === 0 && maxCompanions > 0 && (
+                <div className="text-center p-4 border-dashed border rounded-md">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto"/>
+                    <p className="text-sm text-muted-foreground mt-2">Lade Felder für Begleitpersonen...</p>
+                </div>
+            )}
+            
             {companions.map((companion, index) => (
                 <Card key={index} className="relative bg-muted/30">
                     <CardHeader className="flex flex-row items-center justify-between pb-4">
                          <h4 className="font-medium flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Mitreisender {index + 1}</h4>
-                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCompanion(index)}><Trash2 className="h-4 w-4" /></Button>
+                         {/* Optional: Add a clear button if needed, but not an add/remove that changes array length */}
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
@@ -196,23 +207,17 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
                                 <PopoverTrigger asChild>
                                     <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !companion.dateOfBirth && "text-muted-foreground")}>
                                         <CalendarLucideIcon className="mr-2 h-4 w-4" />
-                                        {companion.dateOfBirth ? format(companion.dateOfBirth, "dd.MM.yyyy") : <span>Geburtsdatum auswählen</span>}
+                                        {companion.dateOfBirth ? format(new Date(companion.dateOfBirth), "dd.MM.yyyy") : <span>Geburtsdatum auswählen</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={companion.dateOfBirth} onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)} initialFocus captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} />
+                                    <Calendar mode="single" selected={companion.dateOfBirth ? new Date(companion.dateOfBirth) : undefined} onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)} initialFocus captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} />
                                 </PopoverContent>
                             </Popover>
                         </div>
                     </CardContent>
                 </Card>
             ))}
-
-            {companions.length < maxCompanions && (
-                <Button type="button" variant="outline" className="w-full" onClick={addCompanion}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Weiteren Mitreisenden hinzufügen
-                </Button>
-            )}
 
             <Alert>
                 <Info className="h-4 w-4" />
@@ -457,22 +462,31 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-      if (hotelId) {
-          getHotelById(hotelId).then(result => {
-              if (result.hotel) {
-                  setHotelDetails(result.hotel);
-              }
-          })
-      }
-  }, [hotelId]);
-  
   const maxCompanions = useMemo(() => {
     if (!prefillData?.rooms) return 0;
     // Sum of all adults and children, minus 1 (the main guest)
     const totalPeople = prefillData.rooms.reduce((sum, room) => sum + room.adults + room.children, 0);
     return Math.max(0, totalPeople - 1);
   }, [prefillData]);
+
+  useEffect(() => {
+    if (hotelId) {
+        getHotelById(hotelId).then(result => {
+            if (result.hotel) {
+                setHotelDetails(result.hotel);
+            }
+        })
+    }
+    // Pre-populate companions based on booking data
+    if (prefillData && companions.length === 0 && maxCompanions > 0) {
+        const initialCompanions = Array.from({ length: maxCompanions }, () => ({
+            firstName: '',
+            lastName: '',
+            dateOfBirth: undefined,
+        }));
+        setCompanions(initialCompanions as any);
+    }
+  }, [hotelId, prefillData, maxCompanions, companions.length]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -632,7 +646,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                 paymentProof: uploadedFileMap.paymentProof,
                 submissionMethod: documentOption
             },
-            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth ? Timestamp.fromDate(c.dateOfBirth) : null}))
+            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth ? Timestamp.fromDate(new Date(c.dateOfBirth)) : null}))
         };
         batch.update(bookingDocRef, updateData);
 

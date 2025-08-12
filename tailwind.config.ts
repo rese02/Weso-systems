@@ -1,5 +1,7 @@
 import type {Config} from 'tailwindcss';
 
+const {fontFamily} = require('tailwindcss/defaultTheme');
+
 export default {
   darkMode: ['class'],
   content: [
@@ -10,9 +12,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Poppins', 'sans-serif'],
-        code: ['monospace'],
+        body: ['var(--font-inter)', ...fontFamily.sans],
+        headline: ['var(--font-poppins)', ...fontFamily.sans],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -97,3 +98,5 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
+    

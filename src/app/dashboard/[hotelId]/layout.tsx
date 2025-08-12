@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sidebar';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { getHotelById } from '@/lib/actions/hotel.actions';
+import { Button } from '@/components/ui/button';
 
 
 export default async function DashboardLayout({
@@ -33,7 +34,17 @@ export default async function DashboardLayout({
 
   // In a real app, you'd want a nicer error state
   if (error || !hotel) {
-    return <div>Error loading hotel: {error || 'Hotel not found'}</div>
+    return (
+        <div className="flex h-screen w-screen flex-col items-center justify-center">
+            <div className="text-center">
+                <h1 className="text-2xl font-bold">Error loading hotel</h1>
+                <p className="text-muted-foreground">{error || 'Hotel not found'}</p>
+                <Button asChild className="mt-4">
+                    <Link href="/admin">Go to Admin</Link>
+                </Button>
+            </div>
+        </div>
+    )
   }
 
   const hotelId = params.hotelId;
@@ -58,9 +69,9 @@ export default async function DashboardLayout({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="New Booking">
-                  <Link href={`/dashboard/${hotelId}/create-booking`}>
+                  <Link href={`/dashboard/${hotelId}/bookings/create-booking`}>
                     <PlusCircle />
-                    <span>Neue Buchung</span>
+                    <span>New Booking</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -68,7 +79,7 @@ export default async function DashboardLayout({
                 <SidebarMenuButton asChild tooltip="Bookings">
                   <Link href={`/dashboard/${hotelId}/bookings`}>
                     <BookCopy />
-                    <span>Buchungen</span>
+                    <span>Bookings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -76,7 +87,7 @@ export default async function DashboardLayout({
                 <SidebarMenuButton asChild tooltip="Settings">
                   <Link href={`/dashboard/${hotelId}/settings`}>
                     <Settings />
-                    <span>Einstellungen</span>
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -92,3 +103,5 @@ export default async function DashboardLayout({
       </SidebarProvider>
   );
 }
+
+    

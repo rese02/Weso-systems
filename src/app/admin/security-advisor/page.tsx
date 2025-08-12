@@ -18,13 +18,13 @@ function SubmitButton() {
     <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending ? (
         <>
-          <Loader2 className="animate-spin" />
-          <span>Generating...</span>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <span>Generiere...</span>
         </>
       ) : (
         <>
           <ShieldCheck />
-          <span>Generate Policy</span>
+          <span>Richtlinie generieren</span>
         </>
       )}
     </Button>
@@ -39,14 +39,14 @@ export default function SecurityAdvisorPage() {
   useEffect(() => {
     if (state.message) {
       toast({
-        title: 'Success',
+        title: 'Erfolg',
         description: state.message,
       });
     }
     if (state.error) {
         toast({
             variant: "destructive",
-            title: 'Error',
+            title: 'Fehler',
             description: state.error,
         });
     }
@@ -55,16 +55,16 @@ export default function SecurityAdvisorPage() {
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
        <div className="grid gap-1">
-            <h1 className="text-3xl font-bold font-headline md:text-4xl">Security Policy Advisor</h1>
-            <p className="text-muted-foreground">Generate a security policy and recommendations using AI.</p>
+            <h1 className="text-3xl font-bold font-headline md:text-4xl">KI-Sicherheitsberater</h1>
+            <p className="text-muted-foreground">Generieren Sie eine Sicherheitsrichtlinie und Empfehlungen mithilfe von KI.</p>
         </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <form action={dispatch}>
           <Card>
             <CardHeader>
-              <CardTitle>Configuration</CardTitle>
+              <CardTitle>Konfiguration</CardTitle>
               <CardDescription>
-                Describe your architecture to get a tailored security policy.
+                Beschreiben Sie Ihre Architektur, um eine maßgeschneiderte Sicherheitsrichtlinie zu erhalten.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -74,12 +74,12 @@ export default function SecurityAdvisorPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="architectureDescription">
-                  Architecture Description
+                  Architekturbeschreibung
                 </Label>
                 <Textarea
                   id="architectureDescription"
                   name="architectureDescription"
-                  placeholder="e.g., Using Next.js with App Router for the frontend. Firebase for authentication (email/password), Firestore for database, and Firebase Storage for file uploads. Custom roles 'admin' and 'hotel' are managed via custom claims..."
+                  placeholder="z.B. Next.js mit App Router für das Frontend. Firebase für Authentifizierung (E-Mail/Passwort), Firestore für Datenbank und Firebase Storage für Datei-Uploads. Benutzerdefinierte Rollen 'admin' und 'hotel' werden über benutzerdefinierte Ansprüche verwaltet..."
                   rows={8}
                 />
                 {state.error && <p className="text-sm text-destructive">{state.error}</p>}
@@ -93,31 +93,31 @@ export default function SecurityAdvisorPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Generated Policy</CardTitle>
+              <CardTitle>Generierte Richtlinie</CardTitle>
               <CardDescription>
-                AI-generated security policy based on your input.
+                KI-generierte Sicherheitsrichtlinie basierend auf Ihrer Eingabe.
               </CardDescription>
             </CardHeader>
             <CardContent>
                 {state.data?.policy ? (
                      <pre className="p-4 bg-secondary rounded-md text-sm whitespace-pre-wrap font-mono">{state.data.policy}</pre>
                 ) : (
-                    <div className="text-sm text-muted-foreground p-4 text-center">The generated policy will appear here.</div>
+                    <div className="text-sm text-muted-foreground p-4 text-center">Die generierte Richtlinie wird hier erscheinen.</div>
                 )}
             </CardContent>
           </Card>
            <Card>
             <CardHeader>
-              <CardTitle>Recommendations</CardTitle>
+              <CardTitle>Empfehlungen</CardTitle>
               <CardDescription>
-                AI-generated security recommendations.
+                KI-generierte Sicherheitsempfehlungen.
               </CardDescription>
             </CardHeader>
             <CardContent>
                 {state.data?.recommendations ? (
                      <pre className="p-4 bg-secondary rounded-md text-sm whitespace-pre-wrap font-mono">{state.data.recommendations}</pre>
                 ) : (
-                    <div className="text-sm text-muted-foreground p-4 text-center">The generated recommendations will appear here.</div>
+                    <div className="text-sm text-muted-foreground p-4 text-center">Die generierten Empfehlungen werden hier erscheinen.</div>
                 )}
             </CardContent>
           </Card>
@@ -126,3 +126,5 @@ export default function SecurityAdvisorPage() {
     </div>
   );
 }
+
+    

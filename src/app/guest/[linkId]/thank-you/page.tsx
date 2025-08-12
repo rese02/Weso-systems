@@ -15,12 +15,12 @@ import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | React.ReactNode }) => (
-    <div className="flex items-start justify-between py-3">
-        <div className="flex items-center text-sm text-muted-foreground">
-            <Icon className="mr-3 h-4 w-4" />
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
+        <div className="flex items-center text-sm text-muted-foreground mb-1 sm:mb-0">
+            <Icon className="mr-3 h-4 w-4 shrink-0" />
             <span>{label}</span>
         </div>
-        <span className="text-sm font-medium text-right">{value}</span>
+        <span className="text-sm font-medium text-left sm:text-right w-full sm:w-auto pl-7 sm:pl-0">{value}</span>
     </div>
 );
 
@@ -139,8 +139,8 @@ export default function ThankYouPage() {
                 <h3 className="text-center font-semibold text-lg pb-2">Ihre Buchungsübersicht</h3>
                 <div className="border rounded-lg divide-y">
                     <DetailRow icon={Users} label="Buchungsnummer" value={booking.id.substring(0, 8).toUpperCase()} />
-                    <DetailRow icon={Calendar} label="Anreise" value={format(parseISO(booking.checkIn), "EEEE, dd. MMM yyyy 'ab 15:00 Uhr'", { locale: de })} />
-                    <DetailRow icon={Calendar} label="Abreise" value={format(parseISO(booking.checkOut), "EEEE, dd. MMM yyyy 'bis 10:00 Uhr'", { locale: de })} />
+                    <DetailRow icon={Calendar} label="Anreise" value={format(parseISO(booking.checkIn), "EEE, dd. MMM yyyy 'ab 15:00 Uhr'", { locale: de })} />
+                    <DetailRow icon={Calendar} label="Abreise" value={format(parseISO(booking.checkOut), "EEE, dd. MMM yyyy 'bis 10:00 Uhr'", { locale: de })} />
                     {booking.rooms.map((room, index) => (
                          <DetailRow key={index} icon={Bed} label={`Zimmer ${index + 1}`} value={room.roomType} />
                     ))}
@@ -158,4 +158,3 @@ export default function ThankYouPage() {
     </div>
   );
 }
-

@@ -18,7 +18,8 @@ const translations = {
         invalidOrNotFound: "Ungültiger oder nicht gefundener Buchungslink.",
         completeBooking: "Buchung vervollständigen",
         secureTransfer: "Sichere Datenübermittlung.",
-        rightsReserved: "Alle Rechte vorbehalten."
+        rightsReserved: "Alle Rechte vorbehalten.",
+        steps: ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'],
     },
     en: {
         loading: "Loading booking details...",
@@ -27,7 +28,9 @@ const translations = {
         invalidOrNotFound: "Invalid or not found booking link.",
         completeBooking: "Complete Booking",
         secureTransfer: "Secure data transmission.",
-        rightsReserved: "All rights reserved."
+        rightsReserved: "All rights reserved.",
+        steps: ['Guest', 'Companions', 'Payment Option', 'Payment Details', 'Review'],
+
     },
     it: {
         loading: "Caricamento dei dettagli della prenotazione...",
@@ -36,7 +39,8 @@ const translations = {
         invalidOrNotFound: "Link di prenotazione non valido o non trovato.",
         completeBooking: "Completa Prenotazione",
         secureTransfer: "Trasmissione sicura dei dati.",
-        rightsReserved: "Tutti i diritti riservati."
+        rightsReserved: "Tutti i diritti riservati.",
+        steps: ['Ospite', 'Accompagnatori', 'Opzione Pagamento', 'Dettagli Pagamento', 'Riepilogo'],
     }
 };
 
@@ -135,9 +139,13 @@ export default function GuestBookingPage() {
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
         <div className="text-center mb-8">
-          <h1 className="text-xs text-muted-foreground">{t.steps[0]}</h1>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.completeBooking}</h1>
-          {linkData && linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
+            {linkData && t.steps && (
+                <>
+                    <h1 className="text-xs text-muted-foreground">{t.steps[0]}</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-headline">{t.completeBooking}</h1>
+                    {linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
+                </>
+            )}
         </div>
       </main>
       <footer className="py-4 text-center text-xs text-muted-foreground">
@@ -146,5 +154,3 @@ export default function GuestBookingPage() {
     </div>
   );
 }
-
-    

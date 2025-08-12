@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Trash2, Loader2, Save, Banknote, Mail, KeyRound } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Save, Banknote, Mail, KeyRound, Phone, MapPin, Building } from 'lucide-react';
 import { getHotelById, updateHotelSettings } from '@/lib/actions/hotel.actions';
 import { useRouter } from 'next/navigation';
 import type { Hotel } from '@/lib/definitions';
@@ -114,43 +114,66 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
         </div>
       <form onSubmit={handleSubmit}>
         <Card>
-          <CardHeader>
-            <CardTitle>Hotel-Details</CardTitle>
-            <CardDescription>Aktualisieren Sie grundlegende Informationen über Ihr Hotel.</CardDescription>
+           <CardHeader>
+            <CardTitle>Basisinformationen</CardTitle>
+            <CardDescription>Allgemeine und Login-Informationen für das Hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="hotel-name">Hotelname</Label>
-              <Input id="hotel-name" name="name" value={hotel.name} onChange={handleInputChange} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="domain">Domain</Label>
-              <Input id="domain" name="domain" value={hotel.domain} onChange={handleInputChange} />
-            </div>
+             <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="hotel-name">Hotelname</Label>
+                  <Input id="hotel-name" name="name" value={hotel.name || ''} onChange={handleInputChange} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="domain">Domain oder Subdomain</Label>
+                  <Input id="domain" name="domain" value={hotel.domain || ''} onChange={handleInputChange}/>
+                </div>
+             </div>
              <div className="grid gap-2">
-              <Label htmlFor="ownerEmail">E-Mail des Hoteliers</Label>
-              <Input id="ownerEmail" name="ownerEmail" type="email" value={hotel.ownerEmail} onChange={handleInputChange} />
+                <Label htmlFor="ownerEmail">E-Mail-Adresse des Hoteliers (für Login)</Label>
+                <Input id="ownerEmail" name="ownerEmail" type="email" value={hotel.ownerEmail || ''} onChange={handleInputChange}/>
             </div>
           </CardContent>
-           <Separator />
+          <Separator />
            <CardHeader>
-            <CardTitle>Bankverbindung</CardTitle>
+            <CardTitle>Öffentliche Kontaktdaten</CardTitle>
+            <CardDescription>Diese Daten werden in E-Mails und auf öffentlichen Seiten angezeigt.</CardDescription>
+           </CardHeader>
+           <CardContent className="grid gap-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="contactEmail" className='flex items-center'><Mail className='w-4 h-4 mr-2'/>Kontakt E-Mail</Label>
+                  <Input name="contactEmail" id="contactEmail" type="email" value={hotel.contactEmail || ''} onChange={handleInputChange}/>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="contactPhone" className='flex items-center'><Phone className='w-4 h-4 mr-2'/>Kontakt Telefonnummer</Label>
+                  <Input name="contactPhone" id="contactPhone" value={hotel.contactPhone || ''} onChange={handleInputChange}/>
+                </div>
+              </div>
+               <div className="grid gap-2">
+                  <Label htmlFor="contactAddress" className='flex items-center'><MapPin className='w-4 h-4 mr-2'/>Vollständige Adresse</Label>
+                  <Input name="contactAddress" id="contactAddress" value={hotel.contactAddress || ''} onChange={handleInputChange}/>
+                </div>
+           </CardContent>
+          <Separator />
+           <CardHeader>
+            <CardTitle>Bankverbindung für Überweisungen</CardTitle>
             <CardDescription>Diese Daten werden dem Gast für die Überweisung angezeigt.</CardDescription>
           </CardHeader>
            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="grid gap-2"><Label htmlFor="bankAccountHolder" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Kontoinhaber</Label><Input name="bankAccountHolder" id="bankAccountHolder" value={hotel.bankAccountHolder || ''} onChange={handleInputChange}/></div>
+              <div className="grid gap-2"><Label htmlFor="bankAccountHolder" className='flex items-center'><Building className='w-4 h-4 mr-2'/>Kontoinhaber</Label><Input name="bankAccountHolder" id="bankAccountHolder" value={hotel.bankAccountHolder || ''} onChange={handleInputChange}/></div>
               <div className="grid gap-2"><Label htmlFor="bankIBAN" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>IBAN</Label><Input name="bankIBAN" id="bankIBAN" value={hotel.bankIBAN || ''} onChange={handleInputChange}/></div>
               <div className="grid gap-2"><Label htmlFor="bankBIC" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>BIC/SWIFT</Label><Input name="bankBIC" id="bankBIC" value={hotel.bankBIC || ''} onChange={handleInputChange}/></div>
               <div className="grid gap-2"><Label htmlFor="bankName" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Bank</Label><Input name="bankName" id="bankName" value={hotel.bankName || ''} onChange={handleInputChange}/></div>
            </CardContent>
             <Separator />
             <CardHeader>
-                <CardTitle>E-Mail-Versand (SMTP)</CardTitle>
-                <CardDescription>Konfiguration für den automatischen E-Mail-Versand (z.B. Gmail). Diese Daten werden sicher gespeichert.</CardDescription>
+                <CardTitle>E-Mail-Versand (SMTP via Gmail)</CardTitle>
+                <CardDescription>Konfiguration für den automatischen E-Mail-Versand.</CardDescription>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid gap-2"><Label htmlFor="smtpUser" className='flex items-center'><Mail className='w-4 h-4 mr-2'/>SMTP-Benutzer (E-Mail)</Label><Input name="smtpUser" id="smtpUser" value={hotel.smtpUser || ''} onChange={handleInputChange}/></div>
-                <div className="grid gap-2"><Label htmlFor="smtpPass" className='flex items-center'><KeyRound className='w-4 h-4 mr-2'/>SMTP-Passwort (App-Passwort)</Label><Input name="smtpPass" id="smtpPass" type="password" value={hotel.smtpPass || ''} onChange={handleInputChange}/></div>
+                <div className="grid gap-2"><Label htmlFor="smtpPass" className='flex items-center'><KeyRound className='w-4 h-4 mr-2'/>SMTP-Passwort (Google App-Passwort)</Label><Input name="smtpPass" id="smtpPass" type="password" value={hotel.smtpPass || ''} onChange={handleInputChange}/></div>
              </CardContent>
           <Separator />
            <CardHeader>

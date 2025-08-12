@@ -169,9 +169,9 @@ const confirmationEmailFlow = ai.defineFlow(
     const t = translations[lang];
     const selectedOptionText = booking.status === 'Partial Payment' ? t.selectedOptionDeposit : t.selectedOptionFull;
 
-    // Placeholder data as it's not in the hotel model
-    const hotelPhone = "+39 380 77 66 834";
-    const hotelFullAddress = "Roncstraße 7, 39040 Kastelruth (BZ) | South Tyrol - Italy";
+    const hotelPhone = hotel.contactPhone || "N/A";
+    const hotelFullAddress = hotel.contactAddress || "N/A";
+    const hotelContactEmail = hotel.contactEmail || hotel.ownerEmail;
 
     const prompt = `
       You are an expert hospitality assistant. Generate a professional and friendly booking confirmation email in HTML format.
@@ -196,7 +196,7 @@ const confirmationEmailFlow = ai.defineFlow(
       - stillOpen: "${openAmount.toFixed(2)} €"
       - hotelName: "${hotel.name}"
       - hotelPhone: "${hotelPhone}"
-      - hotelEmail: "${hotel.ownerEmail}"
+      - hotelEmail: "${hotelContactEmail}"
       - hotelAddress: "${hotelFullAddress}"
       - hotelDomain: "${hotel.domain}"
 

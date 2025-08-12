@@ -13,6 +13,10 @@ const HotelSchema = z.object({
   name: z.string().min(1, 'Hotelname ist erforderlich.'),
   ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
   domain: z.string().min(1, 'Domain ist erforderlich.'),
+  // Public Contact Details
+  contactEmail: z.string().email('Ungültige Kontakt E-Mail-Adresse.').optional().or(z.literal('')),
+  contactPhone: z.string().optional(),
+  contactAddress: z.string().optional(),
   // Bank details are optional
   bankAccountHolder: z.string().optional(),
   bankIBAN: z.string().optional(),
@@ -143,12 +147,19 @@ const SettingsSchema = z.object({
     name: z.string().min(1, 'Hotelname ist erforderlich.'),
     domain: z.string().min(1, 'Domain ist erforderlich.'),
     ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
+    // Public Contact Details
+    contactEmail: z.string().email('Ungültige Kontakt E-Mail-Adresse.').optional().or(z.literal('')),
+    contactPhone: z.string().optional().nullable(),
+    contactAddress: z.string().optional().nullable(),
+    // Booking Configurations
     boardTypes: z.array(z.string()).optional(),
     roomCategories: z.array(z.string()).optional(),
+    // Bank Details
     bankAccountHolder: z.string().optional().nullable(),
     bankIBAN: z.string().optional().nullable(),
     bankBIC: z.string().optional().nullable(),
     bankName: z.string().optional().nullable(),
+    // SMTP Settings
     smtpUser: z.string().optional().nullable(),
     smtpPass: z.string().optional().nullable(),
 }).partial();

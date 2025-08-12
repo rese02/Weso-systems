@@ -9,17 +9,25 @@ export type GuestLanguage = 'de' | 'en' | 'it';
 export interface Hotel {
   id: string;
   name: string;
-  ownerEmail: string;
+  ownerEmail: string; // Internal/Login email
   domain: string;
   createdAt?: string; // Changed to string for serialization
+  
+  // Public Contact Details
+  contactPhone?: string;
+  contactAddress?: string;
+  contactEmail?: string; // Public contact email
+
   // Booking Configurations
   boardTypes?: string[];
   roomCategories?: string[];
+  
   // Bank Details
   bankAccountHolder?: string;
   bankIBAN?: string;
   bankBIC?: string;
   bankName?: string;
+  
   // SMTP Settings
   smtpUser?: string;
   smtpPass?: string;

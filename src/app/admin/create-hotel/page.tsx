@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createHotel } from '@/lib/actions/hotel.actions';
-import { Copy, PlusCircle, Trash2, Loader2, Banknote, Mail, KeyRound } from 'lucide-react';
+import { Copy, PlusCircle, Trash2, Loader2, Banknote, Mail, KeyRound, Phone, MapPin, Building } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -65,8 +65,12 @@ export default function CreateHotelPage() {
     const formData = new FormData(e.currentTarget);
     const hotelData = {
       name: formData.get('name') as string,
-      ownerEmail: formData.get('email') as string,
+      ownerEmail: formData.get('ownerEmail') as string,
       domain: formData.get('domain') as string,
+      // Public Contact Details
+      contactEmail: formData.get('contactEmail') as string,
+      contactPhone: formData.get('contactPhone') as string,
+      contactAddress: formData.get('contactAddress') as string,
       // Bank details
       bankAccountHolder: formData.get('bankAccountHolder') as string,
       bankIBAN: formData.get('bankIBAN') as string,
@@ -126,55 +130,79 @@ export default function CreateHotelPage() {
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Hotel-Details</CardTitle>
-            <CardDescription>Basisinformationen und Anmeldeinformationen für das Hotel.</CardDescription>
+            <CardTitle>Basisinformationen</CardTitle>
+            <CardDescription>Allgemeine und Login-Informationen für das Hotel.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="hotel-name">Hotelname</Label>
-              <Input id="hotel-name" name="name" placeholder="z.B. Hotel Paradies" required/>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="domain">Domain oder Subdomain</Label>
-              <Input id="domain" name="domain" placeholder="z.B. hotel-paradies.de" required/>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-Mail-Adresse des Hoteliers</Label>
-              <Input id="email" name="email" type="email" placeholder="kontakt@hotel.de" required/>
-            </div>
-             <div className="grid gap-2">
-                <Label htmlFor="password">Passwort des Hoteliers</Label>
-                <div className="flex items-center gap-2">
-                    <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Klicken Sie auf 'Generieren', um ein Passwort zu erstellen" />
-                    {generatedPassword && (
-                        <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard}>
-                            <Copy className="h-4 w-4" />
-                        </Button>
-                    )}
+             <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="hotel-name">Hotelname</Label>
+                  <Input id="hotel-name" name="name" placeholder="z.B. Hotel Paradies" required/>
                 </div>
-                <Button variant="outline" type="button" onClick={generatePassword} className="w-fit">Passwort generieren</Button>
-                <p className="text-sm text-muted-foreground">Ein sicheres Passwort wird für die erste Anmeldung des Hoteliers generiert.</p>
+                <div className="grid gap-2">
+                  <Label htmlFor="domain">Domain oder Subdomain</Label>
+                  <Input id="domain" name="domain" placeholder="z.B. hotel-paradies.de" required/>
+                </div>
              </div>
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="ownerEmail">E-Mail-Adresse des Hoteliers (für Login)</Label>
+                  <Input id="ownerEmail" name="ownerEmail" type="email" placeholder="login@hotel.de" required/>
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="password">Passwort des Hoteliers</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Passwort generieren..." />
+                        {generatedPassword && (
+                            <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard}>
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                        )}
+                         <Button variant="outline" type="button" onClick={generatePassword} className="whitespace-nowrap">Generieren</Button>
+                    </div>
+                 </div>
+            </div>
           </CardContent>
           <Separator />
            <CardHeader>
-            <CardTitle>Bankverbindung</CardTitle>
+            <CardTitle>Öffentliche Kontaktdaten</CardTitle>
+            <CardDescription>Diese Daten werden in E-Mails und auf öffentlichen Seiten angezeigt.</CardDescription>
+           </CardHeader>
+           <CardContent className="grid gap-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="contactEmail" className='flex items-center'><Mail className='w-4 h-4 mr-2'/>Kontakt E-Mail</Label>
+                  <Input name="contactEmail" id="contactEmail" type="email" placeholder="info@hotel-paradies.de"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="contactPhone" className='flex items-center'><Phone className='w-4 h-4 mr-2'/>Kontakt Telefonnummer</Label>
+                  <Input name="contactPhone" id="contactPhone" placeholder="+39 0471 706 513"/>
+                </div>
+              </div>
+               <div className="grid gap-2">
+                  <Label htmlFor="contactAddress" className='flex items-center'><MapPin className='w-4 h-4 mr-2'/>Vollständige Adresse</Label>
+                  <Input name="contactAddress" id="contactAddress" placeholder="Musterstraße 1, 12345 Musterstadt, Land"/>
+                </div>
+           </CardContent>
+          <Separator />
+           <CardHeader>
+            <CardTitle>Bankverbindung für Überweisungen</CardTitle>
             <CardDescription>Diese Daten werden dem Gast für die Überweisung angezeigt.</CardDescription>
           </CardHeader>
            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="grid gap-2"><Label htmlFor="bankAccountHolder" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Kontoinhaber</Label><Input name="bankAccountHolder" id="bankAccountHolder" placeholder="Hotel Paradies GmbH"/></div>
+              <div className="grid gap-2"><Label htmlFor="bankAccountHolder" className='flex items-center'><Building className='w-4 h-4 mr-2'/>Kontoinhaber</Label><Input name="bankAccountHolder" id="bankAccountHolder" placeholder="Hotel Paradies GmbH"/></div>
               <div className="grid gap-2"><Label htmlFor="bankIBAN" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>IBAN</Label><Input name="bankIBAN" id="bankIBAN" placeholder="IT..."/></div>
               <div className="grid gap-2"><Label htmlFor="bankBIC" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>BIC/SWIFT</Label><Input name="bankBIC" id="bankBIC" placeholder="RZ..."/></div>
               <div className="grid gap-2"><Label htmlFor="bankName" className='flex items-center'><Banknote className='w-4 h-4 mr-2'/>Bank</Label><Input name="bankName" id="bankName" placeholder="Bankname"/></div>
            </CardContent>
            <Separator />
             <CardHeader>
-                <CardTitle>E-Mail-Versand (SMTP)</CardTitle>
-                <CardDescription>Konfiguration für den automatischen E-Mail-Versand (z.B. Gmail). Diese Daten werden sicher gespeichert.</CardDescription>
+                <CardTitle>E-Mail-Versand (SMTP via Gmail)</CardTitle>
+                <CardDescription>Konfiguration für den automatischen E-Mail-Versand. Diese Daten werden sicher gespeichert.</CardDescription>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid gap-2"><Label htmlFor="smtpUser" className='flex items-center'><Mail className='w-4 h-4 mr-2'/>SMTP-Benutzer (E-Mail)</Label><Input name="smtpUser" id="smtpUser" placeholder="buchungen@hotel.de"/></div>
-                <div className="grid gap-2"><Label htmlFor="smtpPass" className='flex items-center'><KeyRound className='w-4 h-4 mr-2'/>SMTP-Passwort (App-Passwort)</Label><Input name="smtpPass" id="smtpPass" type="password"/></div>
+                <div className="grid gap-2"><Label htmlFor="smtpPass" className='flex items-center'><KeyRound className='w-4 h-4 mr-2'/>SMTP-Passwort (Google App-Passwort)</Label><Input name="smtpPass" id="smtpPass" type="password"/></div>
              </CardContent>
           <Separator />
            <CardHeader>

@@ -25,6 +25,7 @@ import { Calendar } from '../ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
 import { getHotelById } from '@/lib/actions/hotel.actions';
+import { sendEmail } from '@/lib/actions/email.actions';
 
 
 const steps = ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'];
@@ -75,7 +76,7 @@ const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required }
              <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
                  <div className="flex items-center gap-2 text-sm text-green-800 font-medium">
                      <Paperclip className="h-4 w-4" />
-                     <span className="truncate max-w-xs">{upload.file.name}</span>
+                     <span className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</span>
                  </div>
                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-green-800" onClick={onRemove}><Trash2 className="h-4 w-4"/></Button>
              </div>
@@ -153,14 +154,6 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
     maxCompanions: number;
 }) => {
 
-    const removeCompanion = (index: number) => {
-        // This function is kept in case a user needs to clear a pre-filled form,
-        // but adding companions is now automatic.
-        const newCompanions = [...companions];
-        newCompanions[index] = { firstName: '', lastName: '' };
-        setCompanions(newCompanions);
-    };
-
     const handleCompanionChange = (index: number, field: keyof Companion, value: string | Date) => {
         const newCompanions = [...companions];
         (newCompanions[index] as any)[field] = value;
@@ -190,7 +183,6 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
                 <Card key={index} className="relative bg-muted/30">
                     <CardHeader className="flex flex-row items-center justify-between pb-4">
                          <h4 className="font-medium flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Mitreisender {index + 1}</h4>
-                         {/* Optional: Add a clear button if needed, but not an add/remove that changes array length */}
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
@@ -309,16 +301,16 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
         toast({ title: "Kopiert!", description: `${label} wurde in die Zwischenablage kopiert.` });
     };
 
+    if (!hotelDetails) {
+        return <div className='text-center'><Loader2 className='w-6 h-6 animate-spin mx-auto' /><p className='mt-2'>Lade Bankdaten...</p></div>
+    }
+    
     const bankDetails = {
         'Kontoinhaber': hotelDetails?.bankAccountHolder,
         'IBAN': hotelDetails?.bankIBAN,
         'BIC/SWIFT': hotelDetails?.bankBIC,
         'Bank': hotelDetails?.bankName
     };
-
-    if (!hotelDetails) {
-        return <div className='text-center'><Loader2 className='w-6 h-6 animate-spin mx-auto' /><p className='mt-2'>Lade Bankdaten...</p></div>
-    }
 
     return (
         <div className="space-y-6">
@@ -379,7 +371,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
 const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium text-right">{value || 'N/A'}</p>
+        <p className="text-sm font-medium text-right break-all">{value || 'N/A'}</p>
     </div>
 );
 
@@ -464,7 +456,6 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
 
   const maxCompanions = useMemo(() => {
     if (!prefillData?.rooms) return 0;
-    // Sum of all adults and children, minus 1 (the main guest)
     const totalPeople = prefillData.rooms.reduce((sum, room) => sum + room.adults + room.children, 0);
     return Math.max(0, totalPeople - 1);
   }, [prefillData]);
@@ -477,7 +468,6 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             }
         })
     }
-    // Pre-populate companions based on booking data
     if (prefillData && companions.length === 0 && maxCompanions > 0) {
         const initialCompanions = Array.from({ length: maxCompanions }, () => ({
             firstName: '',
@@ -495,8 +485,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   };
 
   const handleFileUpload = (name: string, file: File) => {
-    // Basic validation
-    if (file.size > 5 * 1024 * 1024) { // 5MB
+    if (file.size > 5 * 1024 * 1024) { 
       setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, error: 'Datei ist zu groß (max. 5MB).' } }));
       return;
     }
@@ -510,9 +499,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   const removeUpload = (name: string) => {
     const upload = uploads[name];
     if (upload && upload.url) {
-       // Create a reference to the file to delete
        const fileRef = ref(storage, upload.url);
-       // Delete the file
        deleteObject(fileRef).catch((error) => {
           console.error("Error removing file from storage:", error);
           toast({variant: 'destructive', title: 'Fehler', description: 'Konnte die Datei nicht aus dem Speicher entfernen.'});
@@ -526,7 +513,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   };
 
   const validateStep = (step: number) => {
-      if (step === 0) { // Step 1: Guest
+      if (step === 0) {
         const { firstName, lastName, email, phone } = formData;
         if (!firstName || !lastName || !email || !phone) {
             toast({variant: 'destructive', title: 'Fehlende Angaben', description: 'Bitte füllen Sie alle Pflichtfelder (*) aus.'});
@@ -541,7 +528,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
              return false;
         }
       }
-      if (step === 1) { // Step 2: Companions
+      if (step === 1) {
           if(companions.length !== maxCompanions){
               toast({variant: 'destructive', title: 'Anzahl Begleitpersonen', description: `Bitte fügen Sie die Daten für alle ${maxCompanions} Begleitpersonen hinzu.`});
               return false;
@@ -553,7 +540,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
               }
           }
       }
-      if (step === 3) { // Step 4: Payment Details
+      if (step === 3) {
         if (!uploads.paymentProof) {
             toast({variant: 'destructive', title: 'Fehlender Nachweis', description: 'Bitte laden Sie einen Zahlungsnachweis hoch.'});
             return false;
@@ -610,8 +597,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     try {
         let uploadedFileMap: Record<string, string> = {};
 
-        // Only upload files if the user chose that option
-        const filesToUpload = Object.values(uploads).filter(u => !u.url); // Only upload new files
+        const filesToUpload = Object.values(uploads).filter(u => !u.url);
         if (filesToUpload.length > 0) {
             const uploadPromises = filesToUpload.map(upload => uploadFile(upload));
             const uploadedFiles = await Promise.all(uploadPromises);
@@ -620,7 +606,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                 acc[file.name] = file.url;
                 return acc;
             }, {} as Record<string, string>);
-             // also include already uploaded files
+
             Object.values(uploads).forEach(u => {
                 if(u.url) newFileMap[u.name] = u.url;
             })
@@ -641,8 +627,8 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             submittedAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
             documents: {
-                idFront: uploadedFileMap.idFront || null,
-                idBack: uploadedFileMap.idBack || null,
+                idFront: documentOption === 'upload' ? uploadedFileMap.idFront || null : null,
+                idBack: documentOption === 'upload' ? uploadedFileMap.idBack || null : null,
                 paymentProof: uploadedFileMap.paymentProof || null,
                 submissionMethod: documentOption
             },
@@ -655,17 +641,20 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         
         await batch.commit();
         
-        // Generate and log the confirmation email, but don't send it.
         try {
             console.log("Generating confirmation email...");
             const emailResult = await generateConfirmationEmail({ hotelId, bookingId: prefillData.bookingId });
-            console.log("--- GENERATED EMAIL (for logging) ---");
-            console.log("Subject:", emailResult.subject);
-            console.log("Body:\n", emailResult.body);
-            console.log("-------------------------------------");
+            console.log("Sending confirmation email...");
+            await sendEmail({
+                hotelId: hotelId,
+                to: formData.email,
+                subject: emailResult.subject,
+                html: emailResult.body,
+            });
+            toast({ title: "Bestätigungs-E-Mail gesendet!", description: "Eine Kopie der Bestätigung wurde an Ihre E-Mail gesendet." });
         } catch (emailError) {
-             console.error("Could not generate confirmation email:", emailError);
-             // Don't block the user flow for this, just log it.
+             console.error("Could not send confirmation email:", emailError);
+             toast({ variant: "destructive", title: "E-Mail Fehler", description: "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Ihre Buchung ist aber eingegangen." });
         }
 
         toast({ title: "Buchung übermittelt!", description: "Ihre Buchungsdetails wurden an das Hotel gesendet."});

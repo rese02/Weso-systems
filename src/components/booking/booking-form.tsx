@@ -1098,7 +1098,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
   return (
     <Card className="w-full max-w-3xl shadow-lg">
       <CardHeader>
-        <p className="text-sm text-muted-foreground text-center font-medium">{`Schritt ${currentStep + 1} ${t.stepOf} ${t.steps.length}: ${t.steps[currentStep]}`}</p>
+        <p className="text-xs text-muted-foreground text-center font-medium">{`Schritt ${currentStep + 1} ${t.stepOf} ${t.steps.length}: ${t.steps[currentStep]}`}</p>
         <div className="pt-4">
           <StepIndicator steps={t.steps} currentStep={currentStep} />
         </div>

@@ -1,8 +1,9 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch } from 'firebase/firestore';
+import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -78,10 +79,37 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
     try {
+        const batch = writeBatch(db);
+
+        // 1. Delete all bookings and their associated storage files
+        const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
+        const bookingsSnapshot = await getDocs(bookingsCollectionRef);
+        for (const bookingDoc of bookingsSnapshot.docs) {
+            // Delete associated files from Storage
+            const storageFolderRef = ref(storage, `hotels/${hotelId}/bookings/${bookingDoc.id}`);
+            const res = await listAll(storageFolderRef);
+            await Promise.all(res.items.map((itemRef) => deleteObject(itemRef)));
+             // Add booking doc to batch delete
+            batch.delete(bookingDoc.ref);
+        }
+
+        // 2. Delete all booking links
+        const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
+        const linksSnapshot = await getDocs(linksCollectionRef);
+        linksSnapshot.forEach(linkDoc => {
+            batch.delete(linkDoc.ref);
+        });
+        
+        // 3. Commit the batch deletion of all subcollection documents
+        await batch.commit();
+
+        // 4. Delete the main hotel document
         await deleteDoc(doc(db, 'hotels', hotelId));
+
         revalidatePath('/admin');
         return { success: true };
     } catch (error) {
+        console.error("Error deleting hotel and its data:", error);
         return { success: false, error: (error as Error).message };
     }
 }
@@ -147,5 +175,3 @@ export async function updateHotelSettings(hotelId: string, settings: Partial<Hot
     }
 
 }
-
-    

@@ -1,8 +1,9 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
 import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -241,22 +242,50 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
 
 
 /**
- * Deletes a booking from a hotel's sub-collection.
+ * Deletes a booking from a hotel's sub-collection, including associated files in Storage.
  */
 export async function deleteBooking({ bookingId, hotelId }: { bookingId: string, hotelId: string }): Promise<{ success: boolean, error?: string }> {
      if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
     try {
-        const batch = writeBatch(db);
         const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+        const bookingSnap = await getDoc(bookingRef);
+
+        if (!bookingSnap.exists()) {
+             return { success: false, error: "Booking to delete not found." };
+        }
+
+        const bookingData = bookingSnap.data() as Booking;
+
+        // Delete associated files from Firebase Storage
+        const docUrls = [
+            bookingData.documents?.idFront,
+            bookingData.documents?.idBack,
+            bookingData.documents?.paymentProof
+        ].filter(Boolean); // Filter out any undefined/null values
+
+        for (const url of docUrls) {
+            if (url) {
+                try {
+                    const fileRef = ref(storage, url);
+                    await deleteObject(fileRef);
+                } catch (storageError: any) {
+                    // Log error but continue deletion process
+                    if (storageError.code !== 'storage/object-not-found') {
+                       console.error(`Failed to delete file from storage: ${url}`, storageError);
+                    }
+                }
+            }
+        }
+        
+        // Use a batch to delete Firestore documents atomically
+        const batch = writeBatch(db);
         batch.delete(bookingRef);
         
         // Also delete the associated booking link if it exists
-        const linkQuery = query(collection(db, `hotels/${hotelId}/bookingLinks`), where("bookingId", "==", bookingId), limit(1));
-        const linkSnapshot = await getDocs(linkQuery);
-        if (!linkSnapshot.empty) {
-            const linkDocRef = linkSnapshot.docs[0].ref;
+        if(bookingData.bookingLinkId) {
+            const linkDocRef = doc(db, `hotels/${hotelId}/bookingLinks`, bookingData.bookingLinkId);
             batch.delete(linkDocRef);
         }
 

@@ -173,10 +173,9 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
             </div>
 
             {companions.length === 0 && maxCompanions > 0 && (
-                <div className="text-center p-4 border-dashed border rounded-md">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto"/>
-                    <p className="text-sm text-muted-foreground mt-2">Lade Felder für Begleitpersonen...</p>
-                </div>
+                 <div className="text-center p-4 border-dashed border rounded-md">
+                     <p className="text-sm text-muted-foreground mt-2">Felder für Begleitpersonen werden basierend auf Ihrer Buchung vorbereitet.</p>
+                 </div>
             )}
             
             {companions.map((companion, index) => (
@@ -468,15 +467,18 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             }
         })
     }
-    if (prefillData && companions.length === 0 && maxCompanions > 0) {
-        const initialCompanions = Array.from({ length: maxCompanions }, () => ({
-            firstName: '',
-            lastName: '',
-            dateOfBirth: undefined,
-        }));
-        setCompanions(initialCompanions as any);
-    }
-  }, [hotelId, prefillData, maxCompanions, companions.length]);
+  }, [hotelId]);
+  
+  useEffect(() => {
+      if (prefillData && companions.length === 0 && maxCompanions > 0) {
+          const initialCompanions = Array.from({ length: maxCompanions }, () => ({
+              firstName: '',
+              lastName: '',
+              dateOfBirth: undefined,
+          }));
+          setCompanions(initialCompanions as any);
+      }
+  }, [prefillData, maxCompanions, companions.length]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -597,7 +599,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     try {
         let uploadedFileMap: Record<string, string> = {};
 
-        const filesToUpload = Object.values(uploads).filter(u => !u.url);
+        const filesToUpload = Object.values(uploads).filter(u => u.file && !u.url && !u.error);
         if (filesToUpload.length > 0) {
             const uploadPromises = filesToUpload.map(upload => uploadFile(upload));
             const uploadedFiles = await Promise.all(uploadPromises);
@@ -611,6 +613,10 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                 if(u.url) newFileMap[u.name] = u.url;
             })
             uploadedFileMap = newFileMap;
+        } else {
+            Object.values(uploads).forEach(u => {
+                if(u.url) uploadedFileMap[u.name] = u.url;
+            })
         }
 
         const batch = writeBatch(db);
@@ -627,8 +633,8 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             submittedAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
             documents: {
-                idFront: documentOption === 'upload' ? uploadedFileMap.idFront || null : null,
-                idBack: documentOption === 'upload' ? uploadedFileMap.idBack || null : null,
+                idFront: documentOption === 'upload' ? (uploadedFileMap.idFront || null) : null,
+                idBack: documentOption === 'upload' ? (uploadedFileMap.idBack || null) : null,
                 paymentProof: uploadedFileMap.paymentProof || null,
                 submissionMethod: documentOption
             },
@@ -642,9 +648,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         await batch.commit();
         
         try {
-            console.log("Generating confirmation email...");
             const emailResult = await generateConfirmationEmail({ hotelId, bookingId: prefillData.bookingId });
-            console.log("Sending confirmation email...");
             await sendEmail({
                 hotelId: hotelId,
                 to: formData.email,

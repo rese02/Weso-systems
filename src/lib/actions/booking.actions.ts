@@ -62,6 +62,7 @@ export async function createBookingWithLink(
         // Use an object that matches the structure for a write operation, not the final Booking type
         const firestoreBookingData = {
             ...newBooking,
+            priceTotal: newBooking.priceTotal ?? null,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };

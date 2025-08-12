@@ -2,13 +2,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useMemo, useCallback, use } from 'react';
+import { useState, useEffect, useMemo, useCallback, use, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle, RefreshCw, Trash2, Eye, CheckCircle2, Clock, CircleOff, Search, Copy, Send, Loader2, Edit } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -22,11 +22,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
-import { deleteBooking, getBookingsForHotel } from '@/lib/actions/booking.actions';
+import { de } from 'date-fns/locale';
+import { deleteBooking, getBookingsForHotel, updateBookingStatus } from '@/lib/actions/booking.actions';
 import type { Booking, BookingStatus } from '@/lib/definitions';
 
 
@@ -38,12 +38,23 @@ const statusConfig: { [key in BookingStatus]: { variant: 'default' | 'secondary'
     'Cancelled': { variant: 'destructive', icon: CircleOff, label: 'Storniert' },
     'Checked-in': { variant: 'outline', icon: CheckCircle2, label: 'Check-in' },
     'Checked-out': { variant: 'secondary', icon: CheckCircle2, label: 'Check-out' },
-    'Partial Payment': { variant: 'outline', icon: CheckCircle2, label: 'Teilzahlung' },
+    'Partial Payment': { variant: 'default', icon: CheckCircle2, label: 'Teilzahlung' },
 };
+
+const paymentStatusConfig: { [key in BookingStatus]?: { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string } } = {
+    'Partial Payment': { variant: 'outline', label: 'Teilzahlung' },
+    'Confirmed': { variant: 'default', label: 'Bezahlt' },
+    'Submitted': { variant: 'outline', label: 'Ausstehend' },
+    'Sent': { variant: 'outline', label: 'Ausstehend' },
+    'Open': { variant: 'secondary', label: 'Offen' },
+    'Cancelled': { variant: 'destructive', label: 'Storniert' },
+};
+
 
 export default function BookingsListPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
   const router = useRouter();
   const { hotelId } = use(paramsPromise);
+  const [isPending, startTransition] = useTransition();
   
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +142,18 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
     toast({ title: "Link kopiert", description: "Der Buchungslink wurde in die Zwischenablage kopiert." });
   }
 
+  const handleChangeStatus = (bookingId: string, status: BookingStatus) => {
+    startTransition(async () => {
+      const result = await updateBookingStatus({ hotelId, bookingId, status });
+      if (result.success) {
+        toast({ title: 'Status aktualisiert', description: `Buchung wurde auf '${statusConfig[status].label}' gesetzt.` });
+        fetchBookings(); // Refresh the list
+      } else {
+        toast({ title: 'Fehler', description: result.error, variant: 'destructive' });
+      }
+    });
+  };
+
   const isAllSelected = filteredBookings.length > 0 && selectedBookings.length === filteredBookings.length;
 
   if (!hotelId) {
@@ -153,8 +176,8 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
               <p className="text-muted-foreground">Verwalten Sie hier alle Ihre Buchungen.</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <Button variant="outline" onClick={fetchBookings} disabled={isLoading}>
-                <RefreshCw className={`${isLoading ? 'animate-spin' : ''}`} />
+            <Button variant="outline" onClick={fetchBookings} disabled={isLoading || isPending}>
+                <RefreshCw className={`${isLoading || isPending ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Aktualisieren</span>
             </Button>
             <Button asChild>
@@ -176,7 +199,7 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                 <div className="flex flex-col w-full sm:flex-row sm:items-center sm:w-auto gap-2">
                     <div className="relative w-full sm:w-auto">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Suche nach Name/ID..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <Input placeholder="Suche nach Name, ID..." className="pl-8 w-full sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
@@ -226,29 +249,32 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                           aria-label="Alle auswählen"
                       />
                   </TableHead>
+                  <TableHead>Buchungs-ID</TableHead>
                   <TableHead>Gast</TableHead>
-                  <TableHead className="hidden md:table-cell">Check-in</TableHead>
-                  <TableHead className="hidden md:table-cell">Check-out</TableHead>
+                  <TableHead className="hidden lg:table-cell">Check-in</TableHead>
+                  <TableHead className="hidden lg:table-cell">Check-out</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden sm:table-cell">Gesamtpreis</TableHead>
-                  <TableHead><span className="sr-only">Aktionen</span></TableHead>
+                  <TableHead className="hidden md:table-cell">Zahlungsstatus</TableHead>
+                  <TableHead className="hidden sm:table-cell">Letzte Änderung</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                           <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                       </TableCell>
                   </TableRow>
                 ) : filteredBookings.length === 0 ? (
                   <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                           {allBookings.length > 0 ? "Keine Buchungen entsprechen Ihrer Suche." : "Noch keine Buchungen erstellt."}
                       </TableCell>
                   </TableRow>
                 ) : (filteredBookings.map((booking) => {
                   const currentStatus = statusConfig[booking.status] || { variant: 'secondary', icon: CircleOff, label: booking.status };
+                  const paymentStatus = paymentStatusConfig[booking.status];
                   const guestName = `${booking.firstName || ''} ${booking.lastName || ''}`.trim();
 
                   return (
@@ -260,41 +286,67 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
                                   aria-label={`Buchung ${booking.id} auswählen`}
                               />
                           </TableCell>
-                          <TableCell className="font-medium">
-                              <div className="flex flex-col">
-                                  <span>{guestName || "N/A"}</span>
-                                  <span className="text-xs text-muted-foreground">{booking.id.substring(0,8).toUpperCase()}</span>
-                              </div>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">{booking.checkIn ? format(parseISO(booking.checkIn), 'dd.MM.yy') : 'N/A'}</TableCell>
-                          <TableCell className="hidden md:table-cell">{booking.checkOut ? format(parseISO(booking.checkOut), 'dd.MM.yy') : 'N/A'}</TableCell>
+                          <TableCell className="font-mono text-xs">{booking.id.substring(0,8).toUpperCase()}</TableCell>
+                          <TableCell className="font-medium">{guestName || "N/A"}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{booking.checkIn ? format(parseISO(booking.checkIn), 'dd.MM.yy') : 'N/A'}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{booking.checkOut ? format(parseISO(booking.checkOut), 'dd.MM.yy') : 'N/A'}</TableCell>
                           <TableCell>
                             <Badge variant={currentStatus.variant} className="text-xs">
                                 <currentStatus.icon className="mr-1 h-3 w-3" />
-                                <span className="hidden md:inline">{currentStatus.label}</span>
+                                {currentStatus.label}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell">{booking.priceTotal.toFixed(2)} €</TableCell>
-                          <TableCell>
-                              <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal />
-                                  <span className="sr-only">Menü umschalten</span>
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}`)}>
-                                    <Eye className="mr-2 h-4 w-4"/>Details anzeigen
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}/edit`)}>
-                                    <Edit className="mr-2 h-4 w-4"/>Bearbeiten
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}>
-                                    <Copy className="mr-2 h-4 w-4"/>Link kopieren
-                                  </DropdownMenuItem>
-                              </DropdownMenuContent>
-                              </DropdownMenu>
+                           <TableCell className="hidden md:table-cell">
+                             {paymentStatus ? (
+                                <Badge variant={paymentStatus.variant} className="text-xs">
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                    {paymentStatus.label}
+                                </Badge>
+                             ) : "N/A"}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
+                            {booking.updatedAt ? format(parseISO(booking.updatedAt), 'dd.MM.yy, HH:mm') : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                              <div className='inline-flex items-center gap-1'>
+                                <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}`)}>
+                                    <Eye className="h-4 w-4"/>
+                                    <span className="sr-only">Details anzeigen</span>
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyLink(booking)} disabled={!booking.bookingLinkId}>
+                                    <Copy className="h-4 w-4"/>
+                                     <span className="sr-only">Link kopieren</span>
+                                </Button>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal />
+                                    <span className="sr-only">Menü umschalten</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/${hotelId}/bookings/${booking.id}/edit`)}>
+                                      <Edit className="mr-2 h-4 w-4"/>Bearbeiten
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>Status ändern</DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal>
+                                            <DropdownMenuSubContent>
+                                                <DropdownMenuItem onClick={() => handleChangeStatus(booking.id, 'Confirmed')}>
+                                                   <CheckCircle2 className="mr-2 h-4 w-4"/>Bestätigt
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleChangeStatus(booking.id, 'Cancelled')}>
+                                                   <CircleOff className="mr-2 h-4 w-4"/>Storniert
+                                                </DropdownMenuItem>
+                                                 <DropdownMenuItem onClick={() => handleChangeStatus(booking.id, 'Sent')}>
+                                                   <Send className="mr-2 h-4 w-4"/>Ausstehend (Gesendet)
+                                                </DropdownMenuItem>
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                           </TableCell>
                       </TableRow>
                 )}))}
@@ -306,3 +358,5 @@ export default function BookingsListPage({ params: paramsPromise }: { params: Pr
     </div>
   );
 }
+
+    

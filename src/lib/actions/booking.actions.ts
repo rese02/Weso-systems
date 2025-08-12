@@ -5,7 +5,7 @@ import { db, storage } from '@/lib/firebase';
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { ref, deleteObject, listAll } from 'firebase/storage';
 import { z } from 'zod';
-import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel } from '@/lib/definitions';
+import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';
 
@@ -365,3 +365,27 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   }
 }
 
+/**
+ * Updates the status of a single booking.
+ */
+export async function updateBookingStatus(
+    { hotelId, bookingId, status }: { hotelId: string, bookingId: string, status: BookingStatus }
+): Promise<{ success: boolean; error?: string }> {
+    if (!hotelId || !bookingId || !status) {
+        return { success: false, error: "Hotel ID, Booking ID, and Status are required." };
+    }
+
+    try {
+        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+        await updateDoc(bookingRef, {
+            status: status,
+            updatedAt: Timestamp.now(),
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+    

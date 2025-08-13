@@ -70,7 +70,8 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
         // Query for hotels that belong to the user's agency
-        const q = query(hotelsCollectionRef, where("agencyId", "==", user.agencyId), orderBy("createdAt", "desc"));
+        // Removing orderBy to avoid needing a composite index for this prototype.
+        const q = query(hotelsCollectionRef, where("agencyId", "==", user.agencyId));
         const querySnapshot = await getDocs(q);
         
         const hotels = querySnapshot.docs.map((doc) => {

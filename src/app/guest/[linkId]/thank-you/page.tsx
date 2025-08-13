@@ -90,9 +90,9 @@ const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, labe
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
         <div className="flex items-center text-sm text-muted-foreground mb-1 sm:mb-0">
             <Icon className="mr-3 h-4 w-4 shrink-0" />
-            <span>{label}</span>
+            <span className="flex-shrink-0">{label}</span>
         </div>
-        <span className="text-sm font-medium text-left sm:text-right w-full sm:w-auto pl-7 sm:pl-0">{value}</span>
+        <div className="text-sm font-medium text-left sm:text-right w-full sm:w-auto pl-7 sm:pl-0 break-words">{value}</div>
     </div>
 );
 
@@ -231,5 +231,3 @@ export default function ThankYouPage() {
     </div>
   );
 }
-
-    

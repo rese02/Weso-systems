@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 export default function PrivacyPolicyPage() {
-  const hotelName = "Ihr Hotelname"; // This could be fetched dynamically if needed
   const agencyName = "WESO B-system";
 
   return (
@@ -44,7 +43,7 @@ export default function PrivacyPolicyPage() {
                     <h3 className="font-semibold mt-4">2. Wie wir Ihre Daten verwenden</h3>
                     <p>Ihre Daten werden ausschließlich für folgende Zwecke verwendet:</p>
                     <ul>
-                        <li>Zur Abwicklung und Verwaltung Ihrer Buchung im <strong>{hotelName}</strong>.</li>
+                        <li>Zur Abwicklung und Verwaltung Ihrer Buchung im jeweiligen Hotel.</li>
                         <li>Zur Kommunikation mit Ihnen bezüglich Ihrer Buchung (z.B. Bestätigungs-E-Mail).</li>
                         <li>Zur Erfüllung gesetzlicher Meldepflichten gegenüber den lokalen Behörden.</li>
                     </ul>
@@ -80,7 +79,7 @@ export default function PrivacyPolicyPage() {
                     <h3 className="font-semibold mt-4">2. Come utilizziamo i tuoi dati</h3>
                     <p>I tuoi dati vengono utilizzati esclusivamente per i seguenti scopi:</p>
                     <ul>
-                        <li>Per elaborare e gestire la tua prenotazione presso <strong>{hotelName}</strong>.</li>
+                        <li>Per elaborare e gestire la tua prenotazione presso l'hotel corrispondente.</li>
                         <li>Per comunicare con te in merito alla tua prenotazione (ad es. e-mail di conferma).</li>
                         <li>Per adempiere agli obblighi di legge nei confronti delle autorità locali.</li>
                     </ul>
@@ -116,7 +115,7 @@ export default function PrivacyPolicyPage() {
                     <h3 className="font-semibold mt-4">2. How we use your data</h3>
                     <p>Your data is used exclusively for the following purposes:</p>
                     <ul>
-                        <li>To process and manage your booking at <strong>{hotelName}</strong>.</li>
+                        <li>To process and manage your booking at the respective hotel.</li>
                         <li>To communicate with you regarding your booking (e.g., confirmation email).</li>
                         <li>To comply with legal reporting obligations to local authorities.</li>
                     </ul>

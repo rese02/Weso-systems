@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';
+import { getHotelById } from './hotel.actions';
 
 
 /**
@@ -339,21 +340,24 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
     
-    const hotelDocRef = doc(db, 'hotels', foundHotelId);
-    const hotelSnap = await getDoc(hotelDocRef);
+    const hotelResult = await getHotelById(foundHotelId);
 
-    if (!hotelSnap.exists()) {
+    if (!hotelResult.hotel) {
         return { success: false, error: "Zugehöriges Hotel nicht gefunden." };
     }
 
-    const hotelName = hotelSnap.data().name || 'Hotel';
+    const hotel = hotelResult.hotel;
     
     // Convert Timestamps to ISO strings for client-side serialization
     const serializableLinkData = {
         ...foundLink,
         createdAt: (foundLink.createdAt as Timestamp).toDate().toISOString(),
         expiresAt: (foundLink.expiresAt as Timestamp).toDate().toISOString(),
-        hotelName,
+        hotelName: hotel.name,
+        prefill: {
+            ...foundLink.prefill,
+            logoUrl: hotel.logoUrl || null,
+        }
     };
     
     return { success: true, data: serializableLinkData as BookingLinkWithHotel };
@@ -387,5 +391,3 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
-
-    

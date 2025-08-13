@@ -89,6 +89,7 @@ export interface BookingPrefill {
     bookingId: string;
     rooms: RoomDetails[];
     guestLanguage?: GuestLanguage;
+    logoUrl?: string | null;
     // Prefill from creation form
     firstName?: string;
     lastName?: string;
@@ -147,5 +148,3 @@ export const GUEST_LANGUAGE_OPTIONS: { value: GuestLanguage; label: string }[] =
     { value: 'en', label: 'Englisch' },
     { value: 'it', label: 'Italienisch' },
 ];
-
-    

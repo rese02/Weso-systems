@@ -9,6 +9,7 @@ import { getBookingLinkDetails } from '@/lib/actions/booking.actions';
 import type { BookingLinkWithHotel, GuestLanguage } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { getHotelById } from '@/lib/actions/hotel.actions';
 
 const translations = {
     de: {
@@ -41,15 +42,15 @@ const translations = {
     }
 };
 
-export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
-  const { linkId } = use(paramsPromise);
+export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
+  const linkId = params.linkId;
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Determine language from linkData once fetched, default to 'de'
   const lang = linkData?.prefill.guestLanguage || 'de';
-  const t = translations[lang];
+  const t = translations[lang] || translations.de;
 
   useEffect(() => {
     const fetchLinkDetails = async () => {
@@ -67,7 +68,11 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
         if (new Date() > new Date(result.data.expiresAt as string)) {
           setError(translations[currentLang].expiredLink);
         } else {
-          setLinkData(result.data);
+           const hotelResult = await getHotelById(result.data.hotelId);
+           if (hotelResult.hotel) {
+                result.data.prefill.logoUrl = hotelResult.hotel.logoUrl;
+           }
+           setLinkData(result.data);
         }
       } else {
         // Use German as a fallback if the link doesn't even exist to determine language

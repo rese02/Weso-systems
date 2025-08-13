@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 export default function TermsAndConditionsPage() {
-    const hotelName = "Ihr Hotelname"; // This could be fetched dynamically if needed
     const agencyName = "WESO B-system";
 
   return (

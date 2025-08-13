@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, use } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,9 +50,9 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
     );
 }
 
-export default function HotelierDashboardPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
+export default function HotelierDashboardPage({ params }: { params: { hotelId: string }}) {
   const router = useRouter();
-  const { hotelId } = use(paramsPromise);
+  const { hotelId } = params;
 
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,7 +143,7 @@ export default function HotelierDashboardPage({ params: paramsPromise }: { param
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                     <Button size="lg" className="justify-start" asChild>
-                         <Link href={`/dashboard/${hotelId}/create-booking`}>
+                         <Link href={`/dashboard/${hotelId}/bookings/create-booking`}>
                             <PlusCircle />
                             <span>Neue Buchung erstellen</span>
                          </Link>

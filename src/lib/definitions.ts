@@ -134,8 +134,8 @@ export const bookingFormSchema = z.object({
   checkInDate: z.date({ required_error: "Anreisedatum ist erforderlich." }),
   checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
   boardType: z.string().min(1, 'Verpflegungsart ist erforderlich.'),
-  priceTotal: z.coerce.number().nullable(),
-  guestLanguage: z.string(),
+  priceTotal: z.coerce.number().positive('Preis muss positiv sein.').nullable(),
+  guestLanguage: z.nativeEnum(GuestLanguage),
   rooms: z.array(roomFormSchema).min(1, "Mindestens ein Zimmer muss hinzugefügt werden."),
   internalNotes: z.string().max(500, "Bemerkungen dürfen max. 500 Zeichen lang sein.").optional(),
 }).refine(data => data.checkOutDate > data.checkInDate, {

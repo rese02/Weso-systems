@@ -6,11 +6,10 @@ import { BookingCreationForm } from '@/components/booking/booking-creation-form'
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { XIcon } from 'lucide-react';
-import { use } from 'react';
 
-export default function CreateBookingPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
+export default function CreateBookingPage({ params }: { params: { hotelId: string }}) {
     const router = useRouter();
-    const { hotelId } = use(paramsPromise);
+    const { hotelId } = params;
 
     if (!hotelId) {
       // Maybe show a proper error message

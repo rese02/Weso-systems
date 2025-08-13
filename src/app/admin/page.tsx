@@ -1,8 +1,9 @@
+'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -16,23 +17,60 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
-import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { useEffect, useState, useTransition } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import type { Hotel } from '@/lib/definitions';
 
-export default async function AdminDashboardPage() {
-  const { hotels, error } = await getHotels();
+export default function AdminDashboardPage() {
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const { toast } = useToast();
 
-  const handleDelete = async (formData: FormData) => {
-    "use server";
-    const hotelId = formData.get('hotelId') as string;
-    if (!hotelId) return;
-    try {
-        await deleteHotel(hotelId);
-        revalidatePath('/admin');
-    } catch (error) {
-        console.error("Fehler beim Löschen des Hotels", error);
+  const fetchHotels = async () => {
+    setIsLoading(true);
+    const result = await getHotels();
+    if (result.hotels) {
+      setHotels(result.hotels);
+    } else {
+      setError(result.error || 'Hoteldaten konnten nicht geladen werden.');
     }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchHotels();
+  }, []);
+
+  const handleDelete = async (hotelId: string) => {
+    startDeleteTransition(async () => {
+      const result = await deleteHotel(hotelId);
+      if (result.success) {
+        toast({ title: "Hotel gelöscht", description: "Das Hotel und alle zugehörigen Daten wurden entfernt." });
+        fetchHotels(); // Refresh list
+      } else {
+        toast({ title: "Fehler", description: result.error, variant: 'destructive' });
+      }
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+         <CardHeader>
+              <CardTitle>Wird geladen...</CardTitle>
+              <CardDescription>Hoteldaten werden abgerufen.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <div className="flex justify-center items-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+          </CardContent>
+      </Card>
+    );
   }
 
   if (error) {
@@ -47,20 +85,6 @@ export default async function AdminDashboardPage() {
         </CardContent>
       </Card>
     );
-  }
-  
-  if (!hotels) {
-      return (
-        <Card>
-           <CardHeader>
-                <CardTitle>Wird geladen...</CardTitle>
-                <CardDescription>Hoteldaten werden abgerufen.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>Bitte warten.</p>
-            </CardContent>
-        </Card>
-      );
   }
 
   return (
@@ -130,19 +154,19 @@ export default async function AdminDashboardPage() {
                                       <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Löschen</div>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
-                                      <form action={handleDelete}>
-                                          <input type="hidden" name="hotelId" value={hotel.id} />
-                                          <AlertDialogHeader>
-                                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                              Diese Aktion kann nicht rückgängig gemacht werden. Dadurch werden das Hotel und alle zugehörigen Daten dauerhaft gelöscht.
-                                          </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                              <AlertDialogAction type="submit">Löschen</AlertDialogAction>
-                                          </AlertDialogFooter>
-                                      </form>
+                                      <AlertDialogHeader>
+                                      <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          Diese Aktion kann nicht rückgängig gemacht werden. Dadurch werden das Hotel und alle zugehörigen Daten dauerhaft gelöscht.
+                                      </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDelete(hotel.id)} disabled={isDeleting}>
+                                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Löschen
+                                          </AlertDialogAction>
+                                      </AlertDialogFooter>
                                   </AlertDialogContent>
                               </AlertDialog>
                           </DropdownMenuContent>
@@ -159,5 +183,3 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
-
-    

@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { BookingCreationForm } from '@/components/booking/booking-creation-form';
 import { Button } from '@/components/ui/button';
 import { getBookingById } from '@/lib/actions/booking.actions';
@@ -11,9 +11,9 @@ import type { Booking } from '@/lib/definitions';
 import { Loader2, XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-export default function EditBookingPage({ params: paramsPromise }: { params: Promise<{ hotelId: string, bookingId: string }>}) {
+export default function EditBookingPage({ params }: { params: { hotelId: string, bookingId: string }}) {
     const router = useRouter();
-    const { hotelId, bookingId } = use(paramsPromise);
+    const { hotelId, bookingId } = params;
 
     const [booking, setBooking] = useState<Booking | null>(null);
     const [isLoading, setIsLoading] = useState(true);

@@ -52,6 +52,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
 
   useEffect(() => {
       const fetchHotelConfig = async () => {
+          setIsLoading(true);
           const { hotel } = await getHotelById(hotelId);
           if (hotel) {
               setHotelConfig({
@@ -65,6 +66,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
                    form.setValue('boardType', hotel.boardTypes?.[0] || 'Frühstück');
                }
           }
+          setIsLoading(false);
       };
       fetchHotelConfig();
   }, [hotelId]);
@@ -88,7 +90,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
       checkInDate: undefined,
       checkOutDate: undefined,
       boardType: '', // Set from config
-      priceTotal: null,
+      priceTotal: 0,
       guestLanguage: 'de',
       rooms: [{
         roomType: '', // Set from config
@@ -231,7 +233,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
                           {Array.from({ length: watchRooms[index].children }).map((_, childIndex) => (
                               <FormField
-                                  key={childIndex}
+                                  key={`${roomField.id}-child-${childIndex}`}
                                   control={form.control}
                                   name={`rooms.${index}.childrenAges.${childIndex}`}
                                   render={({ field }) => (

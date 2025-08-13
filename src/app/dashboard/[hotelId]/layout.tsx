@@ -1,5 +1,4 @@
-
-
+'use client';
 
 import Link from 'next/link';
 import {
@@ -22,26 +21,52 @@ import {
 import { DashboardHeader } from '@/components/dashboard-header';
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import type { Hotel } from '@/lib/definitions';
+import { Loader2 } from 'lucide-react';
 
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
   params: { hotelId: string };
 }) {
-  const { hotel, error } = await getHotelById(params.hotelId);
+  const [hotel, setHotel] = useState<Hotel | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // In a real app, you'd want a nicer error state
+  useEffect(() => {
+    if (params.hotelId) {
+      getHotelById(params.hotelId).then(result => {
+        if (result.hotel) {
+          setHotel(result.hotel);
+        } else {
+          setError(result.error || 'Hotel nicht gefunden');
+        }
+        setIsLoading(false);
+      });
+    }
+  }, [params.hotelId]);
+
+  if (isLoading) {
+    return (
+        <div className="flex h-screen w-screen flex-col items-center justify-center">
+             <Loader2 className="h-8 w-8 animate-spin" />
+             <p className="text-muted-foreground mt-2">Lade Hotel-Dashboard...</p>
+        </div>
+    )
+  }
+
   if (error || !hotel) {
     return (
         <div className="flex h-screen w-screen flex-col items-center justify-center">
             <div className="text-center">
-                <h1 className="text-2xl font-bold">Error loading hotel</h1>
+                <h1 className="text-2xl font-bold">Fehler beim Laden des Hotels</h1>
                 <p className="text-muted-foreground">{error || 'Hotel not found'}</p>
                 <Button asChild className="mt-4">
-                    <Link href="/admin">Go to Admin</Link>
+                    <Link href="/admin">Zum Admin</Link>
                 </Button>
             </div>
         </div>
@@ -69,26 +94,26 @@ export default async function DashboardLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="New Booking">
+                <SidebarMenuButton asChild tooltip="Neue Buchung">
                   <Link href={`/dashboard/${hotelId}/bookings/create-booking`}>
                     <PlusCircle />
-                    <span>New Booking</span>
+                    <span>Neue Buchung</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
                <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Bookings">
+                <SidebarMenuButton asChild tooltip="Buchungen">
                   <Link href={`/dashboard/${hotelId}/bookings`}>
                     <BookCopy />
-                    <span>Bookings</span>
+                    <span>Buchungen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Settings">
+                <SidebarMenuButton asChild tooltip="Einstellungen">
                   <Link href={`/dashboard/${hotelId}/settings`}>
                     <Settings />
-                    <span>Settings</span>
+                    <span>Einstellungen</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -104,5 +129,3 @@ export default async function DashboardLayout({
       </SidebarProvider>
   );
 }
-
-    

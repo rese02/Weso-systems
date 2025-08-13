@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +16,7 @@ const translations = {
     de: {
         loading: "Lade Buchungsdetails...",
         invalidLink: "Ungültiger Link",
-        expiredLink: "Dieser Buchungslink ist abgelaufen.",
+        expiredLink: "Dieser Buchungslink ist abgelaufen oder wurde bereits verwendet.",
         invalidOrNotFound: "Ungültiger oder nicht gefundener Buchungslink.",
         completeBooking: "Buchung vervollständigen",
         secureTransfer: "Sichere Datenübermittlung.",
@@ -25,7 +25,7 @@ const translations = {
     en: {
         loading: "Loading booking details...",
         invalidLink: "Invalid Link",
-        expiredLink: "This booking link has expired.",
+        expiredLink: "This booking link has expired or has already been used.",
         invalidOrNotFound: "Invalid or not found booking link.",
         completeBooking: "Complete Booking",
         secureTransfer: "Secure data transmission.",
@@ -35,7 +35,7 @@ const translations = {
     it: {
         loading: "Caricamento dei dettagli della prenotazione...",
         invalidLink: "Link non valido",
-        expiredLink: "Questo link di prenotazione è scaduto.",
+        expiredLink: "Questo link di prenotazione è scaduto o è già stato utilizzato.",
         invalidOrNotFound: "Link di prenotazione non valido o non trovato.",
         completeBooking: "Completa Prenotazione",
         secureTransfer: "Trasmissione sicura dei dati.",
@@ -43,8 +43,8 @@ const translations = {
     }
 };
 
-export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
-  const { linkId } = use(paramsPromise);
+export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
+  const { linkId } = params;
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
       
       if (result.success && result.data) {
         const currentLang = result.data.prefill.guestLanguage || 'de';
-        if (new Date() > new Date(result.data.expiresAt as string)) {
+        if (new Date() > new Date(result.data.expiresAt as string) || result.data.status !== 'active') {
           setError(translations[currentLang].expiredLink);
         } else {
            const hotelResult = await getHotelById(result.data.hotelId);

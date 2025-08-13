@@ -2,14 +2,14 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, signOut, UserCredential } from 'firebase/auth';
 import { auth } from '@/lib/firebase.client';
 import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: typeof signInWithEmailAndPassword;
+  signIn: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
 }
 
@@ -27,15 +27,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const logout = async () => {
+  const customSignIn = (email: string, password: string): Promise<UserCredential> => {
+    return signInWithEmailAndPassword(auth, email, password);
+  }
+
+  const customLogout = async () => {
     await signOut(auth);
   };
   
   const value = {
     user,
     loading,
-    signIn: signInWithEmailAndPassword.bind(null, auth),
-    logout,
+    signIn: customSignIn,
+    logout: customLogout,
   };
   
   if (loading) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -21,7 +22,7 @@ import {
 import { DashboardHeader } from '@/components/dashboard-header';
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import type { Hotel } from '@/lib/definitions';
 import { Loader2 } from 'lucide-react';
 
@@ -31,15 +32,16 @@ export default function DashboardLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { hotelId: string };
+  params: Promise<{ hotelId: string }>;
 }) {
+  const { hotelId } = use(params);
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (params.hotelId) {
-      getHotelById(params.hotelId).then(result => {
+    if (hotelId) {
+      getHotelById(hotelId).then(result => {
         if (result.hotel) {
           setHotel(result.hotel);
         } else {
@@ -48,7 +50,7 @@ export default function DashboardLayout({
         setIsLoading(false);
       });
     }
-  }, [params.hotelId]);
+  }, [hotelId]);
 
   if (isLoading) {
     return (
@@ -72,8 +74,6 @@ export default function DashboardLayout({
         </div>
     )
   }
-
-  const hotelId = params.hotelId;
 
   return (
       <SidebarProvider>

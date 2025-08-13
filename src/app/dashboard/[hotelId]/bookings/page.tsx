@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -52,9 +53,9 @@ const paymentStatusConfig: { [key in BookingStatus]?: { variant: 'default' | 'se
 };
 
 
-export default function BookingsListPage({ params: paramsPromise }: { params: Promise<{ hotelId: string }>}) {
+export default function BookingsListPage({ params }: { params: { hotelId: string }}) {
   const router = useRouter();
-  const { hotelId } = use(paramsPromise);
+  const { hotelId } = use(params);
   const [isPending, startTransition] = useTransition();
   
   const [allBookings, setAllBookings] = useState<Booking[]>([]);

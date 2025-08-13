@@ -47,8 +47,8 @@ const DocumentButton = ({ href, children }: { href: string | null | undefined, c
 );
 
 
-export default function BookingDetailsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string, bookingId: string }>}) {
-  const { hotelId, bookingId } = use(paramsPromise);
+export default function BookingDetailsPage({ params }: { params: { hotelId: string, bookingId: string }}) {
+  const { hotelId, bookingId } = use(params);
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -175,6 +175,24 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
     }
 }
 
+export async function getHotelByOwnerEmail(email: string): Promise<{ success: boolean; hotelId?: string; error?: string }> {
+    if (!email) {
+        return { success: false, error: 'E-Mail ist erforderlich.' };
+    }
+    try {
+        const q = query(collection(db, 'hotels'), where('ownerEmail', '==', email), limit(1));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return { success: false, error: 'Kein Hotel mit dieser E-Mail-Adresse gefunden.' };
+        }
+        const hotelDoc = querySnapshot.docs[0];
+        return { success: true, hotelId: hotelDoc.id };
+    } catch (error) {
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+
 const SettingsSchema = z.object({
     name: z.string().min(1, 'Hotelname ist erforderlich.'),
     domain: z.string().min(1, 'Domain ist erforderlich.'),

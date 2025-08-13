@@ -50,28 +50,6 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
   const [hotelConfig, setHotelConfig] = useState<{ boardTypes: string[], roomCategories: string[] } | null>(null);
   const isEditMode = !!existingBooking;
 
-  useEffect(() => {
-      const fetchHotelConfig = async () => {
-          setIsLoading(true);
-          const { hotel } = await getHotelById(hotelId);
-          if (hotel) {
-              setHotelConfig({
-                  boardTypes: hotel.boardTypes || [],
-                  roomCategories: hotel.roomCategories || [],
-              });
-              // Set default values once config is loaded
-              const initialRoomType = hotel.roomCategories?.[0] || 'Standard Doppelzimmer';
-               if (!isEditMode) {
-                   form.setValue('rooms.0.roomType', initialRoomType);
-                   form.setValue('boardType', hotel.boardTypes?.[0] || 'Frühstück');
-               }
-          }
-          setIsLoading(false);
-      };
-      fetchHotelConfig();
-  }, [hotelId]);
-
-
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: isEditMode && existingBooking ? {
@@ -102,6 +80,28 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
       internalNotes: '',
     },
   });
+
+  useEffect(() => {
+      const fetchHotelConfig = async () => {
+          setIsLoading(true);
+          const { hotel } = await getHotelById(hotelId);
+          if (hotel) {
+              setHotelConfig({
+                  boardTypes: hotel.boardTypes || [],
+                  roomCategories: hotel.roomCategories || [],
+              });
+              // Set default values once config is loaded
+              const initialRoomType = hotel.roomCategories?.[0] || 'Standard Doppelzimmer';
+               if (!isEditMode) {
+                   form.setValue('rooms.0.roomType', initialRoomType);
+                   form.setValue('boardType', hotel.boardTypes?.[0] || 'Frühstück');
+               }
+          }
+          setIsLoading(false);
+      };
+      fetchHotelConfig();
+  }, [hotelId, isEditMode, form]);
+
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,

@@ -6,43 +6,76 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
+import { getHotelByOwnerEmail } from '@/lib/actions/hotel.actions';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase.client';
+
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleLogin = (path: string) => {
-    // In a real app, you'd have actual authentication logic here.
-    // For this prototype, we just navigate.
-    router.push(path);
+  const handleLogin = async (role: 'agency' | 'hotelier') => {
+    setIsLoading(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (userCredential.user) {
+        if (role === 'agency') {
+            router.push('/admin');
+        } else {
+            const result = await getHotelByOwnerEmail(email);
+            if (result.success && result.hotelId) {
+                router.push(`/dashboard/${result.hotelId}`);
+            } else {
+                 toast({ variant: 'destructive', title: "Anmeldefehler", description: result.error || "Für diese E-Mail wurde kein Hotel gefunden." });
+            }
+        }
+      }
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Anmeldefehler", description: "Ungültige E-Mail oder Passwort." });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
     <Card>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
-        <CardDescription>Login to access your dashboard</CardDescription>
+        <CardTitle className="text-2xl font-headline">Willkommen zurück</CardTitle>
+        <CardDescription>Melden Sie sich an, um auf Ihr Dashboard zuzugreifen</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" />
+          <Label htmlFor="email">E-Mail</Label>
+          <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" />
+          <Label htmlFor="password">Passwort</Label>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-            <Button onClick={() => handleLogin('/admin')}>Login as Agency</Button>
-            <Button variant="secondary" onClick={() => handleLogin('/admin')}>
-              Login as Hotelier
+            <Button onClick={() => handleLogin('agency')} disabled={isLoading}>
+                {isLoading && <Loader2 className="animate-spin" />}
+                <span>Login als Agentur</span>
+            </Button>
+            <Button variant="secondary" onClick={() => handleLogin('hotelier')} disabled={isLoading}>
+              {isLoading && <Loader2 className="animate-spin" />}
+              <span>Login als Hotelier</span>
             </Button>
         </div>
         <p className="text-sm text-center text-muted-foreground">
-          No agency account yet?{' '}
+          Noch kein Agentur-Konto?{' '}
           <Link href="/signup" className="underline font-medium text-primary">
-            Sign up
+            Registrieren
           </Link>
         </p>
       </CardFooter>

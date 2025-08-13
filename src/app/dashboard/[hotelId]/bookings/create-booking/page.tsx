@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { XIcon } from 'lucide-react';
 import { use } from 'react';
 
-export default function CreateBookingPage({ params }: { params: Promise<{ hotelId: string }>}) {
+export default function CreateBookingPage({ params }: { params: { hotelId: string }}) {
     const router = useRouter();
     const { hotelId } = use(params);
 

@@ -35,7 +35,7 @@ export default function LoginPage() {
       <CardFooter className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
             <Button onClick={() => handleLogin('/admin')}>Login as Agency</Button>
-            <Button variant="secondary" onClick={() => handleLogin('/dashboard/hotel-paradise')}>
+            <Button variant="secondary" onClick={() => handleLogin('/admin')}>
               Login as Hotelier
             </Button>
         </div>
@@ -49,5 +49,3 @@ export default function LoginPage() {
     </Card>
   );
 }
-
-    

@@ -31,7 +31,7 @@ export default function AdminLayout({
           <SidebarHeader>
             <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
               <Shield className="h-6 w-6" />
-              <span className="text-lg font-bold font-headline">HotelHub Central</span>
+              <span className="text-lg font-bold font-headline">Weso Systems</span>
             </Link>
           </SidebarHeader>
           <SidebarContent>

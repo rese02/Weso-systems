@@ -18,7 +18,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'HotelHub Central',
+  title: 'Weso Systems',
   description: 'Manage all your hotel booking systems from one place.',
 };
 
@@ -36,5 +36,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

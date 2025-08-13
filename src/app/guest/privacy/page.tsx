@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 export default function PrivacyPolicyPage() {
-  const agencyName = "WESO B-system";
+  const agencyName = "Weso Systems";
 
   return (
     <div className="min-h-screen bg-secondary flex flex-col items-center p-4 sm:p-6 md:p-8">

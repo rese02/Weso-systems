@@ -1,13 +1,13 @@
 
-
 'use server';
 
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where } from 'firebase/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getAuthenticatedUser } from './auth.actions';
 
 
 const HotelSchema = z.object({
@@ -33,8 +33,13 @@ const HotelSchema = z.object({
 });
 
 export async function createHotel(
-    hotelData: Omit<Hotel, 'id' | 'createdAt'>
+    hotelData: Omit<Hotel, 'id' | 'createdAt' | 'agencyId'>
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user || user.role !== 'agency-owner') {
+        return { success: false, error: "Access denied." };
+    }
+
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
         const errorMessage = Object.values(validation.error.flatten().fieldErrors).map(e => e.join(', ')).join('; ');
@@ -45,6 +50,7 @@ export async function createHotel(
         const hotelsCollectionRef = collection(db, 'hotels');
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...validation.data, 
+            agencyId: user.agencyId, // Associate hotel with the user's agency
             createdAt: Timestamp.now(),
         });
         revalidatePath('/admin');
@@ -56,9 +62,15 @@ export async function createHotel(
 
 
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { error: "Access denied." };
+    }
+
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        const q = query(hotelsCollectionRef, orderBy("createdAt", "desc"));
+        // Query for hotels that belong to the user's agency
+        const q = query(hotelsCollectionRef, where("agencyId", "==", user.agencyId), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         
         const hotels = querySnapshot.docs.map((doc) => {
@@ -68,6 +80,7 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
                 name: data.name,
                 ownerEmail: data.ownerEmail,
                 domain: data.domain,
+                agencyId: data.agencyId,
                 createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
             } as Hotel;
         });
@@ -81,9 +94,21 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
 
 
 export async function deleteHotel(hotelId: string): Promise<{ success: boolean; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied." };
+    }
+
     if (!hotelId) {
         return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
+    
+    // Authorization check
+    const hotelDocToDelete = await getDoc(doc(db, 'hotels', hotelId));
+    if (!hotelDocToDelete.exists() || hotelDocToDelete.data().agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot delete this hotel." };
+    }
+
     try {
         const batch = writeBatch(db);
 
@@ -138,6 +163,10 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
         };
 
+        // Note: No authorization check here because this function is used by public-facing
+        // components (like the guest booking link) and server actions that perform their own checks.
+        // It's a general data-fetching utility.
+
         return { hotel };
     } catch (error) {
         console.error("Fehler beim Abrufen des Hotels nach ID:", error);
@@ -168,7 +197,18 @@ const SettingsSchema = z.object({
 }).partial();
 
 export async function updateHotelSettings(hotelId: string, settings: Partial<Hotel>): Promise<{success: boolean, error?: string}> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied." };
+    }
+    
     if(!hotelId) return { success: false, error: 'Hotel-ID ist erforderlich.'};
+
+    // Authorization check
+    const hotelDocToUpdate = await getDoc(doc(db, 'hotels', hotelId));
+    if (!hotelDocToUpdate.exists() || hotelDocToUpdate.data().agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot modify this hotel." };
+    }
 
     const validation = SettingsSchema.safeParse(settings);
     if (!validation.success) {

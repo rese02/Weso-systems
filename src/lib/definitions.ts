@@ -9,6 +9,7 @@ export type GuestLanguage = 'de' | 'en' | 'it';
 export interface Hotel {
   id: string;
   name: string;
+  agencyId: string; // To associate hotels with a managing agency
   ownerEmail: string; // Internal/Login email
   domain: string;
   createdAt?: string; // Changed to string for serialization
@@ -57,6 +58,7 @@ export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cance
 export interface Booking {
   id: string;
   hotelId: string;
+  agencyId: string; // For data scoping and security rules
   status: BookingStatus;
   createdAt: string; // Changed to string for serialization
   updatedAt?: string; // Changed to string for serialization

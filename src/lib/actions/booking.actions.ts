@@ -9,6 +9,7 @@ import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLi
 import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';
 import { getHotelById } from './hotel.actions';
+import { getAuthenticatedUser } from './auth.actions';
 
 
 /**
@@ -18,6 +19,16 @@ import { getHotelById } from './hotel.actions';
 export async function createBookingWithLink(
     { hotelId, bookingData }: { hotelId: string, bookingData: BookingFormValues }
 ): Promise<{ success: boolean; bookingId?: string; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied. User not authenticated." };
+    }
+    // Authorization check: Ensure user can create bookings for this hotel
+    const hotelResult = await getHotelById(hotelId);
+    if (!hotelResult.success || hotelResult.hotel?.agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot manage this hotel." };
+    }
+
     if (!hotelId) {
         return { success: false, error: "Hotel ID is required." };
     }
@@ -40,6 +51,7 @@ export async function createBookingWithLink(
         
         const newBooking: Omit<Booking, 'id'> = {
             hotelId,
+            agencyId: user.agencyId,
             status: 'Sent', // 'Sent' because we are creating a link right away
             createdAt: Timestamp.now().toDate().toISOString(),
             updatedAt: Timestamp.now().toDate().toISOString(),
@@ -88,7 +100,7 @@ export async function createBookingWithLink(
         const newLink: Omit<BookingLink, 'id'> = {
             bookingId: newBookingRef.id,
             hotelId: hotelId,
-            createdBy: 'hotel-admin-uid', // Placeholder
+            createdBy: user.id, // Use authenticated user ID
             createdAt: Timestamp.fromDate(now),
             expiresAt: Timestamp.fromDate(addDays(now, 7)),
             status: 'active',
@@ -117,6 +129,15 @@ export async function createBookingWithLink(
 export async function updateBooking(
     { hotelId, bookingId, bookingData }: { hotelId: string, bookingId: string, bookingData: BookingFormValues }
 ): Promise<{ success: boolean; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied. User not authenticated." };
+    }
+    const hotelResult = await getHotelById(hotelId);
+    if (!hotelResult.success || hotelResult.hotel?.agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot manage this hotel." };
+    }
+
     if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
@@ -164,6 +185,15 @@ export async function updateBooking(
  * Fetches all bookings for a given hotel.
  */
 export async function getBookingsForHotel(hotelId: string): Promise<{ success: boolean; bookings?: Booking[]; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied. User not authenticated." };
+    }
+    const hotelResult = await getHotelById(hotelId);
+    if (!hotelResult.success || hotelResult.hotel?.agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot manage this hotel." };
+    }
+
     if (!hotelId) return { success: false, error: "Hotel ID is required." };
 
     try {
@@ -208,6 +238,10 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
  * Fetches a single booking by its ID for a given hotel.
  */
 export async function getBookingById({ hotelId, bookingId }: { hotelId: string, bookingId: string }): Promise<{ success: boolean; booking?: Booking; error?: string }> {
+    // Public and authenticated access is allowed to this function,
+    // so we don't check for user authentication here.
+    // The guest thank-you page needs this, and it's unauthenticated.
+    // The dashboard pages that use it are protected by their own layout checks.
     if (!hotelId || !bookingId) return { success: false, error: "Hotel and Booking ID are required." };
 
     try {
@@ -228,7 +262,7 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
                 // Specifically handle companions array with Timestamps
                 if (key === 'companions') {
                     serializableData[key] = value.map(item => {
-                        if (item && item.dateOfBirth instanceof Timestamp) {
+                        if (item && typeof item === 'object' && item.dateOfBirth instanceof Timestamp) {
                             return { ...item, dateOfBirth: item.dateOfBirth.toDate().toISOString() };
                         }
                         return item;
@@ -256,6 +290,15 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
  * Deletes a booking from a hotel's sub-collection, including associated files in Storage.
  */
 export async function deleteBooking({ bookingId, hotelId }: { bookingId: string, hotelId: string }): Promise<{ success: boolean, error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied. User not authenticated." };
+    }
+    const hotelResult = await getHotelById(hotelId);
+    if (!hotelResult.success || hotelResult.hotel?.agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot manage this hotel." };
+    }
+
      if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
@@ -275,6 +318,11 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
             bookingData.documents?.idBack,
             bookingData.documents?.paymentProof
         ].filter(Boolean); // Filter out any undefined/null values
+
+        bookingData.companions?.forEach(c => {
+            if (c.documents?.idFront) docUrls.push(c.documents.idFront);
+            if (c.documents?.idBack) docUrls.push(c.documents.idBack);
+        })
 
         for (const url of docUrls) {
             if (url) {
@@ -375,6 +423,15 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 export async function updateBookingStatus(
     { hotelId, bookingId, status }: { hotelId: string, bookingId: string, status: BookingStatus }
 ): Promise<{ success: boolean; error?: string }> {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, error: "Access denied. User not authenticated." };
+    }
+    const hotelResult = await getHotelById(hotelId);
+    if (!hotelResult.success || hotelResult.hotel?.agencyId !== user.agencyId) {
+        return { success: false, error: "Access denied. You cannot manage this hotel." };
+    }
+
     if (!hotelId || !bookingId || !status) {
         return { success: false, error: "Hotel ID, Booking ID, and Status are required." };
     }

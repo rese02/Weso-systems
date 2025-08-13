@@ -26,6 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import Link from 'next/link';
+import { sendEmail } from '@/lib/actions/email.actions';
 
 
 const translations = {
@@ -87,8 +88,8 @@ const translations = {
             description: "Bitte überweisen Sie den gewählten Betrag und laden Sie anschließend einen Nachweis hoch.",
             totalPrice: "Gesamtpreis:",
             yourSelection: "Ihre Auswahl:",
-            selectionDeposit: "Anzahlung (30%)",
-            selectionFull: "Gesamtbetrag (100%)",
+            selectionDeposit: "Anzahlung",
+            selectionFull: "Gesamtzahlung",
             toPayNow: "Jetzt zu überweisen:",
             restOnArrival: "Restbetrag bei Anreise im Hotel:",
             bankTransferTo: "Banküberweisung an:",
@@ -211,8 +212,8 @@ const translations = {
             description: "Please transfer the selected amount and then upload a proof of payment.",
             totalPrice: "Total Price:",
             yourSelection: "Your Selection:",
-            selectionDeposit: "Down Payment (30%)",
-            selectionFull: "Full Amount (100%)",
+            selectionDeposit: "Down Payment",
+            selectionFull: "Full Payment",
             toPayNow: "To be paid now:",
             restOnArrival: "Remaining amount on arrival at the hotel:",
             bankTransferTo: "Bank transfer to:",
@@ -335,8 +336,8 @@ const translations = {
             description: "Si prega di effettuare il bonifico dell'importo selezionato e di caricare una prova di pagamento.",
             totalPrice: "Prezzo Totale:",
             yourSelection: "La Sua Selezione:",
-            selectionDeposit: "Acconto (30%)",
-            selectionFull: "Importo Totale (100%)",
+            selectionDeposit: "Acconto",
+            selectionFull: "Pagamento totale",
             toPayNow: "Da pagare ora:",
             restOnArrival: "Importo rimanente all'arrivo in hotel:",
             bankTransferTo: "Bonifico bancario a:",
@@ -537,9 +538,8 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
     );
 };
 
-const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions, lang, handleCompanionChange }: {
+const Step2Companions = ({ companions, documentOption, maxCompanions, lang, handleCompanionChange }: {
     companions: Companion[];
-    setCompanions: React.Dispatch<React.SetStateAction<Companion[]>>;
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
@@ -667,7 +667,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     const toPay = paymentOption === 'deposit' ? depositPrice : totalPrice;
     const restAmount = paymentOption === 'deposit' ? totalPrice - depositPrice : 0;
     const bookingIdShort = prefillData?.bookingId.substring(0, 8).toUpperCase();
-    const paymentPurpose = `${t.paymentPurpose} ${bookingIdShort} - ${paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull}`;
+    const paymentPurpose = `${paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull} ${bookingIdShort}`;
 
     const copyToClipboard = useCallback((text: string, label: string) => {
         navigator.clipboard.writeText(text);
@@ -1066,7 +1066,6 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         case 1:
             return <Step2Companions
                         companions={companions}
-                        setCompanions={setCompanions}
                         documentOption={documentOption}
                         maxCompanions={maxCompanions}
                         lang={lang}
@@ -1129,4 +1128,3 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
-

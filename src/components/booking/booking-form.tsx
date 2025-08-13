@@ -116,7 +116,7 @@ const translations = {
             documents: "Ausweisdokumente",
             uploaded: "Hochgeladen",
             showOnSite: "Bei Ankunft vorzeigen",
-            companions: "Begleitpersonen",
+            companions: "Mitreisende",
             person: "Person",
             paymentInfo: "Zahlungsinformationen",
             totalPrice: "Gesamtpreis",

@@ -19,12 +19,22 @@ import {
 } from '@/components/ui/sidebar';
 import { DashboardHeader } from '@/components/dashboard-header';
 
+// TEMPORARY: Import the password reset action
+import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
 
-export default function AdminLayout({
+
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // TEMPORARY: Call the password reset function once on the server.
+  // This will run when the admin layout is rendered.
+  // After one successful login, this block and the import can be removed.
+  if (process.env.NODE_ENV === 'development') {
+    await resetAgencyPassword();
+  }
+
   return (
       <SidebarProvider>
         <Sidebar>

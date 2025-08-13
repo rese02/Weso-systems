@@ -69,7 +69,7 @@ const translations = {
             firstName: "Vorname *",
             lastName: "Nachname *",
             dob: "Geburtsdatum *",
-            selectDob: "TT.MM.JJJJ",
+            selectDob: "TT/MM/JJJJ",
             docInfoTitle: "Hinweis zu Dokumenten",
             docInfoUpload: "Für Mitreisende sind keine Ausweis-Uploads erforderlich. Der Ausweis des Hauptbuchers ist ausreichend.",
             docInfoOnSite: "Bitte bringen Sie für alle Mitreisenden gültige Ausweisdokumente für den Check-in vor Ort mit."
@@ -513,13 +513,27 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
                  <h3 className="font-semibold">{t.documentsTitle}</h3>
                  <p className="text-sm text-muted-foreground">{t.documentsDescription}</p>
                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')} className="h-auto min-h-10 justify-center px-2">
-                        <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'upload' && 'opacity-0')}/>
-                        <span className="text-center">{t.uploadNow}</span>
+                     <Button
+                        type="button"
+                        variant={documentOption === 'upload' ? 'default' : 'outline'}
+                        onClick={() => setDocumentOption('upload')}
+                        className="h-auto min-h-10 justify-center px-2"
+                    >
+                        <div className="flex items-center justify-center">
+                            <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'upload' && 'opacity-0')}/>
+                            <span className="text-center">{t.uploadNow}</span>
+                        </div>
                     </Button>
-                    <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')} className="h-auto min-h-10 justify-center px-2">
-                         <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'on-site' && 'opacity-0')}/>
-                         <span className="text-center">{t.showOnSite}</span>
+                    <Button
+                        type="button"
+                        variant={documentOption === 'on-site' ? 'default' : 'outline'}
+                        onClick={() => setDocumentOption('on-site')}
+                        className="h-auto min-h-10 justify-center px-2"
+                    >
+                        <div className="flex items-center justify-center">
+                            <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'on-site' && 'opacity-0')}/>
+                            <span className="text-center">{t.showOnSite}</span>
+                        </div>
                     </Button>
                  </div>
                  {documentOption === 'upload' && (
@@ -715,10 +729,9 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
                             <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(value, label)}><Copy className="w-4 h-4"/></Button>
                          </div>
                     ))}
-                    <div className="p-3 flex justify-between items-center text-sm bg-muted/30">
+                    <div className="p-3 flex justify-between text-sm bg-muted/30">
                         <div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3"/>{t.paymentPurpose}</p>
-                            <p className="font-medium">{paymentPurpose}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3"/>{paymentPurpose}</p>
                             <p className="text-xs text-muted-foreground">{t.paymentPurposeHint}</p>
                         </div>
                         <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(paymentPurpose, t.paymentPurpose)}><Copy className="w-4 h-4"/></Button>

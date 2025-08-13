@@ -52,7 +52,7 @@ const translations = {
             documentsTitle: "Ausweisdokumente *",
             documentsDescription: "Bitte wählen Sie, wie Sie die Ausweisdokumente bereitstellen möchten.",
             uploadNow: "Jetzt hochladen",
-            showOnSite: "Vor Ort vorzeigen",
+            showOnSite: "Bei Ankunft vorzeigen",
             idFront: "Ausweisdokument (Vorderseite)",
             idBack: "Ausweisdokument (Rückseite)",
             fileSelect: "Datei auswählen",
@@ -83,7 +83,7 @@ const translations = {
             amountToPay: "Gewählter Betrag zur Überweisung:"
         },
         step4: {
-            title: "Zahl-Details",
+            title: "Zahlung",
             info: "Zahlungsinformationen & Nachweis *",
             description: "Bitte überweisen Sie den gewählten Betrag und laden Sie anschließend einen Nachweis hoch.",
             totalPrice: "Gesamtpreis:",
@@ -115,7 +115,7 @@ const translations = {
             phone: "Telefon",
             documents: "Ausweisdokumente",
             uploaded: "Hochgeladen",
-            showOnSite: "Vor Ort vorzeigen",
+            showOnSite: "Bei Ankunft vorzeigen",
             companions: "Begleitpersonen",
             person: "Person",
             paymentInfo: "Zahlungsinformationen",
@@ -176,7 +176,7 @@ const translations = {
             documentsTitle: "ID Documents *",
             documentsDescription: "Please choose how you want to provide the ID documents.",
             uploadNow: "Upload now",
-            showOnSite: "Show on-site",
+            showOnSite: "Show at check-in",
             idFront: "ID Document (Front)",
             idBack: "ID Document (Back)",
             fileSelect: "Select file",
@@ -207,7 +207,7 @@ const translations = {
             amountToPay: "Selected amount for transfer:"
         },
         step4: {
-            title: "Payment Details",
+            title: "Payment",
             info: "Payment Information & Proof *",
             description: "Please transfer the selected amount and then upload a proof of payment.",
             totalPrice: "Total Price:",
@@ -239,7 +239,7 @@ const translations = {
             phone: "Phone",
             documents: "ID Documents",
             uploaded: "Uploaded",
-            showOnSite: "Show on-site",
+            showOnSite: "Show at check-in",
             companions: "Companions",
             person: "Person",
             paymentInfo: "Payment Information",
@@ -300,7 +300,7 @@ const translations = {
             documentsTitle: "Documenti di Identità *",
             documentsDescription: "Si prega di scegliere come fornire i documenti di identità.",
             uploadNow: "Carica ora",
-            showOnSite: "Mostra in loco",
+            showOnSite: "Mostra all'arrivo",
             idFront: "Documento (fronte)",
             idBack: "Documento (retro)",
             fileSelect: "Seleziona file",
@@ -331,7 +331,7 @@ const translations = {
             amountToPay: "Importo selezionato per il bonifico:"
         },
         step4: {
-            title: "Dettagli di Pagamento",
+            title: "Pagamento",
             info: "Informazioni di Pagamento e Prova *",
             description: "Si prega di effettuare il bonifico dell'importo selezionato e di caricare una prova di pagamento.",
             totalPrice: "Prezzo Totale:",
@@ -363,7 +363,7 @@ const translations = {
             phone: "Telefono",
             documents: "Documenti di Identità",
             uploaded: "Caricato",
-            showOnSite: "Mostra in loco",
+            showOnSite: "Mostra all'arrivo",
             companions: "Accompagnatori",
             person: "Persona",
             paymentInfo: "Informazioni di Pagamento",
@@ -513,8 +513,14 @@ const Step1GuestInfo = memo(function Step1GuestInfo({ formData, handleInputChang
                  <h3 className="font-semibold">{t.documentsTitle}</h3>
                  <p className="text-sm text-muted-foreground">{t.documentsDescription}</p>
                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'upload' && 'opacity-0')}/>{t.uploadNow}</Button>
-                    <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')}><Check className={cn("mr-2 h-4 w-4", documentOption !== 'on-site' && 'opacity-0')}/>{t.showOnSite}</Button>
+                    <Button type="button" variant={documentOption === 'upload' ? 'default' : 'outline'} onClick={() => setDocumentOption('upload')} className="h-auto min-h-10 justify-center px-2">
+                        <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'upload' && 'opacity-0')}/>
+                        <span className="text-center">{t.uploadNow}</span>
+                    </Button>
+                    <Button type="button" variant={documentOption === 'on-site' ? 'default' : 'outline'} onClick={() => setDocumentOption('on-site')} className="h-auto min-h-10 justify-center px-2">
+                         <Check className={cn("mr-2 h-4 w-4 flex-shrink-0", documentOption !== 'on-site' && 'opacity-0')}/>
+                         <span className="text-center">{t.showOnSite}</span>
+                    </Button>
                  </div>
                  {documentOption === 'upload' && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">

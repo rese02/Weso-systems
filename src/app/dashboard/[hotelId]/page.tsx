@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,9 +50,9 @@ const ActivityItem = ({ booking, hotelId }: { booking: Booking, hotelId: string 
     );
 }
 
-export default function HotelierDashboardPage({ params }: { params: { hotelId: string }}) {
+export default function HotelierDashboardPage({ params }: { params: Promise<{ hotelId: string }> }) {
   const router = useRouter();
-  const { hotelId } = params;
+  const { hotelId } = use(params);
 
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);

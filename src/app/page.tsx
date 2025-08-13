@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -8,7 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/login');
+    // Default redirect to the agency login, as it's the primary entry point.
+    router.replace('/agency/login');
   }, [router]);
 
   return (

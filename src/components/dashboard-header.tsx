@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, User } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
+
 
 type DashboardHeaderProps = {
   children?: React.ReactNode;
@@ -18,6 +20,8 @@ type DashboardHeaderProps = {
 };
 
 export function DashboardHeader({ children, logoUrl }: DashboardHeaderProps) {
+  const { logout } = useAuth();
+  
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <div className="md:hidden">
@@ -47,8 +51,8 @@ export function DashboardHeader({ children, logoUrl }: DashboardHeaderProps) {
             <DropdownMenuItem>Profil</DropdownMenuItem>
             <DropdownMenuItem>Einstellungen</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/login">Abmelden</Link>
+            <DropdownMenuItem onClick={logout}>
+              Abmelden
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -88,7 +88,7 @@ const translations = {
 
 const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | React.ReactNode }) => (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
-        <div className="flex items-center text-sm text-muted-foreground mb-1 sm:mb-0">
+        <div className="flex items-center text-sm text-muted-foreground mb-1 sm:mb-0 shrink-0">
             <Icon className="mr-3 h-4 w-4 shrink-0" />
             <span className="flex-shrink-0">{label}</span>
         </div>
@@ -210,7 +210,7 @@ export default function ThankYouPage() {
             </CardHeader>
             <CardContent className="space-y-4 text-left p-6">
                 <h3 className="text-center font-semibold text-lg pb-2">{t.overviewTitle}</h3>
-                <div className="border rounded-lg divide-y">
+                <div className="border rounded-lg divide-y px-4">
                     <DetailRow icon={Users} label={t.bookingNumber} value={booking.id.substring(0, 8).toUpperCase()} />
                     <DetailRow icon={Calendar} label={t.arrival} value={`${format(parseISO(booking.checkIn), "EEE, dd. MMM yyyy", { locale })} '${t.arrivalInfo}'`} />
                     <DetailRow icon={Calendar} label={t.departure} value={`${format(parseISO(booking.checkOut), "EEE, dd. MMM yyyy", { locale })} '${t.departureInfo}'`} />

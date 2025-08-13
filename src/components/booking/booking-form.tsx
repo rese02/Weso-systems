@@ -278,7 +278,7 @@ const translations = {
         stepOf: "of"
     },
     it: {
-        steps: ['Ospite', 'Accomp.', 'Opzione', 'Pagamento', 'Riepilogo'],
+        steps: ['Ospite', 'Ospiti', 'Opzione', 'Pagamento', 'Riepilogo'],
         overviewTitle: 'Riepilogo della Sua Prenotazione',
         period: 'Periodo:',
         room: 'Camera',
@@ -543,10 +543,9 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
-    handleCompanionChange: (index: number, field: keyof Companion, value: string | Date) => void;
+    handleCompanionChange: (index: number, field: keyof Companion, value: string) => void;
 }) => {
     const t = translations[lang].step2;
-    const locale = lang === 'en' ? enUS : lang === 'it' ? it : de;
     
     return (
         <div className="space-y-6">
@@ -573,26 +572,14 @@ const Step2Companions = ({ companions, setCompanions, documentOption, maxCompani
                         </div>
                         <div className="grid gap-1.5 sm:col-span-2">
                              <Label htmlFor={`c-dob-${index}`}>{t.dob}</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !companion.dateOfBirth && "text-muted-foreground")}>
-                                        <CalendarLucideIcon className="mr-2 h-4 w-4" />
-                                        {companion.dateOfBirth ? format(new Date(companion.dateOfBirth), "PPP", { locale }) : <span>{t.selectDob}</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        locale={locale}
-                                        selected={companion.dateOfBirth ? new Date(companion.dateOfBirth) : undefined}
-                                        onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)}
-                                        captionLayout="dropdown-buttons"
-                                        fromYear={1920}
-                                        toYear={new Date().getFullYear()}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                             <Input 
+                                id={`c-dob-${index}`} 
+                                value={companion.dateOfBirth || ''} 
+                                onChange={(e) => handleCompanionChange(index, 'dateOfBirth', e.target.value)} 
+                                required 
+                                placeholder={t.selectDob} 
+                                type="tel"
+                             />
                         </div>
                     </CardContent>
                 </Card>
@@ -863,7 +850,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
           const initialCompanions = Array.from({ length: maxCompanions }, () => ({
               firstName: '',
               lastName: '',
-              dateOfBirth: undefined,
+              dateOfBirth: '',
           }));
           setCompanions(initialCompanions as any);
       }
@@ -874,7 +861,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       setFormData((prev: any) => ({ ...prev, [name]: value }));
   }, []);
 
-  const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string | Date) => {
+  const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string) => {
         setCompanions(prev => {
             const newCompanions = [...prev];
             const companionToUpdate = { ...newCompanions[index] };
@@ -1027,7 +1014,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                 paymentProof: uploadedFileMap.paymentProof || null,
                 submissionMethod: documentOption
             },
-            companions: companions.map(c => ({...c, dateOfBirth: c.dateOfBirth ? Timestamp.fromDate(new Date(c.dateOfBirth)) : null}))
+            companions: companions
         };
         batch.update(bookingDocRef, updateData);
 
@@ -1142,3 +1129,4 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     </Card>
   );
 }
+

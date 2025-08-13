@@ -45,7 +45,7 @@ export interface RoomDetails {
 export interface Companion {
   firstName: string;
   lastName: string;
-  dateOfBirth?: string; // ISO String
+  dateOfBirth?: string; 
 }
 
 export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';

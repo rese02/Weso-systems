@@ -304,7 +304,7 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
         return { success: true };
     } catch (error) {
-        console.error("Error deleting booking:", error);
+        console.error("Error deleting booking and its data:", error);
         return { success: false, error: (error as Error).message };
     }
 }

@@ -168,8 +168,8 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
                     <div className="flex items-center gap-4">
                         <Input id="logo" type="file" onChange={handleLogoChange} accept="image/png" className="w-full" />
                         {logoPreview && (
-                            <div className="relative h-16 w-16 rounded-full overflow-hidden border">
-                                <Image src={logoPreview} alt="Logo Vorschau" layout="fill" objectFit="cover" />
+                            <div className="relative h-16 w-16 rounded-md overflow-hidden border p-1 bg-muted/30">
+                                <Image src={logoPreview} alt="Logo Vorschau" layout="fill" objectFit="contain" />
                             </div>
                         )}
                     </div>
@@ -284,5 +284,3 @@ export default function SettingsPage({ params: paramsPromise }: { params: Promis
     </div>
   );
 }
-
-    

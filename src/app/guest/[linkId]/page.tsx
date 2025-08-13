@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, use } from 'react';
@@ -129,7 +130,7 @@ export default function GuestBookingPage({ params: paramsPromise }: { params: Pr
         <div className="text-center mb-6">
             {linkData && (
                 <>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">{t.completeBooking}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold font-headline">{t.completeBooking}</h1>
                     {linkId && <BookingForm prefillData={{...linkData.prefill, guestLanguage: lang}} linkId={linkId} hotelId={linkData.hotelId} initialGuestData={{firstName: linkData.prefill.firstName, lastName: linkData.prefill.lastName, email: ''}} />}
                 </>
             )}

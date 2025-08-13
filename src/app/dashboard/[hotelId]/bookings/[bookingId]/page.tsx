@@ -11,7 +11,7 @@ import { ArrowLeft, Edit, User, Users, FileText, BedDouble, Loader2, Home, Baby,
 import { getBookingById } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { format, parseISO } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'destructive' } = {
@@ -47,8 +47,8 @@ const DocumentButton = ({ href, children }: { href: string | null | undefined, c
 );
 
 
-export default function BookingDetailsPage({ params }: { params: { hotelId: string, bookingId: string }}) {
-  const { hotelId, bookingId } = params;
+export default function BookingDetailsPage({ params: paramsPromise }: { params: Promise<{ hotelId: string, bookingId: string }>}) {
+  const { hotelId, bookingId } = use(paramsPromise);
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -11,9 +11,9 @@ import type { Booking } from '@/lib/definitions';
 import { Loader2, XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-export default function EditBookingPage({ params }: { params: { hotelId: string, bookingId: string }}) {
+export default function EditBookingPage({ params }: { params: Promise<{ hotelId: string, bookingId: string }>}) {
     const router = useRouter();
-    const { hotelId, bookingId } = params;
+    const { hotelId, bookingId } = use(params);
 
     const [booking, setBooking] = useState<Booking | null>(null);
     const [isLoading, setIsLoading] = useState(true);

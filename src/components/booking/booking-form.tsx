@@ -31,7 +31,7 @@ import Link from 'next/link';
 
 const translations = {
     de: {
-        steps: ['Gast', 'Begleitung', 'Zahl-Option', 'Zahl-Details', 'Prüfung'],
+        steps: ['Gast', 'Mitreiser', 'Option', 'Zahlung', 'Prüfung'],
         overviewTitle: 'Ihre Buchungsübersicht',
         period: 'Zeitraum:',
         room: 'Zimmer',
@@ -155,7 +155,7 @@ const translations = {
         stepOf: "von"
     },
     en: {
-        steps: ['Guest', 'Companions', 'Payment Option', 'Payment Details', 'Review'],
+        steps: ['Guest', 'Companions', 'Option', 'Payment', 'Review'],
         overviewTitle: 'Your Booking Summary',
         period: 'Period:',
         room: 'Room',
@@ -279,7 +279,7 @@ const translations = {
         stepOf: "of"
     },
     it: {
-        steps: ['Ospite', 'Accompagnatori', 'Opzione Pagamento', 'Dettagli Pagamento', 'Riepilogo'],
+        steps: ['Ospite', 'Accomp.', 'Opzione', 'Pagamento', 'Riepilogo'],
         overviewTitle: 'Riepilogo della Sua Prenotazione',
         period: 'Periodo:',
         room: 'Camera',

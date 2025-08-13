@@ -537,22 +537,17 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
     );
 };
 
-const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions, lang }: {
+const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions, lang, handleCompanionChange }: {
     companions: Companion[];
     setCompanions: React.Dispatch<React.SetStateAction<Companion[]>>;
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
+    handleCompanionChange: (index: number, field: keyof Companion, value: string | Date) => void;
 }) => {
     const t = translations[lang].step2;
     const locale = lang === 'en' ? enUS : lang === 'it' ? it : de;
     
-    const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string | Date) => {
-        const newCompanions = [...companions];
-        (newCompanions[index] as any)[field] = value;
-        setCompanions(newCompanions);
-    }, [companions, setCompanions]);
-
     return (
         <div className="space-y-6">
             <div>
@@ -879,6 +874,16 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       setFormData((prev: any) => ({ ...prev, [name]: value }));
   }, []);
 
+  const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string | Date) => {
+        setCompanions(prev => {
+            const newCompanions = [...prev];
+            const companionToUpdate = { ...newCompanions[index] };
+            (companionToUpdate as any)[field] = value;
+            newCompanions[index] = companionToUpdate;
+            return newCompanions;
+        });
+    }, []);
+
   const handleFileUpload = useCallback((name: string, file: File) => {
     const t_file = translations[lang].step1;
     if (file.size > 5 * 1024 * 1024) { 
@@ -1078,6 +1083,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         documentOption={documentOption}
                         maxCompanions={maxCompanions}
                         lang={lang}
+                        handleCompanionChange={handleCompanionChange}
                     />;
         case 2:
             return <Step3PaymentOption

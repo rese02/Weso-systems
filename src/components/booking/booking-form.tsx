@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ import { Calendar } from '../ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
 import { getHotelById } from '@/lib/actions/hotel.actions';
-import { sendEmail } from '@/lib/actions/email.actions';
 import Link from 'next/link';
 
 
@@ -69,7 +68,7 @@ const translations = {
             firstName: "Vorname *",
             lastName: "Nachname *",
             dob: "Geburtsdatum *",
-            selectDob: "Geburtsdatum auswählen",
+            selectDob: "TT.MM.JJJJ",
             docInfoTitle: "Hinweis zu Dokumenten",
             docInfoUpload: "Für Mitreisende sind keine Ausweis-Uploads erforderlich. Der Ausweis des Hauptbuchers ist ausreichend.",
             docInfoOnSite: "Bitte bringen Sie für alle Mitreisenden gültige Ausweisdokumente für den Check-in vor Ort mit."
@@ -193,7 +192,7 @@ const translations = {
             firstName: "First Name *",
             lastName: "Last Name *",
             dob: "Date of Birth *",
-            selectDob: "Select date of birth",
+            selectDob: "DD/MM/YYYY",
             docInfoTitle: "Note on Documents",
             docInfoUpload: "No ID uploads are required for companions. The main booker's ID is sufficient.",
             docInfoOnSite: "Please bring valid ID documents for all companions for check-in on-site."
@@ -317,7 +316,7 @@ const translations = {
             firstName: "Nome *",
             lastName: "Cognome *",
             dob: "Data di Nascita *",
-            selectDob: "Seleziona data di nascita",
+            selectDob: "GG/MM/AAAA",
             docInfoTitle: "Nota sui Documenti",
             docInfoUpload: "Non sono richiesti caricamenti di documenti per gli accompagnatori. È sufficiente il documento dell'ospite principale.",
             docInfoOnSite: "Si prega di portare documenti di identità validi per tutti gli accompagnatori per il check-in in loco."
@@ -413,7 +412,7 @@ type FileUpload = {
     error?: string;
 }
 
-const BookingOverview = memo(function BookingOverview({ prefillData, lang }: { prefillData?: BookingLink['prefill'] | null, lang: GuestLanguage }) {
+const BookingOverview = ({ prefillData, lang }: { prefillData?: BookingLink['prefill'] | null, lang: GuestLanguage }) => {
     if (!prefillData) return null;
     const t = translations[lang].overviewTitle;
     const t_period = translations[lang].period;
@@ -449,9 +448,9 @@ const BookingOverview = memo(function BookingOverview({ prefillData, lang }: { p
             </div>
         </div>
     )
-});
+};
 
-const FileUploadInput = memo(function FileUploadInput({ id, label, onFileSelect, upload, onRemove, required, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, required?: boolean, lang: GuestLanguage }) {
+const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, required?: boolean, lang: GuestLanguage }) => {
     const t = translations[lang].step1;
     if (upload && !upload.error) {
         return (
@@ -479,9 +478,9 @@ const FileUploadInput = memo(function FileUploadInput({ id, label, onFileSelect,
              <p className="text-xs text-muted-foreground mt-1">{t.fileHint}</p>
         </div>
     );
-});
+};
 
-const Step1GuestInfo = memo(function Step1GuestInfo({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption, lang }: {
+const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, setDocumentOption, lang }: {
     formData: any;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     prefillData?: BookingLink['prefill'] | null;
@@ -491,7 +490,7 @@ const Step1GuestInfo = memo(function Step1GuestInfo({ formData, handleInputChang
     documentOption: 'upload' | 'on-site';
     setDocumentOption: (option: 'upload' | 'on-site') => void;
     lang: GuestLanguage;
-}) {
+}) => {
     const t = translations[lang].step1;
     return (
         <div className="space-y-6">
@@ -536,25 +535,23 @@ const Step1GuestInfo = memo(function Step1GuestInfo({ formData, handleInputChang
             </div>
         </div>
     );
-});
+};
 
-const Step2Companions = memo(function Step2Companions({ companions, setCompanions, documentOption, maxCompanions, lang }: {
+const Step2Companions = ({ companions, setCompanions, documentOption, maxCompanions, lang }: {
     companions: Companion[];
     setCompanions: React.Dispatch<React.SetStateAction<Companion[]>>;
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
-}) {
+}) => {
     const t = translations[lang].step2;
     const locale = lang === 'en' ? enUS : lang === 'it' ? it : de;
-
+    
     const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string | Date) => {
-        setCompanions(prev => {
-            const newCompanions = [...prev];
-            (newCompanions[index] as any)[field] = value;
-            return newCompanions;
-        });
-    }, [setCompanions]);
+        const newCompanions = [...companions];
+        (newCompanions[index] as any)[field] = value;
+        setCompanions(newCompanions);
+    }, [companions, setCompanions]);
 
     return (
         <div className="space-y-6">
@@ -589,7 +586,16 @@ const Step2Companions = memo(function Step2Companions({ companions, setCompanion
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={companion.dateOfBirth ? new Date(companion.dateOfBirth) : undefined} onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)} initialFocus captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} />
+                                    <Calendar
+                                        mode="single"
+                                        locale={locale}
+                                        selected={companion.dateOfBirth ? new Date(companion.dateOfBirth) : undefined}
+                                        onSelect={(date) => handleCompanionChange(index, 'dateOfBirth', date as Date)}
+                                        captionLayout="dropdown-buttons"
+                                        fromYear={1920}
+                                        toYear={new Date().getFullYear()}
+                                        initialFocus
+                                    />
                                 </PopoverContent>
                             </Popover>
                         </div>
@@ -606,14 +612,14 @@ const Step2Companions = memo(function Step2Companions({ companions, setCompanion
             </Alert>
         </div>
     );
-});
+};
 
-const Step3PaymentOption = memo(function Step3PaymentOption({ prefillData, paymentOption, setPaymentOption, lang }: {
+const Step3PaymentOption = ({ prefillData, paymentOption, setPaymentOption, lang }: {
     prefillData: BookingLink['prefill'] | null;
     paymentOption: 'deposit' | 'full';
     setPaymentOption: (option: 'deposit' | 'full') => void;
     lang: GuestLanguage;
-}) {
+}) => {
     const t = translations[lang].step3;
     const totalPrice = prefillData?.priceTotal || 0;
     const depositPrice = totalPrice * 0.3;
@@ -661,9 +667,9 @@ const Step3PaymentOption = memo(function Step3PaymentOption({ prefillData, payme
             </div>
         </div>
     );
-});
+};
 
-const Step4PaymentDetails = memo(function Step4PaymentDetails({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload, hotelDetails, lang }: {
+const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUpload, removeUpload, hotelDetails, lang }: {
     prefillData: BookingLink['prefill'] | null;
     paymentOption: 'deposit' | 'full';
     uploads: Record<string, FileUpload>;
@@ -671,7 +677,7 @@ const Step4PaymentDetails = memo(function Step4PaymentDetails({ prefillData, pay
     removeUpload: (name: string) => void;
     hotelDetails: Hotel | null;
     lang: GuestLanguage;
-}) {
+}) => {
     const { toast } = useToast();
     const t = translations[lang].step4;
     const totalPrice = prefillData?.priceTotal || 0;
@@ -751,7 +757,7 @@ const Step4PaymentDetails = memo(function Step4PaymentDetails({ prefillData, pay
             </div>
         </div>
     );
-});
+};
 
 const ReviewItem = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
@@ -760,14 +766,14 @@ const ReviewItem = ({ label, value }: { label: string, value: string | number | 
     </div>
 );
 
-const Step5Review = memo(function Step5Review({ formData, companions, documentOption, paymentOption, prefillData, lang }: {
+const Step5Review = ({ formData, companions, documentOption, paymentOption, prefillData, lang }: {
     formData: any;
     companions: Companion[];
     documentOption: string;
     paymentOption: string;
     prefillData: BookingLink['prefill'] | null;
     lang: GuestLanguage;
-}) {
+}) => {
     const t = translations[lang].step5;
     const totalPrice = prefillData?.priceTotal || 0;
     const depositPrice = totalPrice * 0.3;
@@ -819,7 +825,7 @@ const Step5Review = memo(function Step5Review({ formData, companions, documentOp
              </div>
         </div>
     );
-});
+};
 
 
 export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: { prefillData?: BookingLink['prefill'] & {guestLanguage?: GuestLanguage} | null, linkId?: string, hotelId?: string, initialGuestData: {firstName?: string; lastName?: string, email?: string} }) {
@@ -1051,7 +1057,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
     }
   }
 
-  const CurrentStepComponent = useCallback(() => {
+  const renderStep = () => {
     switch(currentStep) {
         case 0:
             return <Step1GuestInfo 
@@ -1102,7 +1108,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         default:
             return null;
     }
-  }, [currentStep, formData, handleInputChange, prefillData, uploads, handleFileUpload, removeUpload, documentOption, companions, maxCompanions, paymentOption, hotelDetails, lang]);
+  };
 
   return (
     <Card className="w-full max-w-3xl shadow-lg">
@@ -1113,7 +1119,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         </div>
       </CardHeader>
       <CardContent className="min-h-[300px] p-4 sm:p-6">
-        <CurrentStepComponent />
+        {renderStep()}
       </CardContent>
       <CardFooter className="flex justify-between border-t px-6 py-4">
         <Button variant="outline" type="button" onClick={prevStep} disabled={currentStep === 0 || isSubmitting}>

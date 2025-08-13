@@ -45,7 +45,11 @@ export interface RoomDetails {
 export interface Companion {
   firstName: string;
   lastName: string;
-  dateOfBirth?: string; 
+  dateOfBirth?: string;
+  documents?: {
+    idFront?: string | null;
+    idBack?: string | null;
+  }
 }
 
 export type BookingStatus = 'Open' | 'Sent' | 'Submitted' | 'Confirmed' | 'Cancelled' | 'Checked-in' | 'Checked-out' | 'Partial Payment';

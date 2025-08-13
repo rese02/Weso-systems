@@ -69,13 +69,14 @@ const translations = {
             firstName: "Vorname *",
             lastName: "Nachname *",
             dob: "Geburtsdatum *",
-            selectDob: "TT/MM/JJJJ",
+            idFront: "Ausweisdokument (Vorderseite) *",
+            idBack: "Ausweisdokument (Rückseite) *",
             docInfoTitle: "Hinweis zu Dokumenten",
-            docInfoUpload: "Für Mitreisende sind keine Ausweis-Uploads erforderlich. Der Ausweis des Hauptbuchers ist ausreichend.",
+            docInfoUpload: "Bitte laden Sie die Ausweisdokumente für jede Person hoch.",
             docInfoOnSite: "Bitte bringen Sie für alle Mitreisenden gültige Ausweisdokumente für den Check-in vor Ort mit."
         },
         step3: {
-            title: "Zahl-Option",
+            title: "Zahlungsoption",
             selectOption: "Wählen Sie Ihre Zahlungsoption *",
             totalPriceIs: (price: string) => `Der Gesamtpreis dieser Buchung beträgt: ${price} €`,
             deposit: "Anzahlung (30%)",
@@ -138,7 +139,7 @@ const translations = {
         },
         toasts: {
             missingFields: "Bitte füllen Sie alle Pflichtfelder (*) aus.",
-            missingDocs: "Bitte laden Sie Vorder- und Rückseite Ihres Ausweises hoch.",
+            missingDocs: "Bitte laden Sie für alle Personen die Vorder- und Rückseite des Ausweises hoch.",
             fileErrors: "Bitte korrigieren Sie die Fehler bei den hochgeladenen Dateien.",
             companionCountError: (count: number) => `Bitte fügen Sie die Daten für alle ${count} Begleitpersonen hinzu.`,
             companionFieldsError: "Bitte füllen Sie alle Felder für jeden Mitreisenden aus.",
@@ -193,9 +194,10 @@ const translations = {
             firstName: "First Name *",
             lastName: "Last Name *",
             dob: "Date of Birth *",
-            selectDob: "DD/MM/YYYY",
+            idFront: "ID Document (Front) *",
+            idBack: "ID Document (Back) *",
             docInfoTitle: "Note on Documents",
-            docInfoUpload: "No ID uploads are required for companions. The main booker's ID is sufficient.",
+            docInfoUpload: "Please upload the ID documents for each person.",
             docInfoOnSite: "Please bring valid ID documents for all companions for check-in on-site."
         },
         step3: {
@@ -262,7 +264,7 @@ const translations = {
         },
         toasts: {
             missingFields: "Please fill in all required fields (*).",
-            missingDocs: "Please upload the front and back of your ID.",
+            missingDocs: "Please upload the front and back of the ID for all persons.",
             fileErrors: "Please correct the errors in the uploaded files.",
             companionCountError: (count: number) => `Please add the data for all ${count} companions.`,
             companionFieldsError: "Please fill in all fields for each companion.",
@@ -317,9 +319,10 @@ const translations = {
             firstName: "Nome *",
             lastName: "Cognome *",
             dob: "Data di Nascita *",
-            selectDob: "GG/MM/AAAA",
+            idFront: "Documento (fronte) *",
+            idBack: "Documento (retro) *",
             docInfoTitle: "Nota sui Documenti",
-            docInfoUpload: "Non sono richiesti caricamenti di documenti per gli accompagnatori. È sufficiente il documento dell'ospite principale.",
+            docInfoUpload: "Si prega di caricare i documenti di identità per ogni persona.",
             docInfoOnSite: "Si prega di portare documenti di identità validi per tutti gli accompagnatori per il check-in in loco."
         },
         step3: {
@@ -386,7 +389,7 @@ const translations = {
         },
         toasts: {
             missingFields: "Si prega di compilare tutti i campi obbligatori (*).",
-            missingDocs: "Si prega di caricare il fronte e il retro del suo documento d'identità.",
+            missingDocs: "Si prega di caricare il fronte e il retro del documento d'identità per tutte le persone.",
             fileErrors: "Si prega di correggere gli errori nei file caricati.",
             companionCountError: (count: number) => `Si prega di aggiungere i dati per tutti i ${count} accompagnatori.`,
             companionFieldsError: "Si prega di compilare tutti i campi per ogni accompagnatore.",
@@ -409,7 +412,7 @@ type FileUpload = {
     file: File;
     progress: number;
     url?: string;
-    name: string; // e.g. 'idFront', 'idBack'
+    name: string; // e.g. 'idFront', 'idBack', 'companion-0-idFront'
     error?: string;
 }
 
@@ -467,7 +470,7 @@ const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required, 
 
     return (
         <div>
-            <Label htmlFor={id} className="text-sm font-medium">{label} {required && '*'}</Label>
+            <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
             <div className="mt-2">
                  <label htmlFor={id} className="relative flex w-full items-center justify-center rounded-md border-2 border-dashed border-border px-3 py-2 text-sm ring-offset-background transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-muted/50 cursor-pointer">
                     <File className="h-4 w-4 mr-2 text-muted-foreground"/>
@@ -538,8 +541,8 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
                  </div>
                  {documentOption === 'upload' && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                         <FileUploadInput id="idFront" label={t.idFront} onFileSelect={(file) => handleFileUpload('idFront', file)} upload={uploads.idFront} onRemove={() => removeUpload('idFront')} required lang={lang}/>
-                         <FileUploadInput id="idBack" label={t.idBack} onFileSelect={(file) => handleFileUpload('idBack', file)} upload={uploads.idBack} onRemove={() => removeUpload('idBack')} required lang={lang}/>
+                         <FileUploadInput id="idFront" label={t.idFront} onFileSelect={(file) => handleFileUpload('idFront', file)} upload={uploads.idFront} onRemove={() => removeUpload('idFront')} lang={lang}/>
+                         <FileUploadInput id="idBack" label={t.idBack} onFileSelect={(file) => handleFileUpload('idBack', file)} upload={uploads.idBack} onRemove={() => removeUpload('idBack')} lang={lang}/>
                     </div>
                  )}
             </div>
@@ -552,12 +555,15 @@ const Step1GuestInfo = ({ formData, handleInputChange, prefillData, uploads, han
     );
 };
 
-const Step2Companions = ({ companions, documentOption, maxCompanions, lang, handleCompanionChange }: {
+const Step2Companions = ({ companions, documentOption, maxCompanions, lang, handleCompanionChange, uploads, handleFileUpload, removeUpload }: {
     companions: Companion[];
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
     handleCompanionChange: (index: number, field: keyof Companion, value: string) => void;
+    uploads: Record<string, FileUpload>;
+    handleFileUpload: (name: string, file: File) => void;
+    removeUpload: (name: string) => void;
 }) => {
     const t = translations[lang].step2;
     
@@ -575,26 +581,34 @@ const Step2Companions = ({ companions, documentOption, maxCompanions, lang, hand
                     <CardHeader className="flex flex-row items-center justify-between pb-4">
                          <h4 className="font-medium flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> {t.companion} {index + 1}</h4>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid gap-1.5">
+                                <Label htmlFor={`c-firstName-${index}`}>{t.firstName}</Label>
+                                <Input id={`c-firstName-${index}`} value={companion.firstName} onChange={(e) => handleCompanionChange(index, 'firstName', e.target.value)} required />
+                            </div>
+                             <div className="grid gap-1.5">
+                                <Label htmlFor={`c-lastName-${index}`}>{t.lastName}</Label>
+                                <Input id={`c-lastName-${index}`} value={companion.lastName} onChange={(e) => handleCompanionChange(index, 'lastName', e.target.value)} required />
+                            </div>
+                        </div>
                         <div className="grid gap-1.5">
-                            <Label htmlFor={`c-firstName-${index}`}>{t.firstName}</Label>
-                            <Input id={`c-firstName-${index}`} value={companion.firstName} onChange={(e) => handleCompanionChange(index, 'firstName', e.target.value)} required />
-                        </div>
-                         <div className="grid gap-1.5">
-                            <Label htmlFor={`c-lastName-${index}`}>{t.lastName}</Label>
-                            <Input id={`c-lastName-${index}`} value={companion.lastName} onChange={(e) => handleCompanionChange(index, 'lastName', e.target.value)} required />
-                        </div>
-                        <div className="grid gap-1.5 sm:col-span-2">
                              <Label htmlFor={`c-dob-${index}`}>{t.dob}</Label>
                              <Input 
                                 id={`c-dob-${index}`} 
                                 value={companion.dateOfBirth || ''} 
                                 onChange={(e) => handleCompanionChange(index, 'dateOfBirth', e.target.value)} 
                                 required 
-                                placeholder={t.selectDob} 
+                                placeholder="TT/MM/JJJJ" 
                                 type="tel"
                              />
                         </div>
+                         {documentOption === 'upload' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                                <FileUploadInput id={`c-idFront-${index}`} label={t.idFront} onFileSelect={(file) => handleFileUpload(`companion-${index}-idFront`, file)} upload={uploads[`companion-${index}-idFront`]} onRemove={() => removeUpload(`companion-${index}-idFront`)} lang={lang}/>
+                                <FileUploadInput id={`c-idBack-${index}`} label={t.idBack} onFileSelect={(file) => handleFileUpload(`companion-${index}-idBack`, file)} upload={uploads[`companion-${index}-idBack`]} onRemove={() => removeUpload(`companion-${index}-idBack`)} lang={lang}/>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             ))}
@@ -681,7 +695,8 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     const toPay = paymentOption === 'deposit' ? depositPrice : totalPrice;
     const restAmount = paymentOption === 'deposit' ? totalPrice - depositPrice : 0;
     const bookingIdShort = prefillData?.bookingId.substring(0, 8).toUpperCase();
-    const paymentPurpose = `${paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull} ${bookingIdShort}`;
+    const paymentTypeText = paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull;
+    const paymentPurpose = `${paymentTypeText} ${bookingIdShort}`;
 
     const copyToClipboard = useCallback((text: string, label: string) => {
         navigator.clipboard.writeText(text);
@@ -711,7 +726,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
                 <div className="flex justify-between"><span className="text-muted-foreground">{t.totalPrice}</span><span className="font-medium">{totalPrice.toFixed(2)} €</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t.yourSelection}</span><span className="font-medium">{paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t.yourSelection}</span><span className="font-medium">{paymentTypeText}</span></div>
                 <Separator/>
                 <div className="flex justify-between items-center text-base"><span className="text-muted-foreground">{t.toPayNow}</span><span className="font-bold text-primary text-lg">{toPay.toFixed(2)} €</span></div>
                 {paymentOption === 'deposit' && <div className="flex justify-between text-xs pt-1"><span className="text-muted-foreground">{t.restOnArrival}</span><span className="font-medium">{restAmount.toFixed(2)} €</span></div>}
@@ -729,10 +744,10 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
                             <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(value, label)}><Copy className="w-4 h-4"/></Button>
                          </div>
                     ))}
-                    <div className="p-3 flex justify-between text-sm bg-muted/30">
-                        <div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3"/>{paymentPurpose}</p>
-                            <p className="text-xs text-muted-foreground">{t.paymentPurposeHint}</p>
+                    <div className="p-3 flex justify-between items-center text-sm bg-muted/30">
+                        <div className="pr-2">
+                            <p className="text-xs text-muted-foreground">{t.paymentPurpose}</p>
+                            <p className="font-medium">{paymentPurpose}</p>
                         </div>
                         <Button type="button" variant="ghost" size="icon" onClick={() => copyToClipboard(paymentPurpose, t.paymentPurpose)}><Copy className="w-4 h-4"/></Button>
                     </div>
@@ -740,7 +755,7 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
             </div>
 
             <div>
-                 <FileUploadInput id="paymentProof" label={t.paymentProof} onFileSelect={(file) => handleFileUpload('paymentProof', file)} upload={uploads.paymentProof} onRemove={() => removeUpload('paymentProof')} required lang={lang}/>
+                 <FileUploadInput id="paymentProof" label={t.paymentProof} onFileSelect={(file) => handleFileUpload('paymentProof', file)} upload={uploads.paymentProof} onRemove={() => removeUpload('paymentProof')} lang={lang}/>
             </div>
             
             <div className="p-4 rounded-md border border-dashed flex items-start gap-4">
@@ -798,7 +813,10 @@ const Step5Review = ({ formData, companions, documentOption, paymentOption, pref
                     <h4 className="font-semibold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-primary"/>{t.companions}</h4>
                      <Separator/>
                     {companions.map((c, i) => (
-                        <ReviewItem key={i} label={`${t.person} ${i+2}`} value={`${c.firstName} ${c.lastName}`} />
+                        <div key={i}>
+                            <ReviewItem label={`${t.person} ${i+2}`} value={`${c.firstName} ${c.lastName}`} />
+                             {documentOption === 'upload' && <ReviewItem label={t.documents} value={t.uploaded} />}
+                        </div>
                     ))}
                 </div>
             )}
@@ -931,9 +949,17 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       }
       if (step === 1) {
           if (companions.length > 0) {
-            for(const c of companions) {
+            for(const [index, c] of companions.entries()) {
                 if(!c.firstName || !c.lastName || !c.dateOfBirth) {
                     toast({variant: 'destructive', title: 'Fehlende Angaben', description: t_toast.companionFieldsError});
+                    return false;
+                }
+                if (documentOption === 'upload' && (!uploads[`companion-${index}-idFront`] || !uploads[`companion-${index}-idBack`])) {
+                    toast({variant: 'destructive', title: 'Fehlende Dokumente', description: t_toast.missingDocs});
+                    return false;
+                }
+                 if (uploads[`companion-${index}-idFront`]?.error || uploads[`companion-${index}-idBack`]?.error) {
+                    toast({variant: 'destructive', title: 'Fehlerhafte Dateien', description: t_toast.fileErrors});
                     return false;
                 }
             }
@@ -1011,6 +1037,14 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         const batch = writeBatch(db);
         const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
         
+        const updatedCompanions = companions.map((c, index) => ({
+            ...c,
+            documents: {
+                idFront: documentOption === 'upload' ? uploadedFileMap[`companion-${index}-idFront`] || null : null,
+                idBack: documentOption === 'upload' ? uploadedFileMap[`companion-${index}-idBack`] || null : null,
+            }
+        }))
+
         const updateData: any = {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -1027,7 +1061,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                 paymentProof: uploadedFileMap.paymentProof || null,
                 submissionMethod: documentOption
             },
-            companions: companions
+            companions: updatedCompanions,
         };
         batch.update(bookingDocRef, updateData);
 
@@ -1083,6 +1117,9 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                         maxCompanions={maxCompanions}
                         lang={lang}
                         handleCompanionChange={handleCompanionChange}
+                        uploads={uploads}
+                        handleFileUpload={handleFileUpload}
+                        removeUpload={removeUpload}
                     />;
         case 2:
             return <Step3PaymentOption

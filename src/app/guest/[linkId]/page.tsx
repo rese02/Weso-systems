@@ -42,8 +42,8 @@ const translations = {
     }
 };
 
-export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
-  const linkId = params.linkId;
+export default function GuestBookingPage({ params: paramsPromise }: { params: Promise<{ linkId: string }> }) {
+  const { linkId } = use(paramsPromise);
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,12 +120,10 @@ export default function GuestBookingPage({ params }: { params: { linkId: string 
   return (
      <div className="min-h-screen bg-secondary flex flex-col items-center p-4 sm:p-6 md:p-8">
       <header className="py-4 md:py-6 text-center">
-        <Link href="/">
-           <div className="inline-flex items-center gap-2 text-foreground">
-             <Shield className="h-10 w-10 md:h-12 md:w-12 text-primary" />
-             <span className="text-lg md:text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
-           </div>
-        </Link>
+        <div className="inline-flex items-center gap-2 text-foreground">
+            <Shield className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+            <span className="text-lg md:text-xl font-bold font-headline">{linkData?.hotelName || 'Hotel'}</span>
+        </div>
       </header>
       <main className="w-full flex-grow flex flex-col items-center">
         <div className="text-center mb-6">

@@ -27,6 +27,7 @@ import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-emai
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import Link from 'next/link';
 import { sendEmail } from '@/lib/actions/email.actions';
+import imageCompression from 'browser-image-compression';
 
 
 const translations = {
@@ -59,7 +60,8 @@ const translations = {
             fileTooLarge: "Datei ist zu groß (max. 5MB).",
             invalidFileType: "Ungültiger Dateityp (nur JPG, PNG, PDF).",
             uploadFailed: "Upload fehlgeschlagen.",
-            fileHint: "JPG, PNG, PDF (max 5MB)."
+            fileHint: "JPG, PNG, PDF (max 5MB).",
+            compressing: "Komprimiere...",
         },
         step2: {
             title: "Begleitpersonen",
@@ -71,9 +73,6 @@ const translations = {
             dob: "Geburtsdatum *",
             idFront: "Ausweisdokument (Vorderseite) *",
             idBack: "Ausweisdokument (Rückseite) *",
-            docInfoTitle: "Hinweis zu Dokumenten",
-            docInfoUpload: "Bitte laden Sie die Ausweisdokumente für jede Person hoch.",
-            docInfoOnSite: "Bitte bringen Sie für alle Mitreisenden gültige Ausweisdokumente für den Check-in vor Ort mit."
         },
         step3: {
             title: "Zahlungsoption",
@@ -184,7 +183,8 @@ const translations = {
             fileTooLarge: "File is too large (max 5MB).",
             invalidFileType: "Invalid file type (only JPG, PNG, PDF).",
             uploadFailed: "Upload failed.",
-            fileHint: "JPG, PNG, PDF (max 5MB)."
+            fileHint: "JPG, PNG, PDF (max 5MB).",
+            compressing: "Compressing...",
         },
         step2: {
             title: "Companions",
@@ -196,9 +196,6 @@ const translations = {
             dob: "Date of Birth *",
             idFront: "ID Document (Front) *",
             idBack: "ID Document (Back) *",
-            docInfoTitle: "Note on Documents",
-            docInfoUpload: "Please upload the ID documents for each person.",
-            docInfoOnSite: "Please bring valid ID documents for all companions for check-in on-site."
         },
         step3: {
             title: "Payment Option",
@@ -309,7 +306,8 @@ const translations = {
             fileTooLarge: "File troppo grande (max 5MB).",
             invalidFileType: "Tipo di file non valido (solo JPG, PNG, PDF).",
             uploadFailed: "Caricamento fallito.",
-            fileHint: "JPG, PNG, PDF (max 5MB)."
+            fileHint: "JPG, PNG, PDF (max 5MB).",
+            compressing: "Comprimo...",
         },
         step2: {
             title: "Accompagnatori",
@@ -321,9 +319,6 @@ const translations = {
             dob: "Data di Nascita *",
             idFront: "Documento (fronte) *",
             idBack: "Documento (retro) *",
-            docInfoTitle: "Nota sui Documenti",
-            docInfoUpload: "Si prega di caricare i documenti di identità per ogni persona.",
-            docInfoOnSite: "Si prega di portare documenti di identità validi per tutti gli accompagnatori per il check-in in loco."
         },
         step3: {
             title: "Opzione di Pagamento",
@@ -414,6 +409,7 @@ type FileUpload = {
     url?: string;
     name: string; // e.g. 'idFront', 'idBack', 'companion-0-idFront'
     error?: string;
+    isCompressing?: boolean;
 }
 
 const BookingOverview = ({ prefillData, lang }: { prefillData?: BookingLink['prefill'] | null, lang: GuestLanguage }) => {
@@ -454,17 +450,33 @@ const BookingOverview = ({ prefillData, lang }: { prefillData?: BookingLink['pre
     )
 };
 
-const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, required, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, required?: boolean, lang: GuestLanguage }) => {
+const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, lang }: { id: string, label: string, onFileSelect: (file: File) => void, upload?: FileUpload, onRemove: () => void, lang: GuestLanguage }) => {
     const t = translations[lang].step1;
+    
+    if (upload?.isCompressing) {
+        return (
+            <div>
+                 <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+                 <div className="mt-2 p-3 bg-muted border rounded-lg flex items-center justify-center text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <span>{t.compressing}</span>
+                 </div>
+            </div>
+        )
+    }
+
     if (upload && !upload.error) {
         return (
-             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-                 <div className="flex items-center gap-2 text-sm text-green-800 font-medium">
-                     <Paperclip className="h-4 w-4" />
-                     <span className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</span>
-                 </div>
-                 <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-green-800" onClick={onRemove}><Trash2 className="h-4 w-4"/></Button>
-             </div>
+            <div>
+                <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-green-800 font-medium">
+                        <Paperclip className="h-4 w-4" />
+                        <span className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</span>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-green-800" onClick={onRemove}><Trash2 className="h-4 w-4"/></Button>
+                </div>
+            </div>
         )
     }
 
@@ -560,7 +572,7 @@ const Step2Companions = ({ companions, documentOption, maxCompanions, lang, hand
     documentOption: 'upload' | 'on-site';
     maxCompanions: number;
     lang: GuestLanguage;
-    handleCompanionChange: (index: number, field: keyof Companion, value: string) => void;
+    handleCompanionChange: (index: number, field: keyof Companion | 'dateOfBirthFormatted', value: string) => void;
     uploads: Record<string, FileUpload>;
     handleFileUpload: (name: string, file: File) => void;
     removeUpload: (name: string) => void;
@@ -596,8 +608,8 @@ const Step2Companions = ({ companions, documentOption, maxCompanions, lang, hand
                              <Label htmlFor={`c-dob-${index}`}>{t.dob}</Label>
                              <Input 
                                 id={`c-dob-${index}`} 
-                                value={companion.dateOfBirth || ''} 
-                                onChange={(e) => handleCompanionChange(index, 'dateOfBirth', e.target.value)} 
+                                value={(companion as any).dateOfBirthFormatted || ''} 
+                                onChange={(e) => handleCompanionChange(index, 'dateOfBirthFormatted', e.target.value)} 
                                 required 
                                 placeholder="TT/MM/JJJJ" 
                                 type="tel"
@@ -613,13 +625,6 @@ const Step2Companions = ({ companions, documentOption, maxCompanions, lang, hand
                 </Card>
             ))}
 
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>{t.docInfoTitle}</AlertTitle>
-                <AlertDescription>
-                    {documentOption === 'upload' ? t.docInfoUpload : t.docInfoOnSite}
-                </AlertDescription>
-            </Alert>
         </div>
     );
 };
@@ -695,7 +700,8 @@ const Step4PaymentDetails = ({ prefillData, paymentOption, uploads, handleFileUp
     const toPay = paymentOption === 'deposit' ? depositPrice : totalPrice;
     const restAmount = paymentOption === 'deposit' ? totalPrice - depositPrice : 0;
     const bookingIdShort = prefillData?.bookingId.substring(0, 8).toUpperCase();
-    const paymentTypeText = paymentOption === 'deposit' ? t.selectionDeposit : t.selectionFull;
+    
+    const paymentTypeText = paymentOption === 'deposit' ? translations[lang].step3.deposit : translations[lang].step3.fullAmount;
     const paymentPurpose = `${paymentTypeText} ${bookingIdShort}`;
 
     const copyToClipboard = useCallback((text: string, label: string) => {
@@ -882,6 +888,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
               firstName: '',
               lastName: '',
               dateOfBirth: '',
+              dateOfBirthFormatted: '',
           }));
           setCompanions(initialCompanions as any);
       }
@@ -892,17 +899,37 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       setFormData((prev: any) => ({ ...prev, [name]: value }));
   }, []);
 
-  const handleCompanionChange = useCallback((index: number, field: keyof Companion, value: string) => {
+  const formatDob = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    let formatted = '';
+    if (digits.length > 0) {
+      formatted += digits.slice(0, 2);
+    }
+    if (digits.length > 2) {
+      formatted += '/' + digits.slice(2, 4);
+    }
+    if (digits.length > 4) {
+      formatted += '/' + digits.slice(4);
+    }
+    return formatted;
+  }
+
+  const handleCompanionChange = useCallback((index: number, field: keyof Companion | 'dateOfBirthFormatted', value: string) => {
         setCompanions(prev => {
             const newCompanions = [...prev];
             const companionToUpdate = { ...newCompanions[index] };
-            (companionToUpdate as any)[field] = value;
+            if(field === 'dateOfBirthFormatted') {
+                (companionToUpdate as any).dateOfBirthFormatted = formatDob(value);
+                companionToUpdate.dateOfBirth = (companionToUpdate as any).dateOfBirthFormatted;
+            } else {
+                 (companionToUpdate as any)[field] = value;
+            }
             newCompanions[index] = companionToUpdate;
             return newCompanions;
         });
     }, []);
 
-  const handleFileUpload = useCallback((name: string, file: File) => {
+  const handleFileUpload = useCallback(async (name: string, file: File) => {
     const t_file = translations[lang].step1;
     if (file.size > 5 * 1024 * 1024) { 
       setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, error: t_file.fileTooLarge } }));
@@ -912,7 +939,33 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
       setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, error: t_file.invalidFileType } }));
       return;
     }
-    setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name } }));
+
+    // PDF files are not compressed
+    if(file.type === 'application/pdf') {
+        setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name } }));
+        return;
+    }
+    
+    // Set compressing state
+    setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, isCompressing: true } }));
+
+    try {
+        const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+        }
+        const compressedFile = await imageCompression(file, options);
+        // Create a new File object with the original name
+        const newFile = new File([compressedFile], file.name, { type: compressedFile.type });
+
+        setUploads(prev => ({ ...prev, [name]: { file: newFile, progress: 0, name, isCompressing: false } }));
+    } catch (error) {
+         console.error('Compression error:', error);
+         // If compression fails, use the original file but show error
+         setUploads(prev => ({ ...prev, [name]: { file, progress: 0, name, error: "Compression failed.", isCompressing: false } }));
+    }
+
   }, [lang]);
 
   const removeUpload = useCallback((name: string) => {
@@ -938,13 +991,14 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             toast({variant: 'destructive', title: 'Fehlende Angaben', description: t_toast.missingFields});
             return false;
         }
-        if (documentOption === 'upload' && (!uploads.idFront || !uploads.idBack)) {
-            toast({variant: 'destructive', title: 'Fehlende Dokumente', description: t_toast.missingDocs});
-            return false;
-        }
-        if (uploads.idFront?.error || uploads.idBack?.error) {
-             toast({variant: 'destructive', title: 'Fehlerhafte Dateien', description: t_toast.fileErrors});
-             return false;
+        if (documentOption === 'upload') {
+            const requiredUploads = ['idFront', 'idBack'];
+            for (const up of requiredUploads) {
+                if (!uploads[up] || uploads[up].error) {
+                    toast({variant: 'destructive', title: 'Fehlende Dokumente', description: t_toast.missingDocs});
+                    return false;
+                }
+            }
         }
       }
       if (step === 1) {
@@ -954,25 +1008,22 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
                     toast({variant: 'destructive', title: 'Fehlende Angaben', description: t_toast.companionFieldsError});
                     return false;
                 }
-                if (documentOption === 'upload' && (!uploads[`companion-${index}-idFront`] || !uploads[`companion-${index}-idBack`])) {
-                    toast({variant: 'destructive', title: 'Fehlende Dokumente', description: t_toast.missingDocs});
-                    return false;
-                }
-                 if (uploads[`companion-${index}-idFront`]?.error || uploads[`companion-${index}-idBack`]?.error) {
-                    toast({variant: 'destructive', title: 'Fehlerhafte Dateien', description: t_toast.fileErrors});
-                    return false;
+                if (documentOption === 'upload') {
+                     const requiredUploads = [`companion-${index}-idFront`, `companion-${index}-idBack`];
+                     for(const up of requiredUploads) {
+                          if (!uploads[up] || uploads[up].error) {
+                            toast({variant: 'destructive', title: 'Fehlende Dokumente', description: t_toast.missingDocs});
+                            return false;
+                          }
+                     }
                 }
             }
           }
       }
       if (step === 3) {
-        if (!uploads.paymentProof) {
+        if (!uploads.paymentProof || uploads.paymentProof.error) {
             toast({variant: 'destructive', title: 'Fehlender Nachweis', description: t_toast.missingProof});
             return false;
-        }
-         if (uploads.paymentProof?.error) {
-             toast({variant: 'destructive', title: 'Fehlerhafter Nachweis', description: t_toast.proofError});
-             return false;
         }
       }
       return true;
@@ -1038,7 +1089,9 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
         
         const updatedCompanions = companions.map((c, index) => ({
-            ...c,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            dateOfBirth: c.dateOfBirth,
             documents: {
                 idFront: documentOption === 'upload' ? uploadedFileMap[`companion-${index}-idFront`] || null : null,
                 idBack: documentOption === 'upload' ? uploadedFileMap[`companion-${index}-idBack`] || null : null,

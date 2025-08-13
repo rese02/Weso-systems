@@ -204,7 +204,16 @@ export default function BookingDetailsPage({ params: paramsPromise }: { params: 
                                    {booking.companions.map((c, i) => (
                                        <div key={i}>
                                             <p className="font-semibold">{c.firstName} {c.lastName}</p>
-                                            <p className="text-xs text-muted-foreground">Dokumente werden vor Ort vorgelegt.</p>
+                                            <div className="mt-2">
+                                                {booking.documents?.submissionMethod === 'upload' ? (
+                                                     <div className="grid grid-cols-1 gap-2">
+                                                        <DocumentButton href={c.documents?.idFront}>Ausweis (Vorderseite)</DocumentButton>
+                                                        <DocumentButton href={c.documents?.idBack}>Ausweis (Rückseite)</DocumentButton>
+                                                     </div>
+                                                ) : (
+                                                     <p className="text-xs text-muted-foreground p-2 bg-muted rounded-md">Dokumente werden vor Ort vorgelegt.</p>
+                                                )}
+                                            </div>
                                        </div>
                                    ))}
                                </div>

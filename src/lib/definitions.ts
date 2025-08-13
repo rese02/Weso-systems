@@ -4,7 +4,9 @@ import * as z from 'zod';
 
 // --- Base Data Models (as in Firestore) ---
 
-export type GuestLanguage = 'de' | 'en' | 'it';
+export const GUEST_LANGUAGE_VALUES = ['de', 'en', 'it'] as const;
+export type GuestLanguage = (typeof GUEST_LANGUAGE_VALUES)[number];
+
 
 export interface Hotel {
   id: string;
@@ -135,7 +137,7 @@ export const bookingFormSchema = z.object({
   checkOutDate: z.date({ required_error: "Abreisedatum ist erforderlich." }),
   boardType: z.string().min(1, 'Verpflegungsart ist erforderlich.'),
   priceTotal: z.coerce.number().positive('Preis muss positiv sein.').nullable(),
-  guestLanguage: z.nativeEnum(GuestLanguage),
+  guestLanguage: z.enum(GUEST_LANGUAGE_VALUES),
   rooms: z.array(roomFormSchema).min(1, "Mindestens ein Zimmer muss hinzugefügt werden."),
   internalNotes: z.string().max(500, "Bemerkungen dürfen max. 500 Zeichen lang sein.").optional(),
 }).refine(data => data.checkOutDate > data.checkInDate, {

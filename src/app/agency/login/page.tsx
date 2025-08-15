@@ -1,34 +1,18 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
-import { getHotelByOwnerEmail } from '@/lib/actions/hotel.actions';
-
-// TEMPORARY: Import the password reset action
-import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
-
-// TEMPORARY: Call the password reset function once on the server.
-// This will run when the login page is loaded.
-// After one successful login, this block can be removed.
-if (typeof window === 'undefined') {
-  resetAgencyPassword();
-}
-
 
 export default function AgencyLoginPage() {
   const router = useRouter();
-  const { signIn, user, loading, logout } = useAuth();
-  const [email, setEmail] = useState('hallo@agentur-weso.it');
-  const [password, setPassword] = useState('Hallo-weso.2025!');
+  const { signIn, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -37,6 +21,10 @@ export default function AgencyLoginPage() {
     setIsLoading(true);
     setLoginError(null);
     try {
+      // Hardcoded credentials for one-click login
+      const email = 'hallo@agentur-weso.it';
+      const password = 'Hallo-weso.2025!';
+
       const userCredential = await signIn(email, password);
       
       if (userCredential && userCredential.user) {
@@ -61,10 +49,6 @@ export default function AgencyLoginPage() {
         setIsLoading(false);
     }
   };
-
-  if (loading) {
-      return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
-  }
   
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -78,22 +62,14 @@ export default function AgencyLoginPage() {
          <Card>
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-headline">Agency Login</CardTitle>
-            <CardDescription>Enter your credentials to access the agency dashboard.</CardDescription>
+            <CardDescription>Klicken Sie, um das Agentur-Dashboard zu betreten.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent>
             {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? <Loader2 className="animate-spin" /> : <span>Login as Agency</span>}
+                {isLoading ? <Loader2 className="animate-spin" /> : <span>Login als Agentur</span>}
             </Button>
           </CardFooter>
         </Card>

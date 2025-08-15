@@ -9,6 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
+import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
+
+// Server-side action to ensure the agency user has the correct claims.
+// This runs once when the page is loaded on the server.
+resetAgencyPassword();
 
 export default function AgencyLoginPage() {
   const router = useRouter();
@@ -44,7 +49,12 @@ export default function AgencyLoginPage() {
       }
     } catch (error) {
        console.error("Login error:", error);
-       setLoginError("Invalid email or password.");
+       const authError = error as { code?: string };
+       if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/wrong-password') {
+           setLoginError("Invalid email or password. The account repair might be in progress. Please try again in a moment.");
+       } else {
+           setLoginError("An unexpected error occurred during login.");
+       }
     } finally {
         setIsLoading(false);
     }

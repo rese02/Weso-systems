@@ -13,6 +13,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
 import { getHotelByOwnerEmail } from '@/lib/actions/hotel.actions';
 
+// TEMPORARY: Import the password reset action
+import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
+
+// TEMPORARY: Call the password reset function once on the server.
+// This will run when the login page is loaded.
+// After one successful login, this block can be removed.
+if (typeof window === 'undefined') {
+  resetAgencyPassword();
+}
+
 
 export default function AgencyLoginPage() {
   const router = useRouter();

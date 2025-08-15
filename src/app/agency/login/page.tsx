@@ -37,6 +37,8 @@ export default function AgencyLoginPage() {
              router.push('/admin');
          } else {
             setLoginError("Access denied. This account does not have agency permissions.");
+            // Log out the user if they don't have the correct role
+            // await signOut(auth);
          }
       } else {
          setLoginError("Login failed. Please check your credentials.");
@@ -82,12 +84,6 @@ export default function AgencyLoginPage() {
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
                 {isLoading ? <Loader2 className="animate-spin" /> : <span>Login as Agency</span>}
             </Button>
-            <p className="text-sm text-center text-muted-foreground">
-              Noch kein Agentur-Konto?{' '}
-              <Link href="/signup" className="underline font-medium text-primary">
-                Registrieren
-              </Link>
-            </p>
           </CardFooter>
         </Card>
        </div>

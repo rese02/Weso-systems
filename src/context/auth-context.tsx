@@ -27,19 +27,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const customSignIn = (email: string, password: string): Promise<UserCredential> => {
+  const signIn = (email: string, password: string): Promise<UserCredential> => {
     return signInWithEmailAndPassword(auth, email, password);
   }
 
-  const customLogout = async () => {
+  const logout = async () => {
     await signOut(auth);
   };
   
   const value = {
     user,
     loading,
-    signIn: customSignIn,
-    logout: customLogout,
+    signIn,
+    logout,
   };
   
   if (loading) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,9 +16,9 @@ import { getHotelByOwnerEmail } from '@/lib/actions/hotel.actions';
 
 export default function AgencyLoginPage() {
   const router = useRouter();
-  const { signIn, user, loading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { signIn, user, loading, logout } = useAuth();
+  const [email, setEmail] = useState('hallo@agentur-weso.it');
+  const [password, setPassword] = useState('Hallo-weso.2025!');
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -29,7 +30,8 @@ export default function AgencyLoginPage() {
       const userCredential = await signIn(email, password);
       
       if (userCredential && userCredential.user) {
-         const idTokenResult = await userCredential.user.getIdTokenResult();
+         // Force refresh the token to get the latest claims
+         const idTokenResult = await userCredential.user.getIdTokenResult(true);
          const userRole = idTokenResult.claims.role;
 
          if (userRole === 'agency-owner') {
@@ -37,8 +39,7 @@ export default function AgencyLoginPage() {
              router.push('/admin');
          } else {
             setLoginError("Access denied. This account does not have agency permissions.");
-            // Log out the user if they don't have the correct role
-            // await signOut(auth);
+            await logout();
          }
       } else {
          setLoginError("Login failed. Please check your credentials.");

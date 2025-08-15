@@ -1,3 +1,4 @@
+
 import admin from 'firebase-admin';
 
 // This function ensures Firebase Admin is initialized only once.

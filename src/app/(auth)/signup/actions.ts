@@ -1,9 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { authAdmin } from '@/lib/firebase-admin';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp, query, where, getDocs } from 'firebase/firestore';
+import { getFirebaseAdmin } from '@/lib/firebase-admin';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const SignupSchema = z.object({
   agencyName: z.string().min(2, { message: 'Agency name must be at least 2 characters.' }),
@@ -30,6 +29,8 @@ export async function createAgency(prevState: State, formData: FormData): Promis
   const { agencyName, email, password } = validatedFields.data;
 
   try {
+    const { authAdmin, dbAdmin } = await getFirebaseAdmin();
+    
     // Check if user already exists
     try {
         await authAdmin.getUserByEmail(email);
@@ -52,7 +53,7 @@ export async function createAgency(prevState: State, formData: FormData): Promis
     await authAdmin.setCustomUserClaims(userRecord.uid, { role: 'agency-owner' });
 
     // Create agency document in Firestore
-    await addDoc(collection(db, 'agencies'), {
+    await addDoc(collection(dbAdmin, 'agencies'), {
       name: agencyName,
       ownerUid: userRecord.uid,
       createdAt: Timestamp.now(),

@@ -26,3 +26,11 @@ export async function getFirebaseAdmin() {
     dbAdmin: admin.firestore(),
   };
 }
+
+// For direct use in simple scripts, ensuring initialization first.
+const adminPromise = initializeFirebaseAdmin().then(() => ({
+  authAdmin: admin.auth(),
+  dbAdmin: admin.firestore(),
+}));
+
+export const { authAdmin, dbAdmin } = await adminPromise;

@@ -16,10 +16,11 @@ export async function resetAgencyPassword() {
   console.log(`Attempting to update user and set claims for UID: ${USER_UID}`);
   try {
     // Step 1: Set the custom claim for the user to identify them as an agency owner.
+    // This is the most critical part for fixing the "permissions" error.
     await authAdmin.setCustomUserClaims(USER_UID, { role: 'agency-owner' });
     console.log(`Successfully set 'agency-owner' claim for UID: ${USER_UID}`);
     
-    // Step 2: Update the user's password.
+    // Step 2: Update the user's password to ensure it's correct.
     await authAdmin.updateUser(USER_UID, {
       password: NEW_PASSWORD,
     });
@@ -27,7 +28,7 @@ export async function resetAgencyPassword() {
     
     return { success: true, message: 'Password and claims have been set successfully.' };
   } catch (error: any) {
-    console.error('Error updating user:', error.message);
+    console.error('Error in resetAgencyPassword:', error.message);
     return { success: false, error: error.message };
   }
 }

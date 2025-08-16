@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldPath } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -99,7 +99,12 @@ export async function createBookingWithLink(
         };
         batch.set(newLinkRef, newLink);
 
-        // 5. Commit all operations at once
+        // 5. Create a global index entry for direct lookup without collectionGroup queries
+        const indexRef = db.doc(`bookingLinkIndex/${newLinkRef.id}`);
+        batch.set(indexRef, { hotelId: hotelId });
+
+
+        // 6. Commit all operations at once
         await batch.commit();
 
         return { success: true, bookingId: newBookingRef.id };
@@ -267,6 +272,10 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
         }
 
         const bookingData = bookingSnap.data() as Booking;
+        
+        const batch = db.batch();
+
+        // --- Delete files, booking, link, and index entry ---
 
         // Delete associated files from Firebase Storage
         const docUrls = [
@@ -293,12 +302,17 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
             }
         }
         
-        const batch = db.batch();
+        // Delete the booking document
         batch.delete(bookingRef);
         
+        // Delete the booking link document
         if(bookingData.bookingLinkId) {
             const linkDocRef = db.doc(`hotels/${hotelId}/bookingLinks/${bookingData.bookingLinkId}`);
             batch.delete(linkDocRef);
+
+            // Delete the global index entry
+            const indexRef = db.doc(`bookingLinkIndex/${bookingData.bookingLinkId}`);
+            batch.delete(indexRef);
         }
 
         await batch.commit();
@@ -312,21 +326,33 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 
 /**
- * Fetches the details for a given booking link ID using a robust collection group query.
- * This is the correct and final implementation based on the working repository.
+ * Fetches the details for a given booking link ID using a robust, index-free, two-step lookup.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const query = db.collectionGroup('bookingLinks').where('id', '==', linkId).limit(1);
-    const querySnapshot = await query.get();
+    // Step 1: Look up the hotelId from the global index. This is a fast, direct read.
+    const indexRef = db.doc(`bookingLinkIndex/${linkId}`);
+    const indexSnap = await indexRef.get();
 
-    if (querySnapshot.empty) {
+    if (!indexSnap.exists) {
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
+    const { hotelId } = indexSnap.data() as { hotelId: string };
 
-    const linkDoc = querySnapshot.docs[0];
+    if (!hotelId) {
+        return { success: false, error: "Fehlerhafte Link-Daten." };
+    }
+
+    // Step 2: Now that we have the hotelId, perform a direct read on the specific booking link document.
+    const linkDocRef = db.doc(`hotels/${hotelId}/bookingLinks/${linkId}`);
+    const linkDoc = await linkDocRef.get();
+    
+    if (!linkDoc.exists) {
+       return { success: false, error: "Detail des Buchungslinks nicht gefunden." };
+    }
+    
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
     
     const hotelResult = await getHotelById(linkData.hotelId);
@@ -351,9 +377,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    if (e.message.includes('path must be a non-empty string') || e.message.includes('odd number of segments')) {
-       return { success: false, error: "Der angegebene Link ist ungültig oder fehlerhaft." };
-    }
     return { success: false, error: "Ein unerwarteter Serverfehler ist aufgetreten." };
   }
 }

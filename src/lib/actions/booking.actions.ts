@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue, FieldPath } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -319,20 +319,14 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   
   try {
     // Correctly query the collection group for a document with a specific ID.
-    const query = db.collectionGroup('bookingLinks').where(db.FieldPath.documentId(), '==', linkId).limit(1);
+    const query = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
     const querySnapshot = await query.get();
 
     if (querySnapshot.empty) {
-        // To provide a better error message, we check if a document with this ID exists anywhere.
-        const docRef = db.collection('some-collection').doc(linkId); // Dummy ref to use the ID
-        const docSnap = await docRef.get(); // This will fail if ID is invalid format
-        // If it gets here, the ID format is valid but it's not in the bookingLinks collection group.
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
     const linkDoc = querySnapshot.docs[0];
-    // We have to extract the hotelId from the document's path.
-    // The path is like 'hotels/{hotelId}/bookingLinks/{linkId}'
     const pathSegments = linkDoc.ref.path.split('/');
     if (pathSegments.length < 4 || pathSegments[0] !== 'hotels' || pathSegments[2] !== 'bookingLinks') {
          return { success: false, error: "Ungültige Link-Struktur in der Datenbank." };
@@ -363,11 +357,10 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    // Check for the specific Firestore error and provide a user-friendly message
-    if (e.message.includes('path must be a non-empty string')) {
-       return { success: false, error: "Der angegebene Link ist ungültig." };
+    if (e.message.includes('path must be a non-empty string') || e.message.includes('odd number of segments')) {
+       return { success: false, error: "Der angegebene Link ist ungültig oder fehlerhaft." };
     }
-    return { success: false, error: "Ein unerwarteter Fehler ist aufgetreten." };
+    return { success: false, error: "Ein unerwarteter Serverfehler ist aufgetreten." };
   }
 }
 
@@ -394,3 +387,5 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    

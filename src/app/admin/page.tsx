@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Loader2, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -69,6 +69,16 @@ export default function AdminDashboardPage() {
       }
     });
   };
+  
+  const handleCopyLoginLink = () => {
+    const loginUrl = `${window.location.origin}/hotel/login`;
+    navigator.clipboard.writeText(loginUrl);
+    toast({
+      title: "Login-Link kopiert",
+      description: "Der Link zur Hotel-Login-Seite wurde kopiert.",
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -163,6 +173,10 @@ export default function AdminDashboardPage() {
                           <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>Hotelier-Dashboard</Link></DropdownMenuItem>
                               <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Hotel-Einstellungen</Link></DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleCopyLoginLink}>
+                                <Copy className="mr-2 h-4 w-4" />
+                                <span>Login-Link kopieren</span>
+                              </DropdownMenuItem>
                               <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                       <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Löschen</div>

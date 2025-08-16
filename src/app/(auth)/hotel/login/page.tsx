@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase.client';
 
@@ -36,6 +36,7 @@ export default function HotelierLoginPage() {
              router.push(`/dashboard/${hotelId}`);
          } else {
             setLoginError("Dieses Konto ist nicht für den Hotelzugang konfiguriert.");
+            await auth.signOut();
          }
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
@@ -49,38 +50,27 @@ export default function HotelierLoginPage() {
   };
   
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-       <div className="w-full max-w-md">
-        <div className="mb-6 flex justify-center">
-            {/* In a real multi-tenant app, this logo would be dynamic based on the hotel */}
-            <Link href="/" className="flex items-center gap-2 text-foreground">
-                <Shield className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold font-headline">Hotel Login</span>
-            </Link>
+    <Card>
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-headline">Hotel-Login</CardTitle>
+        <CardDescription>Melden Sie sich an, um auf das Dashboard Ihres Hotels zuzugreifen.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
+        <div className="grid gap-2">
+          <Label htmlFor="email">E-Mail</Label>
+          <Input id="email" type="email" placeholder="login@hotel.de" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
         </div>
-         <Card>
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-headline">Willkommen zurück, Hotelier</CardTitle>
-            <CardDescription>Melden Sie sich an, um auf das Dashboard Ihres Hotels zuzugreifen.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-Mail</Label>
-              <Input id="email" type="email" placeholder="login@hotel.de" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Passwort</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? <Loader2 className="animate-spin" /> : <span>Anmelden</span>}
-            </Button>
-          </CardFooter>
-        </Card>
-       </div>
-    </div>
+        <div className="grid gap-2">
+          <Label htmlFor="password">Passwort</Label>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col gap-4">
+        <Button onClick={handleLogin} disabled={isLoading} className="w-full">
+            {isLoading ? <Loader2 className="animate-spin" /> : <span>Anmelden</span>}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

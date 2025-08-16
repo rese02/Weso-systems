@@ -28,6 +28,15 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['date-fns'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/agency/login',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

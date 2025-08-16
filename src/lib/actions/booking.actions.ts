@@ -327,13 +327,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     }
 
     const linkDoc = querySnapshot.docs[0];
-    const hotelId = linkDoc.data().hotelId;
-    
-    if (!hotelId) {
-        return { success: false, error: "Zugehöriges Hotel nicht gefunden (fehlende ID im Link-Dokument)." };
-    }
-    
-    const linkData = { id: linkDoc.id, ...linkDoc.data(), hotelId: hotelId } as BookingLink;
+    const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
     
     const hotelResult = await getHotelById(linkData.hotelId);
     if (!hotelResult.hotel) {
@@ -387,5 +381,3 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
-
-    

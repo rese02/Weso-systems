@@ -1,6 +1,3 @@
-
-'use client';
-
 import Link from 'next/link';
 import {
   BookCopy,
@@ -22,52 +19,47 @@ import {
 import { DashboardHeader } from '@/components/dashboard-header';
 import { getHotelById } from '@/lib/actions/hotel.actions';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState, use } from 'react';
-import type { Hotel } from '@/lib/definitions';
-import { Loader2 } from 'lucide-react';
+import { verifyAuth } from '@/lib/firebase-admin';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ hotelId: string }>;
+  params: { hotelId: string };
 }) {
-  const { hotelId } = use(params);
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { hotelId } = params;
+  
+  const sessionCookie = cookies().get('firebaseIdToken')?.value;
+  const decodedToken = await verifyAuth(sessionCookie);
 
-  useEffect(() => {
-    if (hotelId) {
-      setIsLoading(true);
-      getHotelById(hotelId).then(result => {
-        if (result.hotel) {
-          setHotel(result.hotel);
-        } else {
-          setError(result.error || 'Hotel nicht gefunden');
-        }
-        setIsLoading(false);
-      });
-    }
-  }, [hotelId]);
-
-  if (isLoading) {
-    return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center">
-             <Loader2 className="h-8 w-8 animate-spin" />
-             <p className="text-muted-foreground mt-2">Lade Hotel-Dashboard...</p>
-        </div>
-    )
+  if (!decodedToken) {
+    redirect('/hotel/login');
   }
+
+  // Allow agency to view any hotel dashboard
+  if (decodedToken.role === 'agency') {
+    // Role is sufficient, proceed.
+  } 
+  // For hoteliers, ensure they are accessing their own hotel
+  else if (decodedToken.role !== 'hotelier' || decodedToken.hotelId !== hotelId) {
+    const destination = (decodedToken.role === 'hotelier' && decodedToken.hotelId)
+        ? `/dashboard/${decodedToken.hotelId}`
+        : '/hotel/login';
+    redirect(destination);
+  }
+
+  const { hotel, error } = await getHotelById(hotelId);
 
   if (error || !hotel) {
     return (
         <div className="flex h-screen w-screen flex-col items-center justify-center">
             <div className="text-center">
                 <h1 className="text-2xl font-bold">Fehler beim Laden des Hotels</h1>
-                <p className="text-muted-foreground">{error || 'Hotel not found'}</p>
+                <p className="text-muted-foreground">{error || 'Hotel nicht gefunden'}</p>
                 <Button asChild className="mt-4">
                     <Link href="/admin">Zum Admin</Link>
                 </Button>

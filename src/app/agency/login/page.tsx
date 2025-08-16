@@ -27,7 +27,7 @@ export default function AgencyLoginPage() {
       
       if (userCredential && userCredential.user) {
          // Force refresh the token to get the latest custom claims.
-         // This is crucial for the middleware to pick up the new role immediately.
+         // This is crucial for the server-side checks in layouts to pick up the new role immediately.
          const idTokenResult = await userCredential.user.getIdTokenResult(true);
          const userRole = idTokenResult.claims.role;
 

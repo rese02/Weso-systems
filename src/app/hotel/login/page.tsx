@@ -26,7 +26,8 @@ export default function HotelierLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         const idTokenResult = await userCredential.user.getIdTokenResult(true); // Force refresh
+         // Force refresh the token to get the latest custom claims.
+         const idTokenResult = await userCredential.user.getIdTokenResult(true); 
          const userRole = idTokenResult.claims.role;
          const hotelId = idTokenResult.claims.hotelId;
 

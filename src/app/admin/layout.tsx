@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -18,12 +17,23 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { DashboardHeader } from '@/components/dashboard-header';
+import { verifyAuth } from '@/lib/firebase-admin';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
+  const sessionCookie = cookies().get('firebaseIdToken')?.value;
+  const decodedToken = await verifyAuth(sessionCookie);
+
+  if (!decodedToken || decodedToken.role !== 'agency') {
+    redirect('/agency/login');
+  }
+
   return (
       <SidebarProvider>
         <Sidebar>

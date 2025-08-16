@@ -1,4 +1,5 @@
 import admin from 'firebase-admin';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 
 // This is a "Singleton" pattern. It ensures that the Firebase Admin SDK is initialized only once,
 // preventing errors during hot-reloads in development.
@@ -22,6 +23,24 @@ if (!admin.apps.length) {
 
 const authAdmin = admin.auth();
 const dbAdmin = admin.firestore();
+
+/**
+ * Verifies the session cookie.
+ * @param session - The session cookie string.
+ * @returns The decoded token, or null if invalid.
+ */
+export async function verifyAuth(session?: string): Promise<DecodedIdToken | null> {
+    if (!session) {
+        return null;
+    }
+    try {
+        const decodedToken = await authAdmin.verifyIdToken(session, true);
+        return decodedToken;
+    } catch (error) {
+        console.error('Error verifying auth token:', error);
+        return null;
+    }
+}
 
 
 export { authAdmin, dbAdmin };

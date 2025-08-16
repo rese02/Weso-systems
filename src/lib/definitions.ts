@@ -13,6 +13,7 @@ export interface Hotel {
   name: string;
   agencyId: string; // To associate hotels with a managing agency
   ownerEmail: string; // Internal/Login email
+  ownerUid?: string; // Firebase Auth UID for the hotelier
   domain: string;
   createdAt?: string; // Changed to string for serialization
   logoUrl?: string; // URL for the hotel logo

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, use } from 'react';
@@ -11,7 +10,7 @@ import { Euro, BookCopy, CheckCircle2, Clock, PlusCircle, List, ShieldCheck, Dat
 import { getBookingsForHotel } from '@/lib/actions/booking.actions';
 import type { Booking } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO, isToday } from 'date-fns';
+import { format, parseISO, isToday, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 const StatCard = ({ title, value, description, icon: Icon, isLoading, valuePrefix = '' }: { title: string, value: string, description: string, icon: React.ElementType, isLoading: boolean, valuePrefix?: string }) => (
@@ -88,11 +87,18 @@ export default function HotelierDashboardPage({ params }: { params: Promise<{ ho
   }, [hotelId, fetchBookings, toast, router]);
 
   const stats = useMemo(() => {
-    const confirmedBookings = allBookings.filter(b => b.status === 'Confirmed');
+    const confirmedStatuses: string[] = ['Confirmed', 'Partial Payment', 'Checked-in', 'Checked-out'];
+    const confirmedBookings = allBookings.filter(b => confirmedStatuses.includes(b.status));
     const pendingActions = allBookings.filter(b => b.status === 'Sent' || b.status === 'Submitted').length;
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.priceTotal, 0);
-    const arrivalsToday = allBookings.filter(b => b.status === 'Confirmed' && b.checkIn && isToday(parseISO(b.checkIn))).length;
-
+    
+    // Correctly check if the check-in date is today
+    const today = startOfDay(new Date());
+    const arrivalsToday = allBookings.filter(b => 
+        b.status === 'Confirmed' && 
+        b.checkIn && 
+        startOfDay(parseISO(b.checkIn)).getTime() === today.getTime()
+    ).length;
 
     return { 
         totalRevenue: totalRevenue.toFixed(2),

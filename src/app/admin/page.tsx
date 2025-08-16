@@ -148,8 +148,8 @@ export default function AdminDashboardPage() {
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>Dashboard anzeigen</Link></DropdownMenuItem>
-                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Einstellungen bearbeiten</Link></DropdownMenuItem>
+                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}`}>Hotelier-Dashboard</Link></DropdownMenuItem>
+                              <DropdownMenuItem asChild><Link href={`/dashboard/${hotel.id}/settings`}>Hotel-Einstellungen</Link></DropdownMenuItem>
                               <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                       <div className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:text-destructive focus:bg-destructive/10">Löschen</div>

@@ -98,6 +98,7 @@ export default function CreateHotelPage() {
     const hotelData = {
       name: formData.get('name') as string,
       ownerEmail: formData.get('ownerEmail') as string,
+      password: generatedPassword,
       domain: formData.get('domain') as string,
       logoUrl: logoUrl,
       // Public Contact Details
@@ -118,11 +119,11 @@ export default function CreateHotelPage() {
     };
     
     // Simple client-side validation
-    if(!hotelData.name || !hotelData.ownerEmail || !hotelData.domain) {
+    if(!hotelData.name || !hotelData.ownerEmail || !hotelData.domain || !hotelData.password) {
         toast({
             variant: "destructive",
             title: "Fehler",
-            description: "Bitte füllen Sie alle erforderlichen Hotel-Detailfelder aus.",
+            description: "Bitte füllen Sie alle erforderlichen Hotel-Detailfelder aus und generieren Sie ein Passwort.",
         });
         setIsLoading(false);
         return;
@@ -198,7 +199,7 @@ export default function CreateHotelPage() {
                  <div className="grid gap-2">
                     <Label htmlFor="password">Passwort des Hoteliers</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Passwort generieren..." />
+                        <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Passwort generieren..." required />
                         {generatedPassword && (
                             <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard}>
                                 <Copy className="h-4 w-4" />

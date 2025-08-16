@@ -32,15 +32,16 @@ export default function DashboardLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ hotelId: string }>;
+  params: { hotelId: string };
 }) {
-  const { hotelId } = use(params);
+  const { hotelId } = params;
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (hotelId) {
+      setIsLoading(true);
       getHotelById(hotelId).then(result => {
         if (result.hotel) {
           setHotel(result.hotel);

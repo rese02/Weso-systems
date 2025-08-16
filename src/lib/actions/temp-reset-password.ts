@@ -15,7 +15,8 @@ export async function resetAgencyPassword() {
     const { authAdmin } = await getFirebaseAdmin();
     const email = 'hallo@agentur-weso.it';
     const password = 'Hallo-weso.2025!';
-    const uid = '447umxYFvIRrwU0ogMDYU5Ednyq2';
+    // Using the known static UID for this specific agency owner account
+    const uid = '447umxYFvIRrwU0ogMDYU5Ednyq2'; 
 
     // Set custom claims to ensure the user has the 'agency-owner' role.
     await authAdmin.setCustomUserClaims(uid, { role: 'agency-owner' });

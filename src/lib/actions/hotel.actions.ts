@@ -1,18 +1,21 @@
 
+
 'use server';
 
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where, limit } from 'firebase/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getAuthenticatedUser } from './auth.actions';
+import { getFirebaseAdmin } from '../firebase-admin';
 
 
 const HotelSchema = z.object({
   name: z.string().min(1, 'Hotelname ist erforderlich.'),
   ownerEmail: z.string().email('Ungültige E-Mail-Adresse.'),
+  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein.'),
   domain: z.string().min(1, 'Domain ist erforderlich.'),
   logoUrl: z.string().url('Ungültige Logo-URL.').optional().or(z.literal('')),
   // Public Contact Details
@@ -33,7 +36,7 @@ const HotelSchema = z.object({
 });
 
 export async function createHotel(
-    hotelData: Omit<Hotel, 'id' | 'createdAt' | 'agencyId'>
+    hotelData: Omit<Hotel, 'id' | 'createdAt' | 'agencyId'> & { password?: string }
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
     const user = await getAuthenticatedUser();
     if (!user || user.role !== 'agency-owner') {
@@ -46,16 +49,36 @@ export async function createHotel(
         return { success: false, error: errorMessage || "Validierung fehlgeschlagen." };
     }
     
+    const { password, ...firestoreData } = validation.data;
+    const { authAdmin } = await getFirebaseAdmin();
+
     try {
+        // Create Firebase Auth user for the hotelier
+        const hotelUser = await authAdmin.createUser({
+            email: firestoreData.ownerEmail,
+            password: password,
+            displayName: firestoreData.name,
+        });
+
+        // Set custom claims for the new hotelier user
+        await authAdmin.setCustomUserClaims(hotelUser.uid, { role: 'hotelier' });
+
+        // Create the hotel document in Firestore
         const hotelsCollectionRef = collection(db, 'hotels');
         const docRef = await addDoc(hotelsCollectionRef, { 
-            ...validation.data, 
-            agencyId: user.agencyId, // Associate hotel with the user's agency
+            ...firestoreData, 
+            agencyId: user.agencyId,
+            ownerUid: hotelUser.uid, // Link to the Auth user
             createdAt: Timestamp.now(),
         });
+        
+        // Update the hotelier's custom claims with the new hotelId
+        await authAdmin.setCustomUserClaims(hotelUser.uid, { role: 'hotelier', hotelId: docRef.id });
+
         revalidatePath('/admin');
         return { success: true, hotelId: docRef.id };
     } catch (error) {
+        console.error("Error creating hotel:", error);
         return { success: false, error: (error as Error).message };
     }
 }
@@ -105,10 +128,13 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
     }
     
     // Authorization check
-    const hotelDocToDelete = await getDoc(doc(db, 'hotels', hotelId));
+    const hotelDocRef = doc(db, 'hotels', hotelId);
+    const hotelDocToDelete = await getDoc(hotelDocRef);
     if (!hotelDocToDelete.exists() || hotelDocToDelete.data().agencyId !== user.agencyId) {
         return { success: false, error: "Access denied. You cannot delete this hotel." };
     }
+
+    const hotelData = hotelDocToDelete.data() as Hotel;
 
     try {
         const batch = writeBatch(db);
@@ -137,6 +163,13 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
 
         // 4. Delete the main hotel document
         await deleteDoc(doc(db, 'hotels', hotelId));
+        
+        // 5. Delete the hotelier's Auth user
+        if (hotelData.ownerUid) {
+            const { authAdmin } = await getFirebaseAdmin();
+            await authAdmin.deleteUser(hotelData.ownerUid);
+        }
+
 
         revalidatePath('/admin');
         return { success: true };

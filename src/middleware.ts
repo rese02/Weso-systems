@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { authAdmin } from './lib/firebase-admin'; // Use relative path for stability
+import { authAdmin } from './lib/firebase-admin';
 import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';

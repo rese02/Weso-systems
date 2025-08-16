@@ -9,7 +9,7 @@ import { StepIndicator } from './step-indicator';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File, Check, Paperclip, Trash2, Users, Banknote, Copy, CreditCard } from 'lucide-react';
+import { CalendarIcon, Loader2, Info, User, Mail, Phone, Calendar as CalendarLucideIcon, File as FileIcon, Check, Paperclip, Trash2, Users, Banknote, Copy, CreditCard } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { format, parseISO } from 'date-fns';
 import { de, enUS, it } from 'date-fns/locale';
@@ -484,7 +484,7 @@ const FileUploadInput = ({ id, label, onFileSelect, upload, onRemove, lang }: { 
             <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
             <div className="mt-2">
                  <label htmlFor={id} className="relative flex w-full items-center justify-center rounded-md border-2 border-dashed border-border px-3 py-2 text-sm ring-offset-background transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-muted/50 cursor-pointer">
-                    <File className="h-4 w-4 mr-2 text-muted-foreground"/>
+                    <FileIcon className="h-4 w-4 mr-2 text-muted-foreground"/>
                     <span className="text-primary font-medium">{t.fileSelect}</span>
                     <Input id={id} type="file" className="sr-only" onChange={(e) => e.target.files && onFileSelect(e.target.files[0])} accept="image/png, image/jpeg, application/pdf" />
                 </label>

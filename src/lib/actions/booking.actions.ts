@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -319,10 +319,10 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   
   try {
     // A collection group query is necessary because we don't know the hotelId from the linkId alone.
-    const linkQuery = db.collectionGroup('bookingLinks').where('__name__', '==', `dummy/path/${linkId}`).limit(1); // Invalid query to satisfy type, will be replaced
-    const realQuery = db.collectionGroup('bookingLinks');
+    const realQuery = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
     const querySnapshot = await realQuery.get();
     
+    // Since we limit to 1 and the ID is unique, we expect 0 or 1 doc.
     const linkDoc = querySnapshot.docs.find(doc => doc.id === linkId);
 
     if (!linkDoc) {

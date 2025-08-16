@@ -5,6 +5,7 @@ import {
   PlusCircle,
   Settings,
 } from 'lucide-react';
+import type { Metadata, ResolvingMetadata } from 'next';
 import {
   SidebarProvider,
   Sidebar,
@@ -23,6 +24,26 @@ import { verifyAuth } from '@/lib/firebase-admin';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
+type Props = {
+  params: { hotelId: string };
+};
+
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { hotelId } = params;
+  const { hotel } = await getHotelById(hotelId);
+  const previousIcons = (await parent).icons || [];
+
+  return {
+    title: {
+      template: `%s | ${hotel?.name || 'Dashboard'}`,
+      default: hotel?.name || 'Dashboard',
+    },
+    icons: hotel?.logoUrl ? [{ rel: 'icon', url: hotel.logoUrl }] : previousIcons,
+  };
+}
 
 export default async function DashboardLayout({
   children,

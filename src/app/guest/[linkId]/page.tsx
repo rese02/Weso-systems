@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, use } from 'react';
@@ -71,7 +70,8 @@ export default function GuestBookingPage({ params }: { params: Promise<{ linkId:
         } else {
            const hotelResult = await getHotelById(result.data.hotelId);
            if (hotelResult.hotel) {
-                result.data.prefill.logoUrl = hotelResult.hotel.logoUrl;
+                // Ensure prefill.logoUrl is handled gracefully if it doesn't exist
+                result.data.prefill.logoUrl = hotelResult.hotel.logoUrl || null;
            }
            setLinkData(result.data);
         }

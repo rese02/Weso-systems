@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue, FieldPath } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -311,23 +311,20 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 
 /**
- * Fetches the details for a given booking link ID.
- * This function now performs a collection group query to find the link across all hotels.
+ * Fetches the details for a given booking link ID using a robust collection group query.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // This is the correct and robust way to query for a document by its ID within a collection group.
-    const query = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
+    const query = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
     const querySnapshot = await query.get();
-    
-    const linkDoc = querySnapshot.docs.find(doc => doc.id === linkId);
 
-    if (!linkDoc || !linkDoc.exists) {
+    if (querySnapshot.empty) {
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
+    const linkDoc = querySnapshot.docs[0];
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
 
     if (!linkData.hotelId) {
@@ -335,11 +332,9 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     }
 
     const hotelResult = await getHotelById(linkData.hotelId);
-
     if (!hotelResult.hotel) {
         return { success: false, error: "Zugehöriges Hotel nicht gefunden." };
     }
-
     const hotel = hotelResult.hotel;
     
     const serializableLinkData = {
@@ -385,5 +380,7 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
 
     

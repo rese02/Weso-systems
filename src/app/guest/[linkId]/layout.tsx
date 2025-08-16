@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (result.success && result.data) {
     const hotelName = result.data.hotelName;
-    const hotelLogo = result.data.prefill.logoUrl; // Assuming logoUrl is passed in prefill
+    const hotelLogo = result.data.prefill.logoUrl;
 
     return {
       title: `${hotelName} - Buchung`,
@@ -36,3 +36,5 @@ export default function GuestBookingLayout({
 }) {
   return <>{children}</>;
 }
+
+    

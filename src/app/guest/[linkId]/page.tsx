@@ -68,11 +68,6 @@ export default function GuestBookingPage({ params }: { params: Promise<{ linkId:
         if (new Date() > new Date(result.data.expiresAt as string) || result.data.status !== 'active') {
           setError(translations[currentLang].expiredLink);
         } else {
-           const hotelResult = await getHotelById(result.data.hotelId);
-           if (hotelResult.hotel) {
-                // Ensure prefill.logoUrl is handled gracefully if it doesn't exist
-                result.data.prefill.logoUrl = hotelResult.hotel.logoUrl || null;
-           }
            setLinkData(result.data);
         }
       } else {
@@ -142,3 +137,5 @@ export default function GuestBookingPage({ params }: { params: Promise<{ linkId:
     </div>
   );
 }
+
+    

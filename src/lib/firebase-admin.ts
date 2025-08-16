@@ -1,6 +1,7 @@
 import admin from 'firebase-admin';
 
-// Check if the app is already initialized to prevent re-initialization
+// This is a "Singleton" pattern. It ensures that the Firebase Admin SDK is initialized only once,
+// preventing errors during hot-reloads in development.
 if (!admin.apps.length) {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!serviceAccountKey) {

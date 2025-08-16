@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,10 +11,10 @@ import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase.client';
 
-export default function AgencyLoginPage() {
+export default function HotelierLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('hallo@agentur-weso.it');
-  const [password, setPassword] = useState('Hallo-weso.2025!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -27,17 +26,16 @@ export default function AgencyLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         // Force refresh the token to get the latest custom claims.
-         // This is crucial for the middleware to pick up the new role immediately.
-         const idTokenResult = await userCredential.user.getIdTokenResult(true);
+         const idTokenResult = await userCredential.user.getIdTokenResult(true); // Force refresh
          const userRole = idTokenResult.claims.role;
+         const hotelId = idTokenResult.claims.hotelId;
 
-         if (userRole === 'agency') {
-             toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
-             router.push('/admin');
+         if (userRole === 'hotelier' && hotelId) {
+             toast({ title: "Login erfolgreich", description: "Sie werden zu Ihrem Hotel-Dashboard weitergeleitet..." });
+             router.push(`/dashboard/${hotelId}`);
          } else {
-            setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
-            await auth.signOut(); // Log out the user as they don't have the right role
+            setLoginError("Dieses Konto ist nicht für den Hotelzugang konfiguriert.");
+            await auth.signOut();
          }
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
@@ -53,14 +51,14 @@ export default function AgencyLoginPage() {
   return (
     <Card>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-headline">Agentur-Login</CardTitle>
-        <CardDescription>Melden Sie sich an, um auf das Dashboard zuzugreifen.</CardDescription>
+        <CardTitle className="text-2xl font-headline">Hotel-Login</CardTitle>
+        <CardDescription>Melden Sie sich an, um auf das Dashboard Ihres Hotels zuzugreifen.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
         <div className="grid gap-2">
           <Label htmlFor="email">E-Mail</Label>
-          <Input id="email" type="email" placeholder="admin@weso.it" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
+          <Input id="email" type="email" placeholder="login@hotel.de" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Passwort</Label>

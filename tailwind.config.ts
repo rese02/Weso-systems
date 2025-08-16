@@ -13,7 +13,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-inter)', ...fontFamily.sans],
-        headline: ['var(--font-manrope)', ...fontFamily.sans],
+        headline: ['var(--font-inter)', ...fontFamily.sans],
       },
       colors: {
         background: 'hsl(var(--background))',

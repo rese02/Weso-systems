@@ -54,9 +54,13 @@ export default function HotelierLoginPage() {
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
       }
-    } catch (error) {
-       console.error("Login-Fehler:", error);
-       setLoginError("Ungültige E-Mail-Adresse oder falsches Passwort.");
+    } catch (error: any) {
+       if (error.code === 'auth/invalid-credential') {
+            setLoginError("Ungültige E-Mail-Adresse oder falsches Passwort.");
+       } else {
+            console.error("Login-Fehler:", error);
+            setLoginError("Ein unerwarteter Fehler ist aufgetreten.");
+       }
     } finally {
         setIsLoading(false);
     }

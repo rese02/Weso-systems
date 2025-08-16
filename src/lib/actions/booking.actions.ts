@@ -35,19 +35,24 @@ export async function createBookingWithLink(
     const batch = db.batch();
 
     try {
-        // 1. Create the new booking document
+        // 1. Create the new booking document reference
         const newBookingRef = db.collection(`hotels/${hotelId}/bookings`).doc();
         
+        // 2. Create the booking link reference
+        const newLinkRef = db.collection(`hotels/${hotelId}/bookingLinks`).doc();
+        
+        // 3. Prepare Booking Data
         const newBooking: Omit<Booking, 'id'> = {
             hotelId,
-            agencyId: 'agency_weso_systems', // Simulated static agency ID
-            status: 'Open',
+            agencyId: 'agency_weso_systems',
+            status: 'Sent', // Set status to 'Sent' as a link is being generated
+            bookingLinkId: newLinkRef.id, // Correctly assign the link ID
             createdAt: Timestamp.now().toDate().toISOString(),
             updatedAt: Timestamp.now().toDate().toISOString(),
             firstName: validatedData.firstName,
             lastName: validatedData.lastName,
-            checkIn: validatedData.checkInDate.toISOString(), // Convert Date to ISO string
-            checkOut: validatedData.checkOutDate.toISOString(), // Convert Date to ISO string
+            checkIn: validatedData.checkInDate.toISOString(),
+            checkOut: validatedData.checkOutDate.toISOString(),
             boardType: validatedData.boardType,
             priceTotal: validatedData.priceTotal ?? 0,
             internalNotes: validatedData.internalNotes,
@@ -60,18 +65,16 @@ export async function createBookingWithLink(
                 childrenAges: r.childrenAges || [],
             })),
         };
+
         const firestoreBookingData = {
             ...newBooking,
-            priceTotal: newBooking.priceTotal ?? null,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
         batch.set(newBookingRef, firestoreBookingData);
 
-        // 2. Create the booking link (token) document
-        const newLinkRef = db.collection(`hotels/${hotelId}/bookingLinks`).doc();
+        // 4. Prepare Link Data
         const now = new Date();
-        
         const prefill: BookingPrefill = {
             firstName: newBooking.firstName,
             lastName: newBooking.lastName,
@@ -79,7 +82,7 @@ export async function createBookingWithLink(
             checkOut: newBooking.checkOut,
             boardType: newBooking.boardType,
             priceTotal: newBooking.priceTotal,
-            bookingId: newBookingRef.id,
+            bookingId: newBookingRef.id, // Correctly assign the booking ID
             rooms: newBooking.rooms,
             guestLanguage: newBooking.guestLanguage,
         };
@@ -87,7 +90,7 @@ export async function createBookingWithLink(
         const newLink: Omit<BookingLink, 'id'> = {
             bookingId: newBookingRef.id,
             hotelId: hotelId,
-            createdBy: 'system', // Or a user ID if available
+            createdBy: 'system',
             createdAt: Timestamp.fromDate(now),
             expiresAt: Timestamp.fromDate(addDays(now, 7)),
             status: 'active',
@@ -95,10 +98,7 @@ export async function createBookingWithLink(
         };
         batch.set(newLinkRef, newLink);
 
-        // 3. Update the booking with the link ID and set status to "Sent"
-        batch.update(newBookingRef, { bookingLinkId: newLinkRef.id, status: 'Sent' });
-
-        // 4. Commit all operations at once
+        // 5. Commit all operations at once
         await batch.commit();
 
         return { success: true, bookingId: newBookingRef.id };

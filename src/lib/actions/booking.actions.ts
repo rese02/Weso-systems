@@ -1,7 +1,7 @@
 
 'use server';
 
-import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
+import { dbAdmin as db, dbAdmin } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
 import { Timestamp } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
@@ -82,7 +82,7 @@ export async function createBookingWithLink(
             checkOut: newBooking.checkOut,
             boardType: newBooking.boardType,
             priceTotal: newBooking.priceTotal,
-            bookingId: newBookingRef.id,
+            bookingId: newBookingRef.id, // Ensure bookingId is included here
             rooms: newBooking.rooms,
             guestLanguage: newBooking.guestLanguage,
         };
@@ -404,3 +404,5 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    

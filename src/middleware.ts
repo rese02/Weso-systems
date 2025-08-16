@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { authAdmin } from './lib/firebase-admin'; // Use relative path for stability
 import { cookies } from 'next/headers';
 
-// NOTE: We cannot use the Firebase Admin SDK here because the middleware
-// can run in the Edge runtime, which doesn't support all Node.js APIs.
-// Instead, we call a separate API route that runs in the Node.js runtime.
+export const runtime = 'nodejs';
 
 interface DecodedToken {
   uid: string;
@@ -23,23 +22,15 @@ export async function middleware(request: NextRequest) {
 
   if (sessionCookie) {
     try {
-      const response = await fetch(new URL('/api/auth/verify-token', request.url), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: sessionCookie }),
-      });
-      
-      if (response.ok) {
-        decodedToken = await response.json();
-      } else {
-         // Clear the invalid cookie
-        const res = NextResponse.redirect(agencyLoginUrl);
-        res.cookies.delete('firebaseIdToken');
-        return res;
-      }
+      const token = await authAdmin.verifyIdToken(sessionCookie, true);
+      decodedToken = {
+        uid: token.uid,
+        role: token.role as any,
+        hotelId: token.hotelId as any,
+      };
     } catch (error) {
-       console.error('Middleware fetch error:', error);
-       // On error, assume token is invalid and redirect
+       console.error('Middleware token verification failed:', error);
+       // Clear the invalid cookie and redirect
        const res = NextResponse.redirect(agencyLoginUrl);
        res.cookies.delete('firebaseIdToken');
        return res;
@@ -64,8 +55,11 @@ export async function middleware(request: NextRequest) {
   // --- Hotelier Route Protection ---
   if (pathname.startsWith('/dashboard')) {
     const urlHotelId = pathname.split('/')[2];
+    // Allow agency to view hotelier dashboards
+    if (decodedToken.role === 'agency') {
+      return NextResponse.next();
+    }
     if (decodedToken.role !== 'hotelier' || decodedToken.hotelId !== urlHotelId) {
-      // If role is wrong or hotelId doesn't match, redirect to their own dashboard or login
       const destination = (decodedToken.role === 'hotelier' && decodedToken.hotelId)
         ? new URL(`/dashboard/${decodedToken.hotelId}`, request.url)
         : hotelLoginUrl;
@@ -92,8 +86,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - guest (public guest booking pages)
-     * - api/auth/verify-token (the verification route itself)
+     * - api (API routes, though we removed the only one)
      */
-    '/((?!_next/static|_next/image|favicon.ico|guest|api/auth/verify-token).*)',
+    '/((?!_next/static|_next/image|favicon.ico|guest|api).*)',
   ],
 };

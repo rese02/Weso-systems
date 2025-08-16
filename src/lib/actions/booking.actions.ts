@@ -313,7 +313,7 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID using a robust collection group query.
- * This is the correct and final implementation.
+ * This is the correct and final implementation based on the working repository.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
@@ -387,3 +387,5 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    

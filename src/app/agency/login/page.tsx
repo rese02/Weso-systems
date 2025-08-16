@@ -39,11 +39,20 @@ export default function AgencyLoginPage() {
            body: JSON.stringify({ idToken }),
          });
 
-         if (response.ok) {
-            toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
-            router.push('/admin'); // Always redirect to admin, let the layout handle auth.
+         const result = await response.json();
+
+         if (response.ok && result.success) {
+            // The server now returns the role, we can trust it.
+            if (result.role === 'agency') {
+                toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
+                router.push('/admin');
+            } else {
+                setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
+                // Log out the user if they don't have the right role
+                await fetch('/api/auth/logout', { method: 'POST' });
+                await auth.signOut();
+            }
          } else {
-            const result = await response.json();
             setLoginError(result.error || "Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
          }
       } else {

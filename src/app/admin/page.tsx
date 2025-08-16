@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,12 +15,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Hotel } from '@/lib/definitions';
 
@@ -30,20 +30,26 @@ export default function AdminDashboardPage() {
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
 
-  const fetchHotels = async () => {
+  const fetchHotels = useCallback(async () => {
     setIsLoading(true);
-    const result = await getHotels();
-    if (result.hotels) {
-      setHotels(result.hotels);
-    } else {
-      setError(result.error || 'Hoteldaten konnten nicht geladen werden.');
+    setError(null);
+    try {
+        const result = await getHotels();
+        if (result.hotels) {
+          setHotels(result.hotels);
+        } else {
+          setError(result.error || 'Hoteldaten konnten nicht geladen werden.');
+        }
+    } catch (e: any) {
+        setError(e.message || 'Ein unerwarteter Fehler ist aufgetreten.');
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchHotels();
-  }, []);
+  }, [fetchHotels]);
 
   const handleDelete = async (hotelId: string) => {
     startDeleteTransition(async () => {
@@ -82,6 +88,7 @@ export default function AdminDashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-destructive">{error}</p>
+          <Button onClick={fetchHotels} className="mt-4">Erneut versuchen</Button>
         </CardContent>
       </Card>
     );

@@ -1,8 +1,8 @@
 
 'use server';
 
-import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin'; // Correct: Use Admin SDK for server actions
-import { storage } from '@/lib/firebase.client'; // Correct: Storage client for storage operations
+import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin';
+import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
 import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where, limit } from 'firebase/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
@@ -51,10 +51,7 @@ export async function createHotel(
             displayName: firestoreData.name,
         });
 
-        // Set custom claims for the new hotelier user
-        await authAdmin.setCustomUserClaims(hotelUser.uid, { role: 'hotelier' });
-
-        // Create the hotel document in Firestore
+        // Create the hotel document in Firestore first to get an ID
         const hotelsCollectionRef = collection(db, 'hotels');
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...firestoreData, 
@@ -63,7 +60,7 @@ export async function createHotel(
             createdAt: Timestamp.now(),
         });
         
-        // Update the hotelier's custom claims with the new hotelId
+        // Set custom claims for the new hotelier user, now including the hotelId
         await authAdmin.setCustomUserClaims(hotelUser.uid, { role: 'hotelier', hotelId: docRef.id });
 
         revalidatePath('/admin');

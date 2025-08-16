@@ -1,11 +1,10 @@
 
 'use server';
 
-import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
+import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
-import { ref, deleteObject, listAll } from 'firebase/storage';
-import { z } from 'zod';
+import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
 import { addDays } from 'date-fns';

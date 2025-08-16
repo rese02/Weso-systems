@@ -11,11 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase.client';
-import { useAuth } from '@/context/auth-context';
 
 export default function AgencyLoginPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,20 +46,6 @@ export default function AgencyLoginPage() {
         setIsLoading(false);
     }
   };
-
-   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  // If user is already logged in as agency, redirect them
-  if (user?.claims.role === 'agency') {
-    router.push('/admin');
-    return null;
-  }
   
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">

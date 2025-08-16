@@ -2,7 +2,7 @@
 // Run this from your terminal using a tool like tsx: `tsx src/lib/actions/temp-create-agency-owner.ts`
 // After running it once successfully, you can delete this file.
 
-import { initializeApp, cert } from 'firebase-admin/app';
+import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import 'dotenv/config'; // Make sure to load environment variables
 
@@ -17,23 +17,22 @@ async function createAgencyOwner() {
     return;
   }
 
-  try {
-    // Initialize Firebase Admin SDK
-    const apps = getAuth().app;
-    if (!apps) {
-         initializeApp({
-            credential: cert(JSON.parse(serviceAccountKey)),
-        });
+  // Correctly initialize the app if it hasn't been already
+  if (!admin.apps.length) {
+    try {
+      console.log('Initializing Firebase Admin SDK...');
+      admin.initializeApp({
+        credential: admin.credential.cert(JSON.parse(serviceAccountKey)),
+      });
+       console.log('Firebase Admin SDK initialized successfully.');
+    } catch (e) {
+      console.error('Firebase Admin SDK initialization error:', e);
+      return;
     }
-  } catch (e) {
-      // Catch initialization error if it happens on subsequent runs
-      if ((e as Error).message.includes('already exists')) {
-          console.log('Admin App already initialized.');
-      } else {
-          console.error('Firebase Admin SDK initialization error:', e);
-          return;
-      }
+  } else {
+     console.log('Firebase Admin SDK already initialized.');
   }
+
 
   const authAdmin = getAuth();
 

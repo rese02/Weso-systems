@@ -88,6 +88,7 @@ export async function createBookingWithLink(
         };
 
         const newLink: Omit<BookingLink, 'id'> = {
+            id: newLinkRef.id, // Store the ID also as a field for reliable querying
             bookingId: newBookingRef.id,
             hotelId: hotelId,
             createdBy: 'system',
@@ -319,7 +320,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   
   try {
     // Correctly query the collection group for a document with a specific ID.
-    const query = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
+    const query = db.collectionGroup('bookingLinks').where('id', '==', linkId).limit(1);
     const querySnapshot = await query.get();
 
     if (querySnapshot.empty) {
@@ -327,11 +328,11 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     }
 
     const linkDoc = querySnapshot.docs[0];
-    const pathSegments = linkDoc.ref.path.split('/');
-    if (pathSegments.length < 4 || pathSegments[0] !== 'hotels' || pathSegments[2] !== 'bookingLinks') {
-         return { success: false, error: "Ungültige Link-Struktur in der Datenbank." };
+    const hotelId = linkDoc.data().hotelId;
+    
+    if (!hotelId) {
+        return { success: false, error: "Zugehöriges Hotel nicht gefunden (fehlende ID im Link-Dokument)." };
     }
-    const hotelId = pathSegments[1];
     
     const linkData = { id: linkDoc.id, ...linkDoc.data(), hotelId: hotelId } as BookingLink;
     

@@ -1,4 +1,5 @@
 
+import 'dotenv/config'; // Load environment variables at the very beginning
 import admin from 'firebase-admin';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';

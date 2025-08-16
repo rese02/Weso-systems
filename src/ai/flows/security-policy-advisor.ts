@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -65,11 +66,11 @@ const securityPolicyFlow = ai.defineFlow(
 
       **Part 2: Actionable Recommendations Report**
       Generate a separate, clear, and actionable report of security recommendations in Markdown format. For each recommendation, provide a title, a brief explanation of the risk, and a concrete example of how to implement the fix within the specified tech stack. Address at least the following vulnerabilities:
-        1.  **Firebase Security Rules:** Provide robust Firestore rules for the `hotels` and `bookings` collections that enforce the described access control (e.g., only authenticated agency owners can create hotels, only the correct hotelier can read their bookings).
+        1.  **Firebase Security Rules:** Provide robust Firestore rules for the 'hotels' and 'bookings' collections that enforce the described access control (e.g., only authenticated agency owners can create hotels, only the correct hotelier can read their bookings).
         2.  **Firebase Storage Security:** Provide secure rules for Firebase Storage to ensure only authenticated and authorized users can upload/download documents for their specific booking.
         3.  **Next.js Server Action Security:** How to prevent Cross-Site Request Forgery (CSRF) and ensure only authenticated/authorized users can execute sensitive server actions.
-        4.  **Input Validation & Output Encoding:** Show how to use a library like Zod for strict server-side input validation on forms and server actions to prevent injection attacks. Explain the importance of avoiding `dangerouslySetInnerHTML` in React to prevent XSS.
-        5.  **Dependency Management:** Recommend tools like `npm audit` or Dependabot to keep dependencies secure.
+        4.  **Input Validation & Output Encoding:** Show how to use a library like Zod for strict server-side input validation on forms and server actions to prevent injection attacks. Explain the importance of avoiding 'dangerouslySetInnerHTML' in React to prevent XSS.
+        5.  **Dependency Management:** Recommend tools like 'npm audit' or Dependabot to keep dependencies secure.
     `;
 
     const llmResponse = await ai.generate({
@@ -88,5 +89,3 @@ const securityPolicyFlow = ai.defineFlow(
     return output;
   }
 );
-
-    

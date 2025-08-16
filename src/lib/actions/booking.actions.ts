@@ -1,7 +1,7 @@
 
 'use server';
 
-import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
+import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
 import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
 import { ref, deleteObject, listAll } from 'firebase/storage';
@@ -329,6 +329,9 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
+        // This is a special case to find the document by its ID in a collection group,
+        // which Firestore doesn't support directly. We have to query for the hotelId first.
+        // A more robust solution might involve a root-level collection for links if this becomes slow.
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 

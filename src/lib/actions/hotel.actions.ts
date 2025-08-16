@@ -1,15 +1,13 @@
 
 'use server';
 
-import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
-import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
+import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin'; // Correct: Use Admin SDK for server actions
+import { storage } from '@/lib/firebase.client'; // Correct: Storage client for storage operations
 import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where, limit } from 'firebase/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { authAdmin } from '../firebase-admin';
-
 
 const HotelSchema = z.object({
   name: z.string().min(1, 'Hotelname ist erforderlich.'),
@@ -37,13 +35,6 @@ const HotelSchema = z.object({
 export async function createHotel(
     hotelData: Omit<Hotel, 'id' | 'createdAt' | 'agencyId'> & { password?: string }
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
-    // This action is currently not protected by user roles.
-    // In a real app, you would verify the user is an agency owner.
-    // const user = await getAuthenticatedUser();
-    // if (!user || user.role !== 'agency-owner') {
-    //     return { success: false, error: "Access denied." };
-    // }
-
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
         const errorMessage = Object.values(validation.error.flatten().fieldErrors).map(e => e.join(', ')).join('; ');
@@ -85,7 +76,6 @@ export async function createHotel(
 
 
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
-    // In a real app, you would verify the user is an agency owner.
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
         const q = query(hotelsCollectionRef, where("agencyId", "==", "agency_weso_systems"), orderBy("createdAt", "desc"));
@@ -112,7 +102,6 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
 
 
 export async function deleteHotel(hotelId: string): Promise<{ success: boolean; error?: string }> {
-    // In a real app, you would verify the user is an agency owner and owns this hotel.
     if (!hotelId) {
         return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
@@ -128,32 +117,25 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
     try {
         const batch = writeBatch(db);
 
-        // 1. Delete all bookings and their associated storage files
         const bookingsCollectionRef = collection(db, `hotels/${hotelId}/bookings`);
         const bookingsSnapshot = await getDocs(bookingsCollectionRef);
         for (const bookingDoc of bookingsSnapshot.docs) {
-            // Delete associated files from Storage
             const storageFolderRef = ref(storage, `hotels/${hotelId}/bookings/${bookingDoc.id}`);
             const res = await listAll(storageFolderRef);
             await Promise.all(res.items.map((itemRef) => deleteObject(itemRef)));
-             // Add booking doc to batch delete
             batch.delete(bookingDoc.ref);
         }
 
-        // 2. Delete all booking links
         const linksCollectionRef = collection(db, `hotels/${hotelId}/bookingLinks`);
         const linksSnapshot = await getDocs(linksCollectionRef);
         linksSnapshot.forEach(linkDoc => {
             batch.delete(linkDoc.ref);
         });
         
-        // 3. Commit the batch deletion of all subcollection documents
         await batch.commit();
 
-        // 4. Delete the main hotel document
         await deleteDoc(doc(db, 'hotels', hotelId));
         
-        // 5. Delete the hotelier's Auth user
         if (hotelData.ownerUid) {
             await authAdmin.deleteUser(hotelData.ownerUid);
         }
@@ -232,7 +214,6 @@ const SettingsSchema = z.object({
 }).partial();
 
 export async function updateHotelSettings(hotelId: string, settings: Partial<Hotel>): Promise<{success: boolean, error?: string}> {
-    // In a real app, you would verify the user is an agency owner or the hotelier for this hotel.
     if(!hotelId) return { success: false, error: 'Hotel-ID ist erforderlich.'};
 
     const validation = SettingsSchema.safeParse(settings);

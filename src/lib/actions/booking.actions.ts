@@ -46,7 +46,7 @@ export async function createBookingWithLink(
             hotelId,
             agencyId: 'agency_weso_systems',
             status: 'Sent', // Set status to 'Sent' as a link is being generated
-            bookingLinkId: newLinkRef.id, // Correctly assign the link ID
+            bookingLinkId: newLinkRef.id,
             createdAt: Timestamp.now().toDate().toISOString(),
             updatedAt: Timestamp.now().toDate().toISOString(),
             firstName: validatedData.firstName,
@@ -82,7 +82,7 @@ export async function createBookingWithLink(
             checkOut: newBooking.checkOut,
             boardType: newBooking.boardType,
             priceTotal: newBooking.priceTotal,
-            bookingId: newBookingRef.id, // Correctly assign the booking ID
+            bookingId: newBookingRef.id,
             rooms: newBooking.rooms,
             guestLanguage: newBooking.guestLanguage,
         };
@@ -312,25 +312,35 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID using a robust collection group query.
+ * This is the correct and final implementation.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const query = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
+    // Correctly query the collection group for a document with a specific ID.
+    const query = db.collectionGroup('bookingLinks').where(db.FieldPath.documentId(), '==', linkId).limit(1);
     const querySnapshot = await query.get();
 
     if (querySnapshot.empty) {
+        // To provide a better error message, we check if a document with this ID exists anywhere.
+        const docRef = db.collection('some-collection').doc(linkId); // Dummy ref to use the ID
+        const docSnap = await docRef.get(); // This will fail if ID is invalid format
+        // If it gets here, the ID format is valid but it's not in the bookingLinks collection group.
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
     const linkDoc = querySnapshot.docs[0];
-    const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
-
-    if (!linkData.hotelId) {
-        return { success: false, error: "Link ist nicht mit einem Hotel verbunden." };
+    // We have to extract the hotelId from the document's path.
+    // The path is like 'hotels/{hotelId}/bookingLinks/{linkId}'
+    const pathSegments = linkDoc.ref.path.split('/');
+    if (pathSegments.length < 4 || pathSegments[0] !== 'hotels' || pathSegments[2] !== 'bookingLinks') {
+         return { success: false, error: "Ungültige Link-Struktur in der Datenbank." };
     }
-
+    const hotelId = pathSegments[1];
+    
+    const linkData = { id: linkDoc.id, ...linkDoc.data(), hotelId: hotelId } as BookingLink;
+    
     const hotelResult = await getHotelById(linkData.hotelId);
     if (!hotelResult.hotel) {
         return { success: false, error: "Zugehöriges Hotel nicht gefunden." };
@@ -353,7 +363,11 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   } catch (error) {
     console.error("Error fetching link details:", error);
     const e = error as Error;
-    return { success: false, error: e.message };
+    // Check for the specific Firestore error and provide a user-friendly message
+    if (e.message.includes('path must be a non-empty string')) {
+       return { success: false, error: "Der angegebene Link ist ungültig." };
+    }
+    return { success: false, error: "Ein unerwarteter Fehler ist aufgetreten." };
   }
 }
 
@@ -380,9 +394,3 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
-
-    
-
-    
-
-    

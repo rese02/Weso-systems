@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -13,7 +13,7 @@ import { Loader2, Shield } from 'lucide-react';
 
 export default function HotelierLoginPage() {
   const router = useRouter();
-  const { signIn, user, loading } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,26 +32,22 @@ export default function HotelierLoginPage() {
          const hotelId = idTokenResult.claims.hotelId;
 
          if (userRole === 'hotelier' && hotelId) {
-             toast({ title: "Login Successful", description: "Redirecting to your hotel dashboard..." });
+             toast({ title: "Login erfolgreich", description: "Sie werden zu Ihrem Hotel-Dashboard weitergeleitet..." });
              router.push(`/dashboard/${hotelId}`);
          } else {
-            setLoginError("This account is not configured for hotel access.");
+            setLoginError("Dieses Konto ist nicht für den Hotelzugang konfiguriert.");
          }
       } else {
-        setLoginError("Login failed. Please check your credentials.");
+        setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
       }
     } catch (error) {
-       console.error("Login error:", error);
-       setLoginError("Invalid email or password.");
+       console.error("Login-Fehler:", error);
+       setLoginError("Ungültige E-Mail-Adresse oder falsches Passwort.");
     } finally {
         setIsLoading(false);
     }
   };
   
-  if (loading) {
-      return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
-  }
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
        <div className="w-full max-w-md">
@@ -64,23 +60,23 @@ export default function HotelierLoginPage() {
         </div>
          <Card>
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-headline">Welcome Back, Hotelier</CardTitle>
-            <CardDescription>Sign in to access your hotel's dashboard.</CardDescription>
+            <CardTitle className="text-2xl font-headline">Willkommen zurück, Hotelier</CardTitle>
+            <CardDescription>Melden Sie sich an, um auf das Dashboard Ihres Hotels zuzugreifen.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">E-Mail</Label>
               <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Passwort</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? <Loader2 className="animate-spin" /> : <span>Login as Hotelier</span>}
+                {isLoading ? <Loader2 className="animate-spin" /> : <span>Als Hotelier anmelden</span>}
             </Button>
           </CardFooter>
         </Card>

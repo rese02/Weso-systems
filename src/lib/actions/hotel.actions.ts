@@ -1,10 +1,8 @@
 
 'use server';
 
-import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin';
-import { storage } from '@/lib/firebase.client';
+import { dbAdmin as db, authAdmin, storageAdmin } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -75,7 +73,6 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = db.collection('hotels');
-        // Simplified query to avoid needing a composite index. Filtering will be done client-side.
         const q = hotelsCollectionRef.orderBy("createdAt", "desc");
         const querySnapshot = await q.get();
         
@@ -115,29 +112,42 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
     try {
         const batch = db.batch();
 
+        // --- Delete all sub-collections (bookings, bookingLinks) ---
         const bookingsCollectionRef = db.collection(`hotels/${hotelId}/bookings`);
         const bookingsSnapshot = await bookingsCollectionRef.get();
-        for (const bookingDoc of bookingsSnapshot.docs) {
-            const storageFolderRef = ref(storage, `hotels/${hotelId}/bookings/${bookingDoc.id}`);
-            const res = await listAll(storageFolderRef);
-            await Promise.all(res.items.map((itemRef) => deleteObject(itemRef)));
-            batch.delete(bookingDoc.ref);
-        }
+        bookingsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
 
         const linksCollectionRef = db.collection(`hotels/${hotelId}/bookingLinks`);
         const linksSnapshot = await linksCollectionRef.get();
-        linksSnapshot.forEach(linkDoc => {
-            batch.delete(linkDoc.ref);
+        linksSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
         });
         
+        // Commit the batch deletion of Firestore documents
         await batch.commit();
-
+        
+        // --- Delete associated files from Firebase Storage ---
+        const bucket = storageAdmin.bucket();
+        const hotelStoragePath = `hotels/${hotelId}/`;
+        await bucket.deleteFiles({ prefix: hotelStoragePath });
+        
+        // --- Delete the main hotel document ---
         await hotelDocRef.delete();
         
+        // --- Delete the Firebase Auth user ---
         if (hotelData.ownerUid) {
-            await authAdmin.deleteUser(hotelData.ownerUid);
+            try {
+                await authAdmin.deleteUser(hotelData.ownerUid);
+            } catch (authError: any) {
+                // It's possible the user was already deleted, so we don't want this to fail the whole operation.
+                if (authError.code !== 'auth/user-not-found') {
+                    throw authError;
+                }
+                console.warn(`Auth user with UID ${hotelData.ownerUid} not found. May have been deleted previously.`);
+            }
         }
-
 
         revalidatePath('/admin');
         return { success: true };
@@ -162,7 +172,7 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
         const hotel = { 
             id: snapshot.id, 
             ...data,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
+            createdAt: data?.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
         };
         return { hotel };
     } catch (error) {

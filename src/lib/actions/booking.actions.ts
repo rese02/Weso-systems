@@ -319,7 +319,6 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // Correctly query the collection group for a document with a specific field 'id'
     const query = db.collectionGroup('bookingLinks').where('id', '==', linkId).limit(1);
     const querySnapshot = await query.get();
 

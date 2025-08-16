@@ -1,7 +1,7 @@
 
 'use server';
 
-import { dbAdmin as db, authAdmin, storageAdmin } from '@/lib/firebase-admin';
+import { dbAdmin, authAdmin, storageAdmin } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
@@ -50,7 +50,7 @@ export async function createHotel(
         });
 
         // Create the hotel document in Firestore first to get an ID
-        const hotelsCollectionRef = db.collection('hotels');
+        const hotelsCollectionRef = dbAdmin.collection('hotels');
         const docRef = await hotelsCollectionRef.add({ 
             ...firestoreData, 
             agencyId: 'agency_weso_systems', // Simulated static agency ID
@@ -72,7 +72,7 @@ export async function createHotel(
 
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
-        const hotelsCollectionRef = db.collection('hotels');
+        const hotelsCollectionRef = dbAdmin.collection('hotels');
         const q = hotelsCollectionRef.orderBy("createdAt", "desc");
         const querySnapshot = await q.get();
         
@@ -101,7 +101,7 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
     
-    const hotelDocRef = db.doc(`hotels/${hotelId}`);
+    const hotelDocRef = dbAdmin.doc(`hotels/${hotelId}`);
     const hotelDocToDelete = await hotelDocRef.get();
     if (!hotelDocToDelete.exists) {
         return { success: false, error: "Hotel not found." };
@@ -110,16 +110,16 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
     const hotelData = hotelDocToDelete.data() as Hotel;
 
     try {
-        const batch = db.batch();
+        const batch = dbAdmin.batch();
 
         // --- Delete all sub-collections (bookings, bookingLinks) ---
-        const bookingsCollectionRef = db.collection(`hotels/${hotelId}/bookings`);
+        const bookingsCollectionRef = dbAdmin.collection(`hotels/${hotelId}/bookings`);
         const bookingsSnapshot = await bookingsCollectionRef.get();
         bookingsSnapshot.forEach(doc => {
             batch.delete(doc.ref);
         });
 
-        const linksCollectionRef = db.collection(`hotels/${hotelId}/bookingLinks`);
+        const linksCollectionRef = dbAdmin.collection(`hotels/${hotelId}/bookingLinks`);
         const linksSnapshot = await linksCollectionRef.get();
         linksSnapshot.forEach(doc => {
             batch.delete(doc.ref);
@@ -161,7 +161,7 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
 export async function getHotelById(hotelId: string): Promise<{ hotel?: any, error?: string }> {
     if (!hotelId) return { error: "Hotel-ID ist erforderlich." };
     try {
-        const hotelRef = db.doc(`hotels/${hotelId}`);
+        const hotelRef = dbAdmin.doc(`hotels/${hotelId}`);
         const snapshot = await hotelRef.get();
 
         if (!snapshot.exists) {
@@ -186,7 +186,7 @@ export async function getHotelByOwnerEmail(email: string): Promise<{ success: bo
         return { success: false, error: 'E-Mail ist erforderlich.' };
     }
     try {
-        const q = db.collection('hotels').where('ownerEmail', '==', email).limit(1);
+        const q = dbAdmin.collection('hotels').where('ownerEmail', '==', email).limit(1);
         const querySnapshot = await q.get();
         if (querySnapshot.empty) {
             return { success: false, error: 'Kein Hotel mit dieser E-Mail-Adresse gefunden.' };
@@ -231,7 +231,7 @@ export async function updateHotelSettings(hotelId: string, settings: Partial<Hot
     }
 
     try {
-        const hotelRef = db.doc(`hotels/${hotelId}`);
+        const hotelRef = dbAdmin.doc(`hotels/${hotelId}`);
         await hotelRef.update(validation.data);
         revalidatePath(`/dashboard/${hotelId}/settings`);
         revalidatePath(`/dashboard/${hotelId}`);

@@ -3,17 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase.client';
 
 export default function HotelierLoginPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,10 +24,10 @@ export default function HotelierLoginPage() {
     setIsLoading(true);
     setLoginError(null);
     try {
-      const userCredential = await signIn(email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         const idTokenResult = await userCredential.user.getIdTokenResult();
+         const idTokenResult = await userCredential.user.getIdTokenResult(true); // Force refresh
          const userRole = idTokenResult.claims.role;
          const hotelId = idTokenResult.claims.hotelId;
 
@@ -67,7 +67,7 @@ export default function HotelierLoginPage() {
             {loginError && <p className="text-sm text-center text-destructive">{loginError}</p>}
             <div className="grid gap-2">
               <Label htmlFor="email">E-Mail</Label>
-              <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
+              <Input id="email" type="email" placeholder="login@hotel.de" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Passwort</Label>
@@ -76,7 +76,7 @@ export default function HotelierLoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? <Loader2 className="animate-spin" /> : <span>Als Hotelier anmelden</span>}
+                {isLoading ? <Loader2 className="animate-spin" /> : <span>Anmelden</span>}
             </Button>
           </CardFooter>
         </Card>

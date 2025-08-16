@@ -1,7 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { authAdmin } from '@/lib/firebase-admin';
+import { authAdmin } from './lib/firebase-admin';
 import { cookies } from 'next/headers';
+
+export const runtime = 'nodejs';
 
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {

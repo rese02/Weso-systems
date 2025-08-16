@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -317,7 +317,7 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const query = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
+    const query = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
     const querySnapshot = await query.get();
 
     if (querySnapshot.empty) {
@@ -380,6 +380,8 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
 
     
 

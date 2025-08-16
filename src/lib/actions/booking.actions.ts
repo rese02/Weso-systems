@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { Timestamp, FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { Timestamp, FieldPath } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';

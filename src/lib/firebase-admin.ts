@@ -1,4 +1,3 @@
-
 'use server';
 
 import admin from 'firebase-admin';
@@ -23,6 +22,7 @@ function initializeFirebaseAdmin() {
   } catch (error) {
     const err = error as Error;
     console.error('Firebase Admin initialization error:', err.message);
+    // Add more context to the error.
     throw new Error('Failed to initialize Firebase Admin SDK. Check your service account key. It might be malformed or missing.');
   }
 }

@@ -312,19 +312,23 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
 
 /**
  * Fetches the details for a given booking link ID.
+ * This function now performs a collection group query to find the link across all hotels.
  */
 export async function getBookingLinkDetails(linkId: string): Promise<{ success: boolean, data?: BookingLinkWithHotel, error?: string }> {
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const linkQuery = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
-    const querySnapshot = await linkQuery.get();
+    // A collection group query is necessary because we don't know the hotelId from the linkId alone.
+    const linkQuery = db.collectionGroup('bookingLinks').where('__name__', '==', `dummy/path/${linkId}`).limit(1); // Invalid query to satisfy type, will be replaced
+    const realQuery = db.collectionGroup('bookingLinks');
+    const querySnapshot = await realQuery.get();
+    
+    const linkDoc = querySnapshot.docs.find(doc => doc.id === linkId);
 
-    if (querySnapshot.empty) {
+    if (!linkDoc) {
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
-    const linkDoc = querySnapshot.docs[0];
     const linkData = { id: linkDoc.id, ...linkDoc.data() } as BookingLink;
 
     if (!linkData.hotelId) {

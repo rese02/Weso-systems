@@ -15,6 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
 import Link from 'next/link';

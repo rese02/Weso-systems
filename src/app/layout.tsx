@@ -2,7 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { Inter, Poppins } from 'next/font/google';
+import { Inter, Manrope } from 'next/font/google';
 import { AuthProvider } from '@/context/auth-context';
 
 const inter = Inter({
@@ -11,10 +11,10 @@ const inter = Inter({
   variable: '--font-inter',
 })
  
-const poppins = Poppins({
+const manrope = Manrope({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-poppins',
+  variable: '--font-manrope',
   weight: ['400', '500', '600', '700'],
 })
 
@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${poppins.variable} font-body antialiased`}>
+      <body className={`${inter.variable} ${manrope.variable} font-body antialiased`}>
         <AuthProvider>
             {children}
         </AuthProvider>

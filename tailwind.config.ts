@@ -13,7 +13,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-inter)', ...fontFamily.sans],
-        headline: ['var(--font-poppins)', ...fontFamily.sans],
+        headline: ['var(--font-manrope)', ...fontFamily.sans],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -98,5 +98,3 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-
-    

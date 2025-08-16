@@ -3,7 +3,7 @@
 
 import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
 import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
-import { collection, doc, addDoc, getDoc, getDocs, updateDoc, writeBatch, query, where, Timestamp, orderBy, deleteDoc, collectionGroup, limit } from 'firebase/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import type { Booking, BookingLink, BookingPrefill, BookingFormValues, BookingLinkWithHotel, BookingStatus } from '@/lib/definitions';
 import { bookingFormSchema } from '@/lib/definitions';
@@ -17,7 +17,6 @@ import { getHotelById } from './hotel.actions';
 export async function createBookingWithLink(
     { hotelId, bookingData }: { hotelId: string, bookingData: BookingFormValues }
 ): Promise<{ success: boolean; bookingId?: string; error?: string }> {
-    // In a real app, you'd verify the user has permission to create a booking for this hotel.
 
     if (!hotelId) {
         return { success: false, error: "Hotel ID is required." };
@@ -33,11 +32,11 @@ export async function createBookingWithLink(
     
     const validatedData = validation.data;
 
-    const batch = writeBatch(db);
+    const batch = db.batch();
 
     try {
         // 1. Create the new booking document
-        const newBookingRef = doc(collection(db, `hotels/${hotelId}/bookings`));
+        const newBookingRef = db.collection(`hotels/${hotelId}/bookings`).doc();
         
         const newBooking: Omit<Booking, 'id'> = {
             hotelId,
@@ -70,7 +69,7 @@ export async function createBookingWithLink(
         batch.set(newBookingRef, firestoreBookingData);
 
         // 2. Create the booking link (token) document
-        const newLinkRef = doc(collection(db, `hotels/${hotelId}/bookingLinks`));
+        const newLinkRef = db.collection(`hotels/${hotelId}/bookingLinks`).doc();
         const now = new Date();
         
         const prefill: BookingPrefill = {
@@ -117,7 +116,6 @@ export async function createBookingWithLink(
 export async function updateBooking(
     { hotelId, bookingId, bookingData }: { hotelId: string, bookingId: string, bookingData: BookingFormValues }
 ): Promise<{ success: boolean; error?: string }> {
-    // In a real app, you would verify the user has permission.
 
     if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
@@ -131,7 +129,7 @@ export async function updateBooking(
     const validatedData = validation.data;
 
     try {
-        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
+        const bookingRef = db.doc(`hotels/${hotelId}/bookings/${bookingId}`);
 
         const updatedBookingData = {
             firstName: validatedData.firstName,
@@ -152,7 +150,7 @@ export async function updateBooking(
             updatedAt: Timestamp.now(),
         };
         
-        await updateDoc(bookingRef, updatedBookingData as any);
+        await bookingRef.update(updatedBookingData);
 
         return { success: true };
     } catch (error) {
@@ -166,13 +164,12 @@ export async function updateBooking(
  * Fetches all bookings for a given hotel.
  */
 export async function getBookingsForHotel(hotelId: string): Promise<{ success: boolean; bookings?: Booking[]; error?: string }> {
-    // In a real app, you would verify the user has permission.
     if (!hotelId) return { success: false, error: "Hotel ID is required." };
 
     try {
-        const bookingsCol = collection(db, `hotels/${hotelId}/bookings`);
-        const q = query(bookingsCol, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
+        const bookingsCol = db.collection(`hotels/${hotelId}/bookings`);
+        const q = bookingsCol.orderBy("createdAt", "desc");
+        const snapshot = await q.get();
         
         const bookings = snapshot.docs.map(doc => {
             const data = doc.data();
@@ -210,22 +207,19 @@ export async function getBookingsForHotel(hotelId: string): Promise<{ success: b
  * Fetches a single booking by its ID for a given hotel.
  */
 export async function getBookingById({ hotelId, bookingId }: { hotelId: string, bookingId: string }): Promise<{ success: boolean; booking?: Booking; error?: string }> {
-    // This action can be public for guest pages, but should be protected for admin/dashboard.
-    // The protection happens in the route handlers/middleware.
-    
     if (!hotelId || !bookingId) return { success: false, error: "Hotel and Booking ID are required." };
 
     try {
-        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
-        const snapshot = await getDoc(bookingRef);
+        const bookingRef = db.doc(`hotels/${hotelId}/bookings/${bookingId}`);
+        const snapshot = await bookingRef.get();
         
-        if (!snapshot.exists()) {
+        if (!snapshot.exists) {
             return { success: false, error: "Booking not found." };
         }
         
         const data = snapshot.data();
         const serializableData: { [key: string]: any } = {};
-        for (const key in data) {
+        for (const key in data!) {
             const value = data[key];
             if (value instanceof Timestamp) {
                 serializableData[key] = value.toDate().toISOString();
@@ -260,15 +254,14 @@ export async function getBookingById({ hotelId, bookingId }: { hotelId: string, 
  * Deletes a booking from a hotel's sub-collection, including associated files in Storage.
  */
 export async function deleteBooking({ bookingId, hotelId }: { bookingId: string, hotelId: string }): Promise<{ success: boolean, error?: string }> {
-    // In a real app, you would verify the user has permission.
      if (!hotelId || !bookingId) {
         return { success: false, error: "Hotel ID and Booking ID are required." };
     }
     try {
-        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
-        const bookingSnap = await getDoc(bookingRef);
+        const bookingRef = db.doc(`hotels/${hotelId}/bookings/${bookingId}`);
+        const bookingSnap = await bookingRef.get();
 
-        if (!bookingSnap.exists()) {
+        if (!bookingSnap.exists) {
              return { success: false, error: "Booking to delete not found." };
         }
 
@@ -299,11 +292,11 @@ export async function deleteBooking({ bookingId, hotelId }: { bookingId: string,
             }
         }
         
-        const batch = writeBatch(db);
+        const batch = db.batch();
         batch.delete(bookingRef);
         
         if(bookingData.bookingLinkId) {
-            const linkDocRef = doc(db, `hotels/${hotelId}/bookingLinks`, bookingData.bookingLinkId);
+            const linkDocRef = db.doc(`hotels/${hotelId}/bookingLinks/${bookingData.bookingLinkId}`);
             batch.delete(linkDocRef);
         }
 
@@ -324,13 +317,10 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    const q = query(collectionGroup(db, 'bookingLinks'), where('__name__', '==', linkId), limit(1));
-    const querySnapshot = await getDocs(q);
+    const linkQuery = db.collectionGroup('bookingLinks').where(FieldPath.documentId(), '==', linkId).limit(1);
+    const querySnapshot = await linkQuery.get();
 
     if (querySnapshot.empty) {
-        // This is a special case to find the document by its ID in a collection group,
-        // which Firestore doesn't support directly. We have to query for the hotelId first.
-        // A more robust solution might involve a root-level collection for links if this becomes slow.
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
@@ -375,15 +365,14 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
 export async function updateBookingStatus(
     { hotelId, bookingId, status }: { hotelId: string, bookingId: string, status: BookingStatus }
 ): Promise<{ success: boolean; error?: string }> {
-    // In a real app, you would verify the user has permission.
 
     if (!hotelId || !bookingId || !status) {
         return { success: false, error: "Hotel ID, Booking ID, and Status are required." };
     }
 
     try {
-        const bookingRef = doc(db, `hotels/${hotelId}/bookings`, bookingId);
-        await updateDoc(bookingRef, {
+        const bookingRef = db.doc(`hotels/${hotelId}/bookings/${bookingId}`);
+        await bookingRef.update({
             status: status,
             updatedAt: Timestamp.now(),
         });

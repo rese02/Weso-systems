@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -51,10 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await signOut(auth);
-    // This will trigger the onIdTokenChanged listener, which will set user to null
-    // The middleware will then handle redirection based on the route.
-    // We can add a fallback redirect here if needed.
-    router.push('/hotel/login'); 
+    // Redirect to a neutral login page after logout
+    router.push('/agency/login'); 
   };
   
   const value = {

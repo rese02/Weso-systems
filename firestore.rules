@@ -1,12 +1,37 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Open access for development. 
-    // In production, you MUST secure these rules.
-    // Example: allow read, write: if request.auth != null;
+
+    // Default: Deny all access unless explicitly allowed.
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    // Hotels Collection:
+    // Agency can do anything.
+    // Authenticated users can read a specific hotel document (needed for some client-side logic).
+    match /hotels/{hotelId} {
+      allow read: if request.auth != null;
+      allow list, create, write, delete: if request.auth.token.role == 'agency';
+    }
+
+    // Booking Links Sub-collection:
+    // Agency can manage all links.
+    // Hoteliers can read links for their own hotel.
+    // Anyone can read a single link document if they have the ID (public guest access).
+    match /hotels/{hotelId}/bookingLinks/{linkId} {
+      allow read: if true; // Publicly readable with the link
+      allow list, create, write, delete: if request.auth.token.role == 'agency' || (request.auth.token.role == 'hotelier' && request.auth.token.hotelId == hotelId);
+    }
+    
+    // Bookings Sub-collection:
+    // Agency can manage all bookings.
+    // Hoteliers can manage bookings for their own hotel.
+    // Guests cannot access this collection directly at all.
+    match /hotels/{hotelId}/bookings/{bookingId} {
+       allow read, list, create, write, delete: if request.auth.token.role == 'agency' || (request.auth.token.role == 'hotelier' && request.auth.token.hotelId == hotelId);
     }
   }
 }

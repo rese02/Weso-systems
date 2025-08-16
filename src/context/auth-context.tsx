@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetch('/api/auth/logout', { method: 'POST' });
     // 2. Sign out from client-side Firebase
     await signOut(auth);
-    // 3. Redirect to a neutral login page after logout
-    router.push('/agency/login'); 
+    // 3. Redirect to the hotel login page after logout, which is a safe default for all users.
+    router.push('/hotel/login'); 
   };
   
   const value = {

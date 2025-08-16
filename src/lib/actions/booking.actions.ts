@@ -153,7 +153,7 @@ export async function updateBooking(
             updatedAt: Timestamp.now(),
         };
         
-        await updateDoc(bookingRef, updatedBookingData);
+        await updateDoc(bookingRef, updatedBookingData as any);
 
         return { success: true };
     } catch (error) {

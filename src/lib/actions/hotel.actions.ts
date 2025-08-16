@@ -243,7 +243,7 @@ export async function updateHotelSettings(hotelId: string, settings: Partial<Hot
 
     try {
         const hotelRef = doc(db, 'hotels', hotelId);
-        await updateDoc(hotelRef, validation.data);
+        await updateDoc(hotelRef, validation.data as any);
         revalidatePath(`/dashboard/${hotelId}/settings`);
         revalidatePath(`/dashboard/${hotelId}`);
 

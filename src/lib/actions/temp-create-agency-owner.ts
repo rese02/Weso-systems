@@ -4,7 +4,6 @@
 
 import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import 'dotenv/config'; // Make sure to load environment variables
 
 async function createAgencyOwner() {
   console.log('Attempting to create or configure the agency owner...');

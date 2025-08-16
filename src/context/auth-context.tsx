@@ -1,65 +1,44 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User as FirebaseUser, onIdTokenChanged, signInWithEmailAndPassword, signOut, UserCredential } from 'firebase/auth';
+import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase.client';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-// Augment the Firebase User type to include our custom claims
-interface User extends FirebaseUser {
-  claims: {
-    role?: 'agency' | 'hotelier';
-    hotelId?: string;
-    [key: string]: any;
-  }
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const idTokenResult = await firebaseUser.getIdTokenResult(true);
-        const augmentedUser: User = Object.assign(firebaseUser, {
-            claims: idTokenResult.claims
-        });
-        setUser(augmentedUser);
-      } else {
-        setUser(null);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const signIn = (email: string, password: string): Promise<UserCredential> => {
-    return signInWithEmailAndPassword(auth, email, password);
-  }
-
   const logout = async () => {
+    // 1. Clear server-side session cookie
+    await fetch('/api/auth/logout', { method: 'POST' });
+    // 2. Sign out from client-side Firebase
     await signOut(auth);
-    // Redirect to a neutral login page after logout
+    // 3. Redirect to a neutral login page after logout
     router.push('/agency/login'); 
   };
   
   const value = {
     user,
     loading,
-    signIn,
     logout,
   };
   

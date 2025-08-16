@@ -26,8 +26,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const sessionCookie = cookies().get('firebaseIdToken')?.value;
+  const sessionCookie = cookies().get('session')?.value;
   const decodedToken = await verifyAuth(sessionCookie);
 
   if (!decodedToken || decodedToken.role !== 'agency') {

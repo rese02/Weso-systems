@@ -26,17 +26,30 @@ export default function AgencyLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         // Force refresh the token to get the latest custom claims.
-         // This is crucial for the server-side checks in layouts to pick up the new role immediately.
-         const idTokenResult = await userCredential.user.getIdTokenResult(true);
-         const userRole = idTokenResult.claims.role;
+         const idToken = await userCredential.user.getIdToken();
+         
+         // Send the token to the server to set a cookie
+         const response = await fetch('/api/auth/login', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+           },
+           body: JSON.stringify({ idToken }),
+         });
 
-         if (userRole === 'agency') {
-             toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
-             router.push('/admin');
+         const result = await response.json();
+
+         if (response.ok && result.success) {
+            if (result.role === 'agency') {
+               toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
+               router.push('/admin');
+            } else {
+               setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
+               await fetch('/api/auth/logout', { method: 'POST' }); // Log out server-side
+               await auth.signOut(); // Log out client-side
+            }
          } else {
-            setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
-            await auth.signOut(); // Log out the user as they don't have the right role
+            setLoginError(result.error || "Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
          }
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");

@@ -26,17 +26,27 @@ export default function HotelierLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         // Force refresh the token to get the latest custom claims.
-         const idTokenResult = await userCredential.user.getIdTokenResult(true); 
-         const userRole = idTokenResult.claims.role;
-         const hotelId = idTokenResult.claims.hotelId;
+         const idToken = await userCredential.user.getIdToken();
 
-         if (userRole === 'hotelier' && hotelId) {
-             toast({ title: "Login erfolgreich", description: "Sie werden zu Ihrem Hotel-Dashboard weitergeleitet..." });
-             router.push(`/dashboard/${hotelId}`);
+          const response = await fetch('/api/auth/login', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ idToken }),
+         });
+
+         const result = await response.json();
+
+         if (response.ok && result.success) {
+            if (result.role === 'hotelier' && result.hotelId) {
+               toast({ title: "Login erfolgreich", description: "Sie werden zu Ihrem Hotel-Dashboard weitergeleitet..." });
+               router.push(`/dashboard/${result.hotelId}`);
+            } else {
+               setLoginError("Dieses Konto ist nicht für den Hotelzugang konfiguriert.");
+               await fetch('/api/auth/logout', { method: 'POST' });
+               await auth.signOut();
+            }
          } else {
-            setLoginError("Dieses Konto ist nicht für den Hotelzugang konfiguriert.");
-            await auth.signOut();
+            setLoginError(result.error || "Login fehlgeschlagen.");
          }
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");

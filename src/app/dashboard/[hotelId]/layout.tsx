@@ -33,7 +33,7 @@ export default async function DashboardLayout({
 }) {
   const { hotelId } = params;
   
-  const sessionCookie = cookies().get('firebaseIdToken')?.value;
+  const sessionCookie = cookies().get('session')?.value;
   const decodedToken = await verifyAuth(sessionCookie);
 
   if (!decodedToken) {

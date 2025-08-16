@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { BookingForm } from '@/components/booking/booking-form';
 import { Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +43,8 @@ const translations = {
     }
 };
 
-export default function GuestBookingPage({ params }: { params: { linkId: string } }) {
-  const { linkId } = params;
+export default function GuestBookingPage({ params }: { params: Promise<{ linkId: string }> }) {
+  const { linkId } = use(params);
   const [linkData, setLinkData] = useState<BookingLinkWithHotel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -11,9 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
 import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
 
-// Server-side action to ensure the agency user has the correct claims.
-// This runs once when the page is loaded on the server.
-resetAgencyPassword();
 
 export default function AgencyLoginPage() {
   const router = useRouter();
@@ -21,6 +18,12 @@ export default function AgencyLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // This server action ensures the agency user has the correct password and claims.
+    // It runs once when the component mounts.
+    resetAgencyPassword();
+  }, []);
 
   const handleLogin = async () => {
     setIsLoading(true);

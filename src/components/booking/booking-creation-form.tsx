@@ -68,7 +68,7 @@ export function BookingCreationForm({ hotelId, existingBooking = null }: Booking
       checkInDate: undefined,
       checkOutDate: undefined,
       boardType: '', // Set from config
-      priceTotal: 0,
+      priceTotal: null,
       guestLanguage: 'de',
       rooms: [{
         roomType: '', // Set from config

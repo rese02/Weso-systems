@@ -1,13 +1,14 @@
-'use server';
 
 import admin from 'firebase-admin';
 
 // This function ensures Firebase Admin is initialized only once in a more robust way.
 function initializeFirebaseAdmin() {
+  // Check if the app is already initialized to prevent re-initialization
   if (admin.apps.length > 0) {
-    return;
+    return admin.app();
   }
 
+  // Reading the service account key from environment variables
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!serviceAccountKey) {
     console.error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
@@ -15,21 +16,22 @@ function initializeFirebaseAdmin() {
   }
   
   try {
-    admin.initializeApp({
+    // Initialize the Firebase Admin SDK
+    const app = admin.initializeApp({
       credential: admin.credential.cert(JSON.parse(serviceAccountKey)),
     });
     console.log("Firebase Admin SDK initialized successfully.");
+    return app;
   } catch (error) {
     const err = error as Error;
     console.error('Firebase Admin initialization error:', err.message);
-    // Add more context to the error.
     throw new Error('Failed to initialize Firebase Admin SDK. Check your service account key. It might be malformed or missing.');
   }
 }
 
 // A helper function to get the initialized admin instances.
 // Call this function in your server actions before using authAdmin or dbAdmin.
-export async function getFirebaseAdmin() {
+export function getFirebaseAdmin() {
   initializeFirebaseAdmin();
   return {
     authAdmin: admin.auth(),

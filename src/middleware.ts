@@ -7,7 +7,8 @@ export const runtime = 'nodejs';
 
 async function verifyToken(token: string) {
   try {
-    const { authAdmin } = await getFirebaseAdmin();
+    // getFirebaseAdmin now handles the initialization safely within the function call
+    const { authAdmin } = getFirebaseAdmin();
     const decodedToken = await authAdmin.verifyIdToken(token);
     return decodedToken;
   } catch (error) {

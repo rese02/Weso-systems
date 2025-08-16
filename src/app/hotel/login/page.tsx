@@ -26,7 +26,9 @@ export default function HotelierLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         const idToken = await userCredential.user.getIdToken();
+         // Force token refresh to get the latest claims immediately.
+         // This is crucial for new users whose claims might not be in the cached token yet.
+         const idToken = await userCredential.user.getIdToken(true);
 
           const response = await fetch('/api/auth/login', {
            method: 'POST',
@@ -37,6 +39,7 @@ export default function HotelierLoginPage() {
          const result = await response.json();
 
          if (response.ok && result.success) {
+            // The server-side verification is the source of truth.
             if (result.role === 'hotelier' && result.hotelId) {
                toast({ title: "Login erfolgreich", description: "Sie werden zu Ihrem Hotel-Dashboard weitergeleitet..." });
                router.push(`/dashboard/${result.hotelId}`);

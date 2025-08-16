@@ -38,8 +38,8 @@ async function createAgencyOwner() {
   const authAdmin = getAuth();
 
   // --- Define the agency owner credentials ---
-  const agencyEmail = 'admin@weso.it';
-  const agencyPassword = 'changeme123';
+  const agencyEmail = 'hallo@agentur-weso.it';
+  const agencyPassword = 'Hallo-weso.2025!';
   // -----------------------------------------
 
   try {
@@ -70,7 +70,7 @@ async function createAgencyOwner() {
     console.log('\n✅ Setup complete!');
     console.log('You can now log in with:');
     console.log(`   Email: ${agencyEmail}`);
-    console.log(`   Password: ${agencyPassword}`);
+    console.log(`   Password: [your password]`);
 
   } catch (error) {
     console.error('An error occurred during the setup process:');

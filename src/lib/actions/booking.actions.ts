@@ -318,14 +318,13 @@ export async function getBookingLinkDetails(linkId: string): Promise<{ success: 
   if (!linkId) return { success: false, error: "Link ID is required." };
   
   try {
-    // A collection group query is necessary because we don't know the hotelId from the linkId alone.
-    const realQuery = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
-    const querySnapshot = await realQuery.get();
+    // This is the correct and robust way to query for a document by its ID within a collection group.
+    const query = db.collectionGroup('bookingLinks').where('__name__', '==', linkId).limit(1);
+    const querySnapshot = await query.get();
     
-    // Since we limit to 1 and the ID is unique, we expect 0 or 1 doc.
     const linkDoc = querySnapshot.docs.find(doc => doc.id === linkId);
 
-    if (!linkDoc) {
+    if (!linkDoc || !linkDoc.exists) {
         return { success: false, error: "Ungültiger oder nicht gefundener Buchungslink." };
     }
 
@@ -386,3 +385,5 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
+
+    

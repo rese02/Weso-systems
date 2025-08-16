@@ -7,7 +7,7 @@ import { getAuth } from 'firebase-admin/auth';
 import 'dotenv/config'; // Make sure to load environment variables
 
 async function createAgencyOwner() {
-  console.log('Attempting to create the first agency owner...');
+  console.log('Attempting to create or configure the agency owner...');
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
@@ -67,8 +67,7 @@ async function createAgencyOwner() {
     // Set the custom claim for the user
     await authAdmin.setCustomUserClaims(user.uid, { role: 'agency' });
     console.log(`Successfully set custom claim 'role: agency' for user ${user.uid}.`);
-    console.log('\n✅ Setup complete!');
-    console.log('You can now log in with:');
+    console.log('\n✅ Setup complete! You can now log in.');
     console.log(`   Email: ${agencyEmail}`);
     console.log(`   Password: [your password]`);
 

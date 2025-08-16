@@ -27,7 +27,8 @@ export default function AgencyLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         const idTokenResult = await userCredential.user.getIdTokenResult(true); // Force refresh
+         // Force refresh the token to get the latest custom claims.
+         const idTokenResult = await userCredential.user.getIdTokenResult(true);
          const userRole = idTokenResult.claims.role;
 
          if (userRole === 'agency') {
@@ -35,6 +36,7 @@ export default function AgencyLoginPage() {
              router.push('/admin');
          } else {
             setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
+            await auth.signOut(); // Log out the user as they don't have the right role
          }
       } else {
         setLoginError("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");

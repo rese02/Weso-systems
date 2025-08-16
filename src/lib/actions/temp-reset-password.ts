@@ -12,7 +12,7 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin';
 export async function resetAgencyPassword() {
   console.log("Attempting to reset agency user password and claims...");
   try {
-    const { authAdmin } = getFirebaseAdmin();
+    const { authAdmin } = await getFirebaseAdmin();
     const email = 'hallo@agentur-weso.it';
     const password = 'Hallo-weso.2025!';
     const uid = '447umxYFvIRrwU0ogMDYU5Ednyq2';

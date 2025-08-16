@@ -29,7 +29,7 @@ function initializeFirebaseAdmin() {
 
 // A helper function to get the initialized admin instances.
 // Call this function in your server actions before using authAdmin or dbAdmin.
-export function getFirebaseAdmin() {
+export async function getFirebaseAdmin() {
   initializeFirebaseAdmin();
   return {
     authAdmin: admin.auth(),

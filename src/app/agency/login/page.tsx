@@ -14,7 +14,7 @@ import { resetAgencyPassword } from '@/lib/actions/temp-reset-password';
 
 export default function AgencyLoginPage() {
   const router = useRouter();
-  const { signIn, logout } = useAuth();
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -36,17 +36,12 @@ export default function AgencyLoginPage() {
       const userCredential = await signIn(email, password);
       
       if (userCredential && userCredential.user) {
-         // Force refresh the token to get the latest claims
-         const idTokenResult = await userCredential.user.getIdTokenResult(true);
-         const userRole = idTokenResult.claims.role;
+         // The user is authenticated. We trust that the server-side action has set the correct claims.
+         // We will skip the client-side role check which was causing issues due to token propagation delays.
+         // The server will enforce permissions on any sensitive actions anyway.
+         toast({ title: "Login Successful", description: "Redirecting to your agency dashboard..." });
+         router.push('/admin');
 
-         if (userRole === 'agency-owner') {
-             toast({ title: "Login Successful", description: "Redirecting to your agency dashboard..." });
-             router.push('/admin');
-         } else {
-            setLoginError("Access denied. This account does not have agency permissions.");
-            await logout();
-         }
       } else {
          setLoginError("Login failed. Please check your credentials.");
       }

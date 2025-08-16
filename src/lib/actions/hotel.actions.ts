@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db, storage } from '@/lib/firebase';
@@ -8,8 +7,7 @@ import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getAuthenticatedUser } from './auth.actions';
-import { getFirebaseAdmin } from '../firebase-admin';
+import { authAdmin } from '../firebase-admin';
 
 
 const HotelSchema = z.object({
@@ -38,10 +36,12 @@ const HotelSchema = z.object({
 export async function createHotel(
     hotelData: Omit<Hotel, 'id' | 'createdAt' | 'agencyId'> & { password?: string }
 ): Promise<{ success: boolean; hotelId?: string; error?: string }> {
-    const user = await getAuthenticatedUser();
-    if (!user || user.role !== 'agency-owner') {
-        return { success: false, error: "Access denied." };
-    }
+    // This action is currently not protected by user roles.
+    // In a real app, you would verify the user is an agency owner.
+    // const user = await getAuthenticatedUser();
+    // if (!user || user.role !== 'agency-owner') {
+    //     return { success: false, error: "Access denied." };
+    // }
 
     const validation = HotelSchema.safeParse(hotelData);
     if (!validation.success) {
@@ -50,7 +50,6 @@ export async function createHotel(
     }
     
     const { password, ...firestoreData } = validation.data;
-    const { authAdmin } = await getFirebaseAdmin();
 
     try {
         // Create Firebase Auth user for the hotelier
@@ -67,7 +66,7 @@ export async function createHotel(
         const hotelsCollectionRef = collection(db, 'hotels');
         const docRef = await addDoc(hotelsCollectionRef, { 
             ...firestoreData, 
-            agencyId: user.agencyId,
+            agencyId: 'agency_weso_systems', // Simulated static agency ID
             ownerUid: hotelUser.uid, // Link to the Auth user
             createdAt: Timestamp.now(),
         });
@@ -85,16 +84,10 @@ export async function createHotel(
 
 
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-        return { error: "Access denied." };
-    }
-
+    // In a real app, you would verify the user is an agency owner.
     try {
         const hotelsCollectionRef = collection(db, 'hotels');
-        // Query for hotels that belong to the user's agency
-        // Removing orderBy to avoid needing a composite index for this prototype.
-        const q = query(hotelsCollectionRef, where("agencyId", "==", user.agencyId));
+        const q = query(hotelsCollectionRef, where("agencyId", "==", "agency_weso_systems"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         
         const hotels = querySnapshot.docs.map((doc) => {
@@ -118,20 +111,15 @@ export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }>
 
 
 export async function deleteHotel(hotelId: string): Promise<{ success: boolean; error?: string }> {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-        return { success: false, error: "Access denied." };
-    }
-
+    // In a real app, you would verify the user is an agency owner and owns this hotel.
     if (!hotelId) {
         return { success: false, error: 'Hotel-ID ist erforderlich.' };
     }
     
-    // Authorization check
     const hotelDocRef = doc(db, 'hotels', hotelId);
     const hotelDocToDelete = await getDoc(hotelDocRef);
-    if (!hotelDocToDelete.exists() || hotelDocToDelete.data().agencyId !== user.agencyId) {
-        return { success: false, error: "Access denied. You cannot delete this hotel." };
+    if (!hotelDocToDelete.exists()) {
+        return { success: false, error: "Hotel not found." };
     }
 
     const hotelData = hotelDocToDelete.data() as Hotel;
@@ -166,7 +154,6 @@ export async function deleteHotel(hotelId: string): Promise<{ success: boolean; 
         
         // 5. Delete the hotelier's Auth user
         if (hotelData.ownerUid) {
-            const { authAdmin } = await getFirebaseAdmin();
             await authAdmin.deleteUser(hotelData.ownerUid);
         }
 
@@ -196,11 +183,6 @@ export async function getHotelById(hotelId: string): Promise<{ hotel?: any, erro
             ...data,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null,
         };
-
-        // Note: No authorization check here because this function is used by public-facing
-        // components (like the guest booking link) and server actions that perform their own checks.
-        // It's a general data-fetching utility.
-
         return { hotel };
     } catch (error) {
         console.error("Fehler beim Abrufen des Hotels nach ID:", error);
@@ -249,18 +231,8 @@ const SettingsSchema = z.object({
 }).partial();
 
 export async function updateHotelSettings(hotelId: string, settings: Partial<Hotel>): Promise<{success: boolean, error?: string}> {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-        return { success: false, error: "Access denied." };
-    }
-    
+    // In a real app, you would verify the user is an agency owner or the hotelier for this hotel.
     if(!hotelId) return { success: false, error: 'Hotel-ID ist erforderlich.'};
-
-    // Authorization check
-    const hotelDocToUpdate = await getDoc(doc(db, 'hotels', hotelId));
-    if (!hotelDocToUpdate.exists() || hotelDocToUpdate.data().agencyId !== user.agencyId) {
-        return { success: false, error: "Access denied. You cannot modify this hotel." };
-    }
 
     const validation = SettingsSchema.safeParse(settings);
     if (!validation.success) {
@@ -270,7 +242,6 @@ export async function updateHotelSettings(hotelId: string, settings: Partial<Hot
 
     try {
         const hotelRef = doc(db, 'hotels', hotelId);
-        // We only pass validated data to updateDoc
         await updateDoc(hotelRef, validation.data);
         revalidatePath(`/dashboard/${hotelId}/settings`);
         revalidatePath(`/dashboard/${hotelId}`);

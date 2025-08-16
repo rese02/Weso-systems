@@ -1,21 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFirebaseAdmin } from './lib/firebase-admin';
 
-// Force the middleware to run on the Node.js runtime
-// This is necessary because 'firebase-admin' is not compatible with the Edge runtime
-export const runtime = 'nodejs';
-
-async function verifyToken(token: string) {
-  try {
-    // getFirebaseAdmin now handles the initialization safely within the function call
-    const { authAdmin } = getFirebaseAdmin();
-    const decodedToken = await authAdmin.verifyIdToken(token);
-    return decodedToken;
-  } catch (error) {
-    console.error('Token verification failed:', (error as Error).message);
-    return null;
-  }
-}
+// The middleware does not need the Node.js runtime anymore, it can run on the Edge.
+// export const runtime = 'nodejs';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,6 +10,27 @@ export async function middleware(request: NextRequest) {
   const agencyLoginUrl = new URL('/agency/login', request.url);
   const hotelLoginUrl = new URL('/hotel/login', request.url);
 
+  // A helper function to verify the token by calling our new API route
+  const verifyToken = async (token: string) => {
+    try {
+      const response = await fetch(new URL('/api/auth/verify-token', request.url), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying token via API route:', error);
+      return null;
+    }
+  };
+  
   // --- Agency Route Protection ---
   if (pathname.startsWith('/admin')) {
     if (!token) {
@@ -45,11 +52,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(hotelLoginUrl);
     }
 
-    // Extract hotelId from the URL path, e.g., /dashboard/some-hotel-id/...
     const urlHotelId = pathname.split('/')[2];
     if (decodedToken.hotelId !== urlHotelId) {
-       console.warn(`Access mismatch: User's hotelId (${decodedToken.hotelId}) does not match URL hotelId (${urlHotelId}). Redirecting.`);
-       // Redirect to their own dashboard to prevent accessing others'
        const correctDashboardUrl = new URL(`/dashboard/${decodedToken.hotelId}`, request.url);
        return NextResponse.redirect(correctDashboardUrl);
     }
@@ -75,7 +79,7 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api (API routes are now handled internally)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)

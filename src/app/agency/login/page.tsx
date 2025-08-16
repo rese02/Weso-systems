@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -26,9 +27,10 @@ export default function AgencyLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential && userCredential.user) {
-         const idToken = await userCredential.user.getIdToken();
+         // Force token refresh to get the latest claims immediately
+         const idToken = await userCredential.user.getIdToken(true);
          
-         // Send the token to the server to set a cookie
+         // Send the token to the server to set a session cookie
          const response = await fetch('/api/auth/login', {
            method: 'POST',
            headers: {
@@ -37,18 +39,11 @@ export default function AgencyLoginPage() {
            body: JSON.stringify({ idToken }),
          });
 
-         const result = await response.json();
-
-         if (response.ok && result.success) {
-            if (result.role === 'agency') {
-               toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
-               router.push('/admin');
-            } else {
-               setLoginError("Dieses Konto ist nicht für den Agenturzugang konfiguriert.");
-               await fetch('/api/auth/logout', { method: 'POST' }); // Log out server-side
-               await auth.signOut(); // Log out client-side
-            }
+         if (response.ok) {
+            toast({ title: "Login erfolgreich", description: "Sie werden zum Agentur-Dashboard weitergeleitet..." });
+            router.push('/admin'); // Always redirect to admin, let the layout handle auth.
          } else {
+            const result = await response.json();
             setLoginError(result.error || "Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.");
          }
       } else {

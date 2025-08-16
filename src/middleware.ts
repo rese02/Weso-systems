@@ -1,5 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { authAdmin } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
 // This function can be marked `async` if using `await` inside
@@ -10,11 +11,10 @@ export async function middleware(request: NextRequest) {
   const adminDashboardUrl = new URL('/admin', request.url);
   
   // Try to get the token from cookies
-  const tokenCookie = cookies().get('firebaseIdToken');
-  const token = tokenCookie?.value;
+  const sessionCookie = cookies().get('firebaseIdToken')?.value;
 
   // If there's no token and user is trying to access a protected route
-  if (!token) {
+  if (!sessionCookie) {
     if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) {
       // Redirect to agency login as a default for protected routes
       return NextResponse.redirect(agencyLoginUrl);
@@ -22,29 +22,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // If there is a token, verify it
+  // If there is a token, verify it directly on the server
   try {
-    const response = await fetch(new URL('/api/auth/verify-token', request.url), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `firebaseIdToken=${token}` // Forward the cookie
-      },
-      body: JSON.stringify({ token }),
-    });
-
-    if (!response.ok) {
-       // Token is invalid, clear it and redirect to login
-       const response = NextResponse.redirect(agencyLoginUrl);
-       response.cookies.delete('firebaseIdToken');
-       return response;
-    }
-
-    const decodedToken = await response.json();
+    const decodedToken = await authAdmin.verifyIdToken(sessionCookie);
 
     // --- Agency Route Protection ---
     if (pathname.startsWith('/admin')) {
       if (decodedToken.role !== 'agency') {
+        // If the role is not agency, redirect to the agency login page.
         return NextResponse.redirect(agencyLoginUrl);
       }
     }
@@ -54,9 +39,10 @@ export async function middleware(request: NextRequest) {
       if (decodedToken.role !== 'hotelier' || !decodedToken.hotelId) {
         return NextResponse.redirect(hotelLoginUrl);
       }
+      // Extract hotelId from URL, e.g., /dashboard/hotel123 -> hotel123
       const urlHotelId = pathname.split('/')[2];
       if (decodedToken.hotelId !== urlHotelId) {
-        // Redirect to the correct dashboard if accessing the wrong one
+        // If the user tries to access a different hotel's dashboard, redirect to their own.
         return NextResponse.redirect(new URL(`/dashboard/${decodedToken.hotelId}`, request.url));
       }
     }
@@ -73,7 +59,7 @@ export async function middleware(request: NextRequest) {
 
   } catch (error) {
     console.error('Middleware token verification error:', error);
-    // If verification fails, treat as unauthenticated
+    // If verification fails, treat as unauthenticated. Clear the invalid cookie.
     const response = NextResponse.redirect(agencyLoginUrl);
     response.cookies.delete('firebaseIdToken');
     return response;
@@ -88,8 +74,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - guest (public guest booking pages)
-     * - api/auth (the auth verification route itself to prevent loops)
+     * - api/ (API routes, though we removed the only one used by middleware)
      */
-    '/((?!_next/static|_next/image|favicon.ico|guest|api/auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|guest|api/).*)',
   ],
 };

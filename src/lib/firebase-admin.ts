@@ -1,3 +1,4 @@
+
 import admin from 'firebase-admin';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
@@ -34,10 +35,11 @@ export async function verifyAuth(session?: string): Promise<DecodedIdToken | nul
         return null;
     }
     try {
-        const decodedToken = await authAdmin.verifyIdToken(session, true);
+        // Use verifySessionCookie for session management, it's the counterpart to createSessionCookie
+        const decodedToken = await authAdmin.verifySessionCookie(session, true /** checkRevoked */);
         return decodedToken;
     } catch (error) {
-        console.error('Error verifying auth token:', error);
+        console.error('Error verifying session cookie:', error);
         return null;
     }
 }

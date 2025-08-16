@@ -2,7 +2,7 @@
 'use server';
 
 import { dbAdmin as db, authAdmin } from '@/lib/firebase-admin';
-import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
+import { storage } from '@/lib/firebase.client';
 import { Timestamp } from 'firebase-admin/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';
@@ -75,7 +75,8 @@ export async function createHotel(
 export async function getHotels(): Promise<{ hotels?: Hotel[]; error?: string }> {
     try {
         const hotelsCollectionRef = db.collection('hotels');
-        const q = hotelsCollectionRef.where("agencyId", "==", "agency_weso_systems").orderBy("createdAt", "desc");
+        // Simplified query to avoid needing a composite index. Filtering will be done client-side.
+        const q = hotelsCollectionRef.orderBy("createdAt", "desc");
         const querySnapshot = await q.get();
         
         const hotels = querySnapshot.docs.map((doc) => {

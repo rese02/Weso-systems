@@ -19,12 +19,14 @@ import {
 import { getHotels, deleteHotel } from '@/lib/actions/hotel.actions';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { useEffect, useState, useTransition, useCallback } from 'react';
+import { useEffect, useState, useTransition, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Hotel } from '@/lib/definitions';
 
+const AGENCY_ID = 'agency_weso_systems';
+
 export default function AdminDashboardPage() {
-  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [allHotels, setAllHotels] = useState<Hotel[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -36,7 +38,7 @@ export default function AdminDashboardPage() {
     try {
         const result = await getHotels();
         if (result.hotels) {
-          setHotels(result.hotels);
+          setAllHotels(result.hotels);
         } else {
           setError(result.error || 'Hoteldaten konnten nicht geladen werden.');
         }
@@ -50,6 +52,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchHotels();
   }, [fetchHotels]);
+
+  const hotels = useMemo(() => {
+    return allHotels.filter(hotel => hotel.agencyId === AGENCY_ID);
+  }, [allHotels]);
 
   const handleDelete = async (hotelId: string) => {
     startDeleteTransition(async () => {

@@ -387,5 +387,3 @@ export async function updateBookingStatus(
         return { success: false, error: (error as Error).message };
     }
 }
-
-    

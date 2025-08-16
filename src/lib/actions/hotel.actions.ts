@@ -1,7 +1,8 @@
 
 'use server';
 
-import { db, storage } from '@/lib/firebase';
+import { dbAdmin as db } from '@/lib/firebase-admin'; // Use Admin SDK for server actions
+import { storage } from '@/lib/firebase.client'; // Storage client can be used on server
 import { collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp, getDoc, updateDoc, orderBy, writeBatch, where, limit } from 'firebase/firestore';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import type { Hotel } from '@/lib/definitions';

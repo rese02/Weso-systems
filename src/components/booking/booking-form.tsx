@@ -17,10 +17,9 @@ import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import type { BookingLink, Hotel, Companion, GuestLanguage } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { storage } from '@/lib/firebase.client';
+import { storage, db as clientDb } from '@/lib/firebase.client'; // Use client DB for batch commit
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Timestamp, doc, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase.client';
 import { Calendar } from '../ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { generateConfirmationEmail } from '@/ai/flows/generate-confirmation-email';
@@ -1085,8 +1084,8 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
             if (u.url) uploadedFileMap[u.name] = u.url;
         });
 
-        const batch = writeBatch(db);
-        const bookingDocRef = doc(db, `hotels/${hotelId}/bookings`, prefillData.bookingId);
+        const batch = writeBatch(clientDb);
+        const bookingDocRef = doc(clientDb, `hotels/${hotelId}/bookings`, prefillData.bookingId);
         
         const updatedCompanions = companions.map((c, index) => ({
             firstName: c.firstName,
@@ -1118,7 +1117,7 @@ export function BookingForm({ prefillData, linkId, hotelId, initialGuestData }: 
         };
         batch.update(bookingDocRef, updateData);
 
-        const linkDocRef = doc(db, `hotels/${hotelId}/bookingLinks`, linkId);
+        const linkDocRef = doc(clientDb, `hotels/${hotelId}/bookingLinks`, linkId);
         batch.update(linkDocRef, { status: 'used' });
         
         await batch.commit();

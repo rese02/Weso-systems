@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -199,13 +198,13 @@ export default function CreateHotelPage() {
                  <div className="grid gap-2">
                     <Label htmlFor="password">Passwort des Hoteliers</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Passwort generieren..." required />
+                        <Input id="password" name="password" value={generatedPassword} readOnly placeholder="Passwort generieren..." required className="flex-1" />
+                        <Button variant="outline" type="button" onClick={generatePassword} className="whitespace-nowrap">Generieren</Button>
                         {generatedPassword && (
-                            <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard}>
+                            <Button variant="ghost" size="icon" type="button" onClick={copyToClipboard} className="shrink-0">
                                 <Copy className="h-4 w-4" />
                             </Button>
                         )}
-                         <Button variant="outline" type="button" onClick={generatePassword} className="whitespace-nowrap">Generieren</Button>
                     </div>
                  </div>
             </div>
